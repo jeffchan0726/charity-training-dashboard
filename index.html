@@ -25,13 +25,11 @@
                 </div>
                 
                 <div class="flex items-center gap-x-3">
-                    <!-- Current User Display -->
                     <div id="currentUserDisplay" class="bg-white/20 px-4 py-1.5 rounded-2xl text-sm flex items-center gap-x-2 hidden">
                         <i class="fa-solid fa-user"></i>
                         <span id="currentUserName"></span>
                     </div>
                     
-                    <!-- Login / Logout Button -->
                     <button id="loginBtn" onclick="showLoginModal()" class="px-4 py-1.5 bg-white text-[#166534] font-semibold rounded-2xl text-sm">
                         登入
                     </button>
@@ -60,17 +58,15 @@
             </button>
         </div>
 
-        <!-- 概覽 -->
+        <!-- 內容區域 -->
         <div id="content-overview" class="tab-content">
             <div class="text-center py-12 text-[#a8a29e]">概覽頁面</div>
         </div>
 
-        <!-- 金主排行榜 -->
         <div id="content-sponsor" class="tab-content hidden">
             <div class="text-center py-12 text-[#a8a29e]">金主排行榜</div>
         </div>
 
-        <!-- Workout Log -->
         <div id="content-log" class="tab-content hidden">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-xl">Workout Log <span id="logUserName" class="text-[#4ade80]"></span></h3>
@@ -149,9 +145,7 @@
     </div>
 
     <script>
-        // ==================== 請修改呢行 ====================
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhdwkW7y-xmQ1UT1nvSzi5kP4v838Hs7AQzQ6LxuKdUovY3ubdBMtGJMcSbWWivELm/exec";
-        // ===================================================
 
         let currentUser = null;
         let workoutLogs = [];
@@ -200,21 +194,23 @@
             const username = document.getElementById('loginUsername').value.trim();
             const pin = document.getElementById('loginPin').value.trim();
 
-            if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
-
-            // 簡單驗證（實際應由後端驗證）
-            const result = await callAppsScript("getLogs", { user: username });
-            
-            if (result.status === "error") {
-                alert("登入失敗，請檢查用戶名稱或 PIN");
+            if (!username || !pin) {
+                alert("請輸入用戶名稱同 PIN");
                 return;
             }
 
-            currentUser = username;
-            localStorage.setItem('currentUser', currentUser);
-            hideLoginModal();
-            updateUIAfterLogin();
-            await loadUserLogs();
+            // 呼叫後端驗證
+            const result = await callAppsScript("login", { user: username, pin: pin });
+
+            if (result.status === "success") {
+                currentUser = username;
+                localStorage.setItem('currentUser', currentUser);
+                hideLoginModal();
+                updateUIAfterLogin();
+                await loadUserLogs();
+            } else {
+                alert("登入失敗，請檢查用戶名稱或 PIN");
+            }
         }
 
         function logoutUser() {
