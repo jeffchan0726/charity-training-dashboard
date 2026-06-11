@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,14 +8,35 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif; }
-        .charity-header { background: linear-gradient(135deg, #166534 0%, #4ade80 100%); }
-        .section-card { background: #1c1917; border: 1px solid #44403c; }
-        .nav-tab.active { background-color: #166534; color: white; }
-        .exercise-card { transition: all 0.2s; }
-        .exercise-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); }
+        body {
+            font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+        }
+
+        .charity-header {
+            background: linear-gradient(135deg, #166534 0%, #4ade80 100%);
+        }
+
+        .section-card {
+            background: #1c1917;
+            border: 1px solid #44403c;
+        }
+
+        .nav-tab.active {
+            background-color: #166534;
+            color: white;
+        }
+
+        .exercise-card {
+            transition: all 0.2s;
+        }
+
+        .exercise-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+        }
     </style>
 </head>
+
 <body class="bg-[#1c1917] text-[#e7e5e4]">
 
     <!-- Header -->
@@ -29,12 +51,16 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-x-4">
-                    <div id="currentUserDisplay" class="hidden bg-white/20 px-5 py-2 rounded-2xl text-sm flex items-center gap-x-2">
+                    <div id="currentUserDisplay"
+                        class="hidden bg-white/20 px-5 py-2 rounded-2xl text-sm flex items-center gap-x-2">
                         <i class="fa-solid fa-user"></i> <span id="currentUserName"></span>
                     </div>
-                    <button id="loginBtn" onclick="showLoginModal()" class="px-5 py-2 bg-white text-[#166534] font-semibold rounded-2xl">登入</button>
-                    <button id="logoutBtn" onclick="logoutUser()" class="hidden px-5 py-2 bg-white/20 hover:bg-white/30 rounded-2xl">登出</button>
-                    <button onclick="showAddUserModal()" class="px-5 py-2 bg-white/20 hover:bg-white/30 rounded-2xl">新增用戶</button>
+                    <button id="loginBtn" onclick="showLoginModal()"
+                        class="px-5 py-2 bg-white text-[#166534] font-semibold rounded-2xl">登入</button>
+                    <button id="logoutBtn" onclick="logoutUser()"
+                        class="hidden px-5 py-2 bg-white/20 hover:bg-white/30 rounded-2xl">登出</button>
+                    <button onclick="showAddUserModal()"
+                        class="px-5 py-2 bg-white/20 hover:bg-white/30 rounded-2xl">新增用戶</button>
                 </div>
             </div>
         </div>
@@ -44,12 +70,19 @@
 
         <!-- Navigation -->
         <div class="flex flex-wrap gap-2 mb-8 border-b border-[#44403c] pb-4 overflow-x-auto">
-            <button onclick="switchTab('overview')" id="tab-overview" class="nav-tab active px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">概覽</button>
-            <button onclick="switchTab('schedule')" id="tab-schedule" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">每日時間表</button>
-            <button onclick="switchTab('supplement')" id="tab-supplement" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">補充劑</button>
-            <button onclick="switchTab('training')" id="tab-training" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">訓練計劃</button>
-            <button onclick="switchTab('log')" id="tab-log" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">Workout Log</button>
-            <button onclick="switchTab('sponsor')" id="tab-sponsor" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">金主排行榜</button>
+            <button onclick="switchTab('overview')" id="tab-overview"
+                class="nav-tab active px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">概覽</button>
+            <button onclick="switchTab('schedule')" id="tab-schedule"
+                class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">每日時間表</button>
+            <button onclick="switchTab('supplement')" id="tab-supplement"
+                class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">Supplements</button>
+            <button onclick="switchTab('training')" id="tab-training"
+                class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">訓練計劃</button>
+            <button onclick="switchTab('log')" id="tab-log"
+                class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">Workout Log</button>
+            <button onclick="switchTab('sponsor')" id="tab-sponsor"
+                class="nav-tab px-5 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2 hover:bg-[#292524]">
+                <i class="fa-solid fa-trophy"></i> <span>金主排行榜</span>
         </div>
 
         <!-- 概覽 -->
@@ -79,139 +112,353 @@
             <div class="section-card rounded-3xl p-8">
                 <h2 class="text-2xl font-bold mb-6">每日時間表</h2>
                 <div class="space-y-5 text-sm">
-                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">04:30</div><div><strong>起床 + 3隻雞蛋 + 蛋白shake + Vitamin D3</strong></div></div>
-                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">04:45-7:00</div><div><strong>Gym 重訓</strong>（Set 1/2/3 輪換）</div></div>
-                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">12:00</div><div>午餐（300g雜菜 + 200g瘦肉）</div></div>
-                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">19:00</div><div>晚餐 + 補充劑</div></div>
-                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">21:00</div><div>睡前補劑 + 入睡</div></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 補充劑 -->
-        <div id="content-supplement" class="tab-content hidden">
-            <div class="section-card rounded-3xl p-8">
-                <h2 class="text-2xl font-bold mb-6">補充劑時間表</h2>
-                <table class="w-full text-sm">
-                    <thead><tr class="border-b border-[#57534e]"><th class="py-3 text-left">補充劑</th><th>時間</th><th>劑量</th></tr></thead>
-                    <tbody class="divide-y divide-[#44403c]">
-                        <tr><td>Rule 1 Whey + Collagen + Creatine</td><td>04:30</td><td>3+2 scoops + 5g</td></tr>
-                        <tr><td>Vitamin D3</td><td>04:30</td><td>5000IU</td></tr>
-                        <tr><td>Biotin + Omega-3 + 多維 + Zinc</td><td>19:30</td><td>隨餐</td></tr>
-                        <tr><td>Magnesium + CoQ10</td><td>21:00</td><td>睡前</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 訓練計劃 -->
-        <div id="content-training" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-8">每週訓練分拆（Mon / Wed / Fri）</h2>
-            <div class="grid md:grid-cols-3 gap-6">
-
-                <!-- Set 1 -->
-                <div class="section-card rounded-3xl p-6">
-                    <h3 class="font-bold text-emerald-400 mb-6">Set 1: Chest + Triceps</h3>
-                    <div class="space-y-4">
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/incline_dumbbell_press.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>1. Incline Dumbbell Press<br><span class="text-xs text-[#a8a29e]">斜板啞鈴推胸</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/flat_dumbbell_press.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>2. Flat Dumbbell Press<br><span class="text-xs text-[#a8a29e]">平板啞鈴推胸</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/lower_chest_cable_fly.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>3. Lower Chest Cable Fly<br><span class="text-xs text-[#a8a29e]">下胸繩索飛鳥</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/tricep_rope_pushdown.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>4. Tricep Rope Pushdown<br><span class="text-xs text-[#a8a29e]">繩索三頭肌下壓</span></div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">04:30</div>
+                        <div><strong>起床</strong></div>
+                        <div>每朝3隻雞蛋+喝咖啡 +Supplements+沖蛋白shake</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">4:40-4:45am</div>
+                        <div><strong>準備出門</strong></div>
+                        <div>檢查水瓶（至少1.5L）、搖搖杯、毛巾、耳機</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">4:45-7:00am</div>
+                        <div><strong>到達Gym+暖身+跑步機+重訓</strong></div>
+                        <div>10分鐘動態暖身：手臂畫圈、腿擺動、髖關節打開、深蹲10次、原地慢跑
                         </div>
                     </div>
-                </div>
-
-                <!-- Set 2 -->
-                <div class="section-card rounded-3xl p-6">
-                    <h3 class="font-bold text-emerald-400 mb-6">Set 2: Back + Biceps + Core</h3>
-                    <div class="space-y-4">
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/pull_ups.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>1. Pull-ups<br><span class="text-xs text-[#a8a29e]">引體向上</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/seated_cable_row.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>2. Seated Cable Row<br><span class="text-xs text-[#a8a29e]">坐姿繩索划船</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/deadlift.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>3. Deadlift<br><span class="text-xs text-[#a8a29e]">硬拉</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/bayesian_cable_curls.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>4. Bayesian Cable Curls<br><span class="text-xs text-[#a8a29e]">Bayesian 繩索彎舉</span></div>
-                        </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">7:00-7:25am</div>
+                        <div><strong>伸展 + 回家</strong></div>
+                        <div>5分鐘靜態伸展</div>
                     </div>
-                </div>
-
-                <!-- Set 3 -->
-                <div class="section-card rounded-3xl p-6">
-                    <h3 class="font-bold text-emerald-400 mb-6">Set 3: Legs + Shoulders + Forearms + Core</h3>
-                    <div class="space-y-4">
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/zercher_squats.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>1. Zercher Squats<br><span class="text-xs text-[#a8a29e]">澤奇深蹲</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/lateral_raises.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>2. Lateral Raises<br><span class="text-xs text-[#a8a29e]">側平舉</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/rear_delt_raises.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>3. Rear Delt Raises<br><span class="text-xs text-[#a8a29e]">後肩三角肌飛鳥</span></div>
-                        </div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
-                            <img src="images/dragon_flag.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div>4. Dragon Flag<br><span class="text-xs text-[#a8a29e]">龍旗</span></div>
-                        </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">7:25am–12:00pm</div>
+                        <div><strong>回家/沖涼/上班</strong></div>
+                        <div>每小時喝水200-300ml（目標12:00前喝1.5L）</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">12:00-13:00pm</div>
+                        <div><strong>午餐（Lunch box）</strong></div>
+                        <div>300g 雜菜 + 200g 蘑菇 + 150g 粟米 + 200g 瘦肉/雞胸/豆腐 + 少量糙米</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">13:00-6:00pm</div>
+                        <div><strong>繼續工作</strong></div>
+                        <div>每小時喝水200ml</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">6:00-7:00pm</div>
+                        <div><strong>回家/沖涼/休息</strong></div>
+                        <div>熱水澡放鬆肌肉 + 補水（全日目標3-4L）</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">7:00-7:30pm</div>
+                        <div><strong>晚餐</strong></div>
+                        <div>200g 白飯/糙米 + 250g 清蒸魚 + 300g 生菜/青菜</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">7:30-7:45pm</div>
+                        <div><strong>Supplements</strong></div>
+                        <div>Biotin 10,000 mcg 1粒 + Omega-3 3粒 + NOW Daily Vits 1粒 + Zinc 30mg 1粒</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">7:45-8:50pm</div>
+                        <div><strong>放鬆時間</strong></div>
+                        <div>避免藍光、輕鬆活動</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">8:50-9:00pm</div>
+                        <div><strong>睡前Supplements + 準備</strong></div>
+                        <div>Magnesium Glycinate 400mg（2粒） + CoQ10 200mg 1粒 刷牙、關燈</div>
+                    </div>
+                    <div class="flex gap-x-6">
+                        <div class="w-28 font-mono text-[#a8a29e]">9:00pm</div>
+                        <div><strong>入睡</strong></div>
+                        <div>確保7.5小時優質睡眠</div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Workout Log -->
-        <div id="content-log" class="tab-content hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-xl">Workout Log <span id="logUserName" class="text-[#4ade80]"></span></h3>
-                <button onclick="showAddLogModal()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
-                    <i class="fa-solid fa-plus"></i> 新增記錄
-                </button>
+    <!-- Supplements -->
+    <div id="content-supplement" class="tab-content hidden">
+        <div class="section-card rounded-3xl p-8">
+            <h2 class="text-2xl font-bold mb-6">Supplements時間表</h2>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-[#57534e]">
+                        <th class="py-3 text-left">Supplements</th>
+                        <th>時間</th>
+                        <th>劑量</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#44403c]">
+                    <tr>
+                        <td>Protein + Collagen + Creatine</td>
+                        <td>04:30</td>
+                        <td>3+2 scoops + 5g</td>
+                    </tr>
+                    <tr>
+                        <td>Vitamin D3</td>
+                        <td>04:30</td>
+                        <td>1粒</td>
+                    </tr>
+                    <tr>
+                        <td>Biotin 生物素</td>
+                        <td>隨餐(Dinner)</td>
+                        <td>1粒</td>
+                    </tr>
+                    <tr>
+                        <td>Omega-3 Fish Oil</td>
+                        <td>隨餐(Dinner)</td>
+                        <td>3粒</td>
+                    </tr>
+                    <tr>
+                        <td>NOW Daily Vits 多維</td>
+                        <td>隨餐(Dinner)</td>
+                        <td>1粒</td>
+                    </tr>
+                    <tr>
+                        <td>Zinc Picolinate</td>
+                        <td>隨餐(Dinner)</td>
+                        <td>1粒</td>
+                    </tr>
+                    <tr>
+                        <td>Magnesium Glycinate</td>
+                        <td>睡前</td>
+                        <td>2粒</td>
+                    </tr>
+                    <tr>
+                        <td>CoQ10 200mg</td>
+                        <td>睡前</td>
+                        <td>1粒</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 訓練計劃 -->
+    <div id="content-training" class="tab-content hidden">
+        <h2 class="text-2xl font-bold mb-8">每週訓練分拆（Mon / Wed / Fri）</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+
+            <!-- Set 1 -->
+            <div class="section-card rounded-3xl p-6">
+                <h3 class="font-bold text-emerald-400 mb-6">Set 1: Chest + Triceps（胸部 + 三頭肌）</h3>
+                <div class="space-y-4">
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/incline_dumbbell_press.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>1. Incline Dumbbell Press<br><span class="text-xs text-[#a8a29e]">斜板啞鈴推胸</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/flat_dumbbell_press.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>2. Flat Dumbbell Press<br><span class="text-xs text-[#a8a29e]">平板啞鈴推胸</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/lower_chest_cable_fly.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>3. Lower Chest Cable Fly<br><span class="text-xs text-[#a8a29e]">下胸繩索飛鳥</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/tricep_rope_pushdown.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>4. Tricep Rope Pushdown<br><span class="text-xs text-[#a8a29e]">繩索三頭肌下壓</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/cable_overhead_triceps.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>5. Cable Overhead Triceps Extension<br><span
+                                class="text-xs text-[#a8a29e]">繩索過頭三頭肌伸展</span>
+                        </div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/wood_chopper.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>6. Wood Chopper<br><span class="text-xs text-[#a8a29e]">繩索伐木式</span></div>
+                    </div>
+
+                </div>
             </div>
-            <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-[#57534e]">
-                            <th class="py-4 px-5 text-left">日期</th>
-                            <th class="py-4 px-4">動作</th>
-                            <th class="py-4 px-4 text-center">組數</th>
-                            <th class="py-4 px-4 text-center">次數</th>
-                            <th class="py-4 px-4 text-center">重量 (kg)</th>
-                            <th class="py-4 px-4"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="logTableBody" class="divide-y divide-[#44403c]"></tbody>
-                </table>
+
+            <!-- Set 2 -->
+            <div class="section-card rounded-3xl p-6">
+                <h3 class="font-bold text-emerald-400 mb-6">Set 2: Back + Biceps + Core（背部 + 二頭肌 + 核心）</h3>
+                <div class="space-y-4">
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/pull_ups.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>1. Pull-ups<br><span class="text-xs text-[#a8a29e]">引體向上</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/seated_cable_row.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>2. Seated Cable Row<br><span class="text-xs text-[#a8a29e]">坐姿繩索划船</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/deadlift.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>3. Deadlift<br><span class="text-xs text-[#a8a29e]">硬拉</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/bayesian_cable_curls.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>4. Bayesian Cable Curls<br><span class="text-xs text-[#a8a29e]">繩索彎舉</span>
+                        </div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/preacher_curls.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>5. Preacher Curls<br><span class="text-xs text-[#a8a29e]">固定錘式彎舉</span>
+                        </div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/ab_wheel_rollout.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>6. Ab Wheel Rollout<br><span class="text-xs text-[#a8a29e]">腹輪推出</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Set 3 -->
+            <div class="section-card rounded-3xl p-6">
+                <h3 class="font-bold text-emerald-400 mb-6">Set 3: Legs + Shoulders + Forearms + Core（腿部 + 肩膀 + 前臂 + 核心）
+                </h3>
+                <div class="space-y-4">
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/zercher_squats.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>1. Zercher Squats<br><span class="text-xs text-[#a8a29e]">澤奇深蹲</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/reverse_forearm_curl.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>2. Reverse Forearm Curl<br><span class="text-xs text-[#a8a29e]">反向前臂彎舉</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/lateral_raises.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>3. Lateral Raises<br><span class="text-xs text-[#a8a29e]">側平舉</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/rear_delt_raises.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>4. Rear Delt Raises<br><span class="text-xs text-[#a8a29e]">後肩三角肌飛鳥</span></div>
+                    </div>
+                    <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                        <img src="images/dragon_flag.jpg"
+                            class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                        <div>5. Dragon Flag<br><span class="text-xs text-[#a8a29e]">龍旗</span></div>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- 金主排行榜 -->
-        <div id="content-sponsor" class="tab-content hidden">
-            <div class="section-card rounded-3xl p-8">
-                <h2 class="text-3xl font-bold text-center mb-8 flex items-center justify-center gap-x-3">
-                    <i class="fa-solid fa-trophy text-yellow-400"></i> 金主排行榜 <i class="fa-solid fa-trophy text-yellow-400"></i>
-                </h2>
-                <!-- 可放 PayCode QR -->
+    <!-- Workout Log -->
+    <div id="content-log" class="tab-content hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-xl">Workout Log <span id="logUserName" class="text-[#4ade80]"></span></h3>
+            <button onclick="showAddLogModal()"
+                class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
+                <i class="fa-solid fa-plus"></i> 新增記錄
+            </button>
+        </div>
+        <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-[#57534e]">
+                        <th class="py-4 px-5 text-left">日期</th>
+                        <th class="py-4 px-4">動作</th>
+                        <th class="py-4 px-4 text-center">組數</th>
+                        <th class="py-4 px-4 text-center">次數</th>
+                        <th class="py-4 px-4 text-center">重量 (kg)</th>
+                        <th class="py-4 px-4"></th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody" class="divide-y divide-[#44403c]"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 金主排行榜 Tab -->
+    <div id="content-sponsor" class="tab-content">
+        <div class="section-card rounded-3xl p-8 border border-[#44403c] relative">
+            <h2 class="text-4xl font-bold mb-8 text-center flex items-center justify-center gap-x-3">
+                <i class="fa-solid fa-trophy text-[#fbbf24]"></i>
+                <span>金主排行榜</span>
+                <i class="fa-solid fa-trophy text-[#fbbf24]"></i>
+            </h2>
+
+            <div class="max-w-2xl mx-auto space-y-4">
+                <!-- Top Donors -->
+                <div
+                    class="flex justify-between items-center bg-gradient-to-r from-yellow-500/20 to-transparent px-8 py-5 rounded-3xl border border-yellow-500/30">
+                    <div class="flex items-center gap-x-4">
+                        <span class="text-4xl">🥇</span>
+                        <span class="font-bold text-2xl">Aly</span>
+                    </div>
+                    <span class="text-3xl font-bold text-yellow-400">HK$888</span>
+                </div>
+
+                <div
+                    class="flex justify-between items-center bg-gradient-to-r from-gray-400/20 to-transparent px-8 py-5 rounded-3xl border border-gray-400/30">
+                    <div class="flex items-center gap-x-4">
+                        <span class="text-4xl">🥈</span>
+                        <span class="font-bold text-2xl">Bon</span>
+                    </div>
+                    <span class="text-3xl font-bold text-gray-300">HK$666</span>
+                </div>
+
+                <div
+                    class="flex justify-between items-center bg-gradient-to-r from-orange-500/20 to-transparent px-8 py-5 rounded-3xl border border-orange-500/30">
+                    <div class="flex items-center gap-x-4">
+                        <span class="text-4xl">🥉</span>
+                        <span class="font-bold text-2xl">Fan</span>
+                    </div>
+                    <span class="text-3xl font-bold text-orange-400">HK$520</span>
+                </div>
+
+                <div class="flex justify-between items-center bg-[#292524] px-8 py-4 rounded-3xl">
+                    <div class="flex items-center gap-x-4">
+                        <span class="text-2xl">4</span>
+                        <span class="font-bold text-xl">William</span>
+                    </div>
+                    <span class="text-2xl font-bold text-emerald-400">HK$388</span>
+                </div>
+
+                <div class="flex justify-between items-center bg-[#292524] px-8 py-4 rounded-3xl">
+                    <div class="flex items-center gap-x-4">
+                        <span class="text-2xl">5</span>
+                        <span class="font-bold text-xl">奇異果</span>
+                    </div>
+                    <span class="text-2xl font-bold text-emerald-400">HK$168</span>
+                </div>
+
+                <div class="flex justify-between items-center bg-[#292524] px-8 py-4 rounded-3xl">
+                    <div class="flex items-center gap-x-4">
+                        <span class="text-2xl">6</span>
+                        <span class="font-bold text-xl">+× wrong</span>
+                    </div>
+                    <span class="text-2xl font-bold text-emerald-400">HK$66.6</span>
+                </div>
+            </div>
+
+            <!-- PayCode -->
+            <div class="mt-10 flex justify-center">
+                <div class="bg-[#292524] rounded-3xl p-8 text-center max-w-xs w-full">
+                    <p class="text-xl mb-4 font-medium">支持 Jeff，一起為善而戰</p>
+                    <div class="w-56 h-56 mx-auto bg-white rounded-2xl p-4">
+                        <img src="paycode.png" alt="Jeff PayCode" class="w-full h-full object-contain">
+                    </div>
+                    <p class="text-sm text-[#a8a29e] mt-4">一掃 PayCode，立即過數</p>
+                </div>
             </div>
         </div>
     </div>
@@ -222,12 +469,15 @@
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
             <h3 class="font-bold text-xl mb-4">用戶登入</h3>
             <div class="space-y-4">
-                <input type="text" id="loginUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
-                <input type="password" id="loginPin" placeholder="PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="text" id="loginUsername" placeholder="用戶名稱"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="password" id="loginPin" placeholder="PIN 碼"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
             </div>
             <div class="flex gap-x-3 mt-6">
                 <button onclick="hideLoginModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
-                <button onclick="loginUser()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">登入</button>
+                <button onclick="loginUser()"
+                    class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">登入</button>
             </div>
         </div>
     </div>
@@ -236,16 +486,21 @@
     <div id="addUserModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
             <h3 class="font-bold text-xl mb-4">新增用戶</h3>
-            <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs px-3 py-2 rounded-2xl mb-4">
+            <div
+                class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs px-3 py-2 rounded-2xl mb-4">
                 <i class="fa-solid fa-exclamation-triangle mr-1"></i> 安全提示：請勿使用平時用開嘅密碼作為 PIN
             </div>
             <div class="space-y-4">
-                <input type="text" id="newUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
-                <input type="password" id="newPin" placeholder="設定 PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="text" id="newUsername" placeholder="用戶名稱"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="password" id="newPin" placeholder="設定 PIN 碼"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
             </div>
             <div class="flex gap-x-3 mt-6">
-                <button onclick="hideAddUserModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
-                <button onclick="addNewUser()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">建立用戶</button>
+                <button onclick="hideAddUserModal()"
+                    class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
+                <button onclick="addNewUser()"
+                    class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">建立用戶</button>
             </div>
         </div>
     </div>
@@ -255,17 +510,24 @@
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
             <h3 class="font-bold mb-4">新增 Workout Log</h3>
             <div class="space-y-3">
-                <input type="date" id="logDate" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
-                <input type="text" id="logExercise" placeholder="動作名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
+                <input type="date" id="logDate"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
+                <input type="text" id="logExercise" placeholder="動作名稱"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
                 <div class="grid grid-cols-3 gap-2">
-                    <input type="number" id="logSets" placeholder="組數" value="3" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
-                    <input type="text" id="logReps" placeholder="次數" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
-                    <input type="number" id="logWeight" placeholder="重量 (kg)" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
+                    <input type="number" id="logSets" placeholder="組數" value="3"
+                        class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
+                    <input type="text" id="logReps" placeholder="次數"
+                        class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
+                    <input type="number" id="logWeight" placeholder="重量 (kg)"
+                        class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
                 </div>
             </div>
             <div class="flex gap-x-3 mt-5">
-                <button onclick="hideAddLogModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
-                <button onclick="addNewLog()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">儲存</button>
+                <button onclick="hideAddLogModal()"
+                    class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
+                <button onclick="addNewLog()"
+                    class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">儲存</button>
             </div>
         </div>
     </div>
@@ -446,6 +708,61 @@
             document.getElementById('tab-' + tab).classList.add('active', 'bg-[#166534]', 'text-white');
         }
 
+
+        function launchBigShow() {
+            // 火箭
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => createRocket(), i * 60);
+            }
+            // 煙花
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => createFirework(), i * 280);
+            }
+            // 跑車
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => createSportCar(), i * 420);
+            }
+        }
+
+        function createRocket() {
+            const rocket = document.createElement('div');
+            rocket.className = 'rocket';
+            rocket.innerHTML = '🚀';
+            rocket.style.left = Math.random() * window.innerWidth + 'px';
+            rocket.style.bottom = '-60px';
+            rocket.style.fontSize = (Math.random() * 2 + 2) + 'rem';
+            rocket.style.animation = `flyRocket ${Math.random() * 1.1 + 1.4}s linear forwards`;
+            document.body.appendChild(rocket);
+            setTimeout(() => rocket.remove(), 3000);
+        }
+
+        function createFirework() {
+            const colors = ['#ef4444', '#facc15', '#22c55e', '#3b82f6', '#ec4899'];
+            const fw = document.createElement('div');
+            fw.className = 'firework';
+            fw.style.left = Math.random() * window.innerWidth + 'px';
+            fw.style.top = (Math.random() * 300 + 150) + 'px';
+            fw.style.fontSize = '2.5rem';
+            fw.innerHTML = '🎆';
+            fw.style.color = colors[Math.floor(Math.random() * colors.length)];
+            fw.style.animation = 'explode 1.2s ease-out forwards';
+            document.body.appendChild(fw);
+            setTimeout(() => fw.remove(), 1500);
+        }
+
+        function createSportCar() {
+            const car = document.createElement('div');
+            car.className = 'sportscar';
+            car.innerHTML = '🏎️';
+            car.style.bottom = (Math.random() * 120 + 80) + 'px';
+            car.style.left = '-120px';
+            car.style.fontSize = (Math.random() * 1.5 + 2.5) + 'rem';
+            car.style.animation = `driveCar ${Math.random() * 1.8 + 2.2}s linear forwards`;
+            document.body.appendChild(car);
+            setTimeout(() => car.remove(), 4500);
+        }
+
+
         async function initialize() {
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
@@ -463,4 +780,5 @@
         window.onload = initialize;
     </script>
 </body>
+
 </html>
