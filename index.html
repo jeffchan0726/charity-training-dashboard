@@ -113,9 +113,16 @@
     <div id="addUserModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
             <h3 class="font-bold text-xl mb-4">新增用戶</h3>
+            
+            <!-- 安全提示 -->
+            <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs px-3 py-2 rounded-2xl mb-4">
+                <i class="fa-solid fa-exclamation-triangle mr-1"></i>
+                安全提示：請勿使用你平時用開嘅密碼作為 PIN
+            </div>
+
             <div class="space-y-4">
                 <input type="text" id="newUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
-                <input type="password" id="newPin" placeholder="設定 PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
+                <input type="password" id="newPin" placeholder="設定 PIN 碼（建議 4-6 位）" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
             </div>
             <div class="flex gap-x-3 mt-6">
                 <button onclick="hideAddUserModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
@@ -199,7 +206,6 @@
                 return;
             }
 
-            // 呼叫後端驗證
             const result = await callAppsScript("login", { user: username, pin: pin });
 
             if (result.status === "success") {
@@ -316,13 +322,31 @@
             const username = document.getElementById('newUsername').value.trim();
             const pin = document.getElementById('newPin').value.trim();
 
-            if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
+            if (!username || !pin) {
+                alert("請輸入用戶名稱同 PIN");
+                return;
+            }
+
+            // 簡單重複檢查（可再優化）
+            if (localStorage.getItem('users')) {
+                const existingUsers = JSON.parse(localStorage.getItem('users'));
+                if (existingUsers.find(u => u.username === username)) {
+                    alert("用戶名稱已存在，請使用其他名稱");
+                    return;
+                }
+            }
 
             const result = await callAppsScript("addUser", { user: username, pin: pin });
 
             if (result.status === "success") {
                 alert(`用戶 ${username} 已建立！`);
                 hideAddUserModal();
+
+                // 建立後自動登入
+                currentUser = username;
+                localStorage.setItem('currentUser', currentUser);
+                updateUIAfterLogin();
+                await loadUserLogs();
             } else {
                 alert("建立用戶失敗");
             }
