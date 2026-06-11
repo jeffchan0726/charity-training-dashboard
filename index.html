@@ -10,7 +10,7 @@
         body { font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif; }
         .charity-header { background: linear-gradient(135deg, #166534 0%, #4ade80 100%); }
         .section-card { background: #1c1917; border: 1px solid #44403c; }
-        .nav-tab.active { background-color: #166534; color: white; border-bottom: 3px solid #4ade80; }
+        .nav-tab.active { background-color: #166534; color: white; }
         .exercise-card { transition: all 0.2s; }
         .exercise-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3); }
     </style>
@@ -42,17 +42,17 @@
 
     <div class="max-w-7xl mx-auto px-6 pt-6 pb-12">
 
-        <!-- Navigation Tabs -->
-        <div class="flex flex-wrap gap-2 mb-8 border-b border-[#44403c] pb-4">
-            <button onclick="switchTab('overview')" id="tab-overview" class="nav-tab active px-6 py-3 rounded-2xl text-sm font-semibold">概覽</button>
-            <button onclick="switchTab('schedule')" id="tab-schedule" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold">每日時間表</button>
-            <button onclick="switchTab('supplement')" id="tab-supplement" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold">補充劑</button>
-            <button onclick="switchTab('training')" id="tab-training" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold">訓練計劃</button>
-            <button onclick="switchTab('log')" id="tab-log" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold">Workout Log</button>
-            <button onclick="switchTab('sponsor')" id="tab-sponsor" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold">金主排行榜</button>
+        <!-- Navigation -->
+        <div class="flex flex-wrap gap-2 mb-8 border-b border-[#44403c] pb-4 overflow-x-auto">
+            <button onclick="switchTab('overview')" id="tab-overview" class="nav-tab active px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">概覽</button>
+            <button onclick="switchTab('schedule')" id="tab-schedule" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">每日時間表</button>
+            <button onclick="switchTab('supplement')" id="tab-supplement" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">補充劑</button>
+            <button onclick="switchTab('training')" id="tab-training" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">訓練計劃</button>
+            <button onclick="switchTab('log')" id="tab-log" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">Workout Log</button>
+            <button onclick="switchTab('sponsor')" id="tab-sponsor" class="nav-tab px-6 py-3 rounded-2xl text-sm font-semibold whitespace-nowrap">金主排行榜</button>
         </div>
 
-        <!-- 概覽 Tab -->
+        <!-- 概覽 -->
         <div id="content-overview" class="tab-content">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div class="section-card rounded-3xl p-6">
@@ -80,8 +80,8 @@
                 <h2 class="text-2xl font-bold mb-6">每日時間表</h2>
                 <div class="space-y-5 text-sm">
                     <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">04:30</div><div><strong>起床 + 3隻雞蛋 + 蛋白shake + Vitamin D3</strong></div></div>
-                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">04:45-7:00</div><div><strong>Gym 重訓</strong> (Set 1/2/3 輪換)</div></div>
-                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">12:00</div><div>午餐（300g 雜菜 + 200g 瘦肉）</div></div>
+                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">04:45-7:00</div><div><strong>Gym 重訓</strong>（Set 1/2/3 輪換）</div></div>
+                    <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">12:00</div><div>午餐（300g雜菜 + 200g瘦肉）</div></div>
                     <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">19:00</div><div>晚餐 + 補充劑</div></div>
                     <div class="flex gap-x-6"><div class="w-28 font-mono text-[#a8a29e]">21:00</div><div>睡前補劑 + 入睡</div></div>
                 </div>
@@ -106,33 +106,75 @@
 
         <!-- 訓練計劃 -->
         <div id="content-training" class="tab-content hidden">
-            <h2 class="text-2xl font-bold mb-6">每週訓練分拆</h2>
+            <h2 class="text-2xl font-bold mb-8">每週訓練分拆（Mon / Wed / Fri）</h2>
             <div class="grid md:grid-cols-3 gap-6">
+
+                <!-- Set 1 -->
                 <div class="section-card rounded-3xl p-6">
-                    <h3 class="font-bold text-emerald-400 mb-4">Set 1: Chest + Triceps</h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">1. Incline Dumbbell Press 斜板啞鈴推胸</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">2. Flat Dumbbell Press 平板啞鈴推胸</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">3. Lower Chest Cable Fly 下胸繩索飛鳥</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">4. Tricep Rope Pushdown 繩索三頭肌下壓</div>
+                    <h3 class="font-bold text-emerald-400 mb-6">Set 1: Chest + Triceps</h3>
+                    <div class="space-y-4">
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/incline_dumbbell_press.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>1. Incline Dumbbell Press<br><span class="text-xs text-[#a8a29e]">斜板啞鈴推胸</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/flat_dumbbell_press.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>2. Flat Dumbbell Press<br><span class="text-xs text-[#a8a29e]">平板啞鈴推胸</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/lower_chest_cable_fly.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>3. Lower Chest Cable Fly<br><span class="text-xs text-[#a8a29e]">下胸繩索飛鳥</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/tricep_rope_pushdown.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>4. Tricep Rope Pushdown<br><span class="text-xs text-[#a8a29e]">繩索三頭肌下壓</span></div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Set 2 -->
                 <div class="section-card rounded-3xl p-6">
-                    <h3 class="font-bold text-emerald-400 mb-4">Set 2: Back + Biceps + Core</h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">1. Pull-ups 引體向上</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">2. Seated Cable Row 坐姿繩索划船</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">3. Deadlift 硬拉</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">4. Bayesian Cable Curls</div>
+                    <h3 class="font-bold text-emerald-400 mb-6">Set 2: Back + Biceps + Core</h3>
+                    <div class="space-y-4">
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/pull_ups.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>1. Pull-ups<br><span class="text-xs text-[#a8a29e]">引體向上</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/seated_cable_row.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>2. Seated Cable Row<br><span class="text-xs text-[#a8a29e]">坐姿繩索划船</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/deadlift.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>3. Deadlift<br><span class="text-xs text-[#a8a29e]">硬拉</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/bayesian_cable_curls.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>4. Bayesian Cable Curls<br><span class="text-xs text-[#a8a29e]">Bayesian 繩索彎舉</span></div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Set 3 -->
                 <div class="section-card rounded-3xl p-6">
-                    <h3 class="font-bold text-emerald-400 mb-4">Set 3: Legs + Shoulders + Forearms + Core</h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">1. Zercher Squats 澤奇深蹲</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">2. Lateral Raises 側平舉</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">3. Rear Delt Raises 後肩飛鳥</div>
-                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl">4. Dragon Flag 龍旗</div>
+                    <h3 class="font-bold text-emerald-400 mb-6">Set 3: Legs + Shoulders + Forearms + Core</h3>
+                    <div class="space-y-4">
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/zercher_squats.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>1. Zercher Squats<br><span class="text-xs text-[#a8a29e]">澤奇深蹲</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/lateral_raises.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>2. Lateral Raises<br><span class="text-xs text-[#a8a29e]">側平舉</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/rear_delt_raises.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>3. Rear Delt Raises<br><span class="text-xs text-[#a8a29e]">後肩三角肌飛鳥</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-4 rounded-2xl flex gap-4">
+                            <img src="images/dragon_flag.jpg" class="w-20 h-20 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div>4. Dragon Flag<br><span class="text-xs text-[#a8a29e]">龍旗</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -165,24 +207,23 @@
 
         <!-- 金主排行榜 -->
         <div id="content-sponsor" class="tab-content hidden">
-            <div class="section-card rounded-3xl p-8 text-center">
-                <h2 class="text-3xl font-bold mb-8">金主排行榜</h2>
-                <div class="max-w-md mx-auto space-y-4">
-                    <div class="bg-gradient-to-r from-yellow-500/20 to-transparent p-6 rounded-3xl">🥇 Aly - HK$888</div>
-                    <div class="bg-gradient-to-r from-gray-400/20 to-transparent p-6 rounded-3xl">🥈 Bon - HK$666</div>
-                    <div class="bg-gradient-to-r from-orange-500/20 to-transparent p-6 rounded-3xl">🥉 Fan - HK$520</div>
-                </div>
+            <div class="section-card rounded-3xl p-8">
+                <h2 class="text-3xl font-bold text-center mb-8 flex items-center justify-center gap-x-3">
+                    <i class="fa-solid fa-trophy text-yellow-400"></i> 金主排行榜 <i class="fa-solid fa-trophy text-yellow-400"></i>
+                </h2>
+                <!-- 可放 PayCode QR -->
             </div>
         </div>
     </div>
 
+    <!-- Modals -->
     <!-- Login Modal -->
     <div id="loginModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
             <h3 class="font-bold text-xl mb-4">用戶登入</h3>
             <div class="space-y-4">
-                <input type="text" id="loginUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
-                <input type="password" id="loginPin" placeholder="PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
+                <input type="text" id="loginUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="password" id="loginPin" placeholder="PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
             </div>
             <div class="flex gap-x-3 mt-6">
                 <button onclick="hideLoginModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
@@ -196,11 +237,11 @@
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
             <h3 class="font-bold text-xl mb-4">新增用戶</h3>
             <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs px-3 py-2 rounded-2xl mb-4">
-                ⚠️ 安全提示：請勿使用你平時用開嘅密碼作為 PIN
+                <i class="fa-solid fa-exclamation-triangle mr-1"></i> 安全提示：請勿使用平時用開嘅密碼作為 PIN
             </div>
             <div class="space-y-4">
-                <input type="text" id="newUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
-                <input type="password" id="newPin" placeholder="設定 PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
+                <input type="text" id="newUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="password" id="newPin" placeholder="設定 PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
             </div>
             <div class="flex gap-x-3 mt-6">
                 <button onclick="hideAddUserModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
@@ -214,12 +255,12 @@
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
             <h3 class="font-bold mb-4">新增 Workout Log</h3>
             <div class="space-y-3">
-                <input type="date" id="logDate" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2 text-sm">
-                <input type="text" id="logExercise" placeholder="動作名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2 text-sm">
+                <input type="date" id="logDate" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
+                <input type="text" id="logExercise" placeholder="動作名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
                 <div class="grid grid-cols-3 gap-2">
-                    <input type="number" id="logSets" placeholder="組數" value="3" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2 text-sm">
-                    <input type="text" id="logReps" placeholder="次數" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2 text-sm">
-                    <input type="number" id="logWeight" placeholder="重量 (kg)" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2 text-sm">
+                    <input type="number" id="logSets" placeholder="組數" value="3" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
+                    <input type="text" id="logReps" placeholder="次數" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
+                    <input type="number" id="logWeight" placeholder="重量 (kg)" class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2">
                 </div>
             </div>
             <div class="flex gap-x-3 mt-5">
@@ -328,7 +369,7 @@
                     <td class="py-3 px-4 text-center">${log.reps}</td>
                     <td class="py-3 px-4 text-center">${log.weight}</td>
                     <td class="py-3 px-2 text-right">
-                        <button onclick="deleteLog(${log.id})" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="deleteLog(${log.id})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -393,18 +434,16 @@
                 localStorage.setItem('currentUser', currentUser);
                 updateUIAfterLogin();
                 await loadUserLogs();
-            } else if (result.message && result.message.includes("already exists")) {
-                alert("用戶名稱已存在，請使用其他名稱");
             } else {
-                alert("建立用戶失敗");
+                alert("建立用戶失敗（用戶名稱可能已存在）");
             }
         }
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-[#166534]', 'text-white'));
             document.getElementById('content-' + tab).classList.remove('hidden');
-            document.getElementById('tab-' + tab).classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active', 'bg-[#166534]', 'text-white');
         }
 
         async function initialize() {
