@@ -10,6 +10,7 @@
         body { font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif; }
         .charity-header { background: linear-gradient(135deg, #166534 0%, #4ade80 100%); }
         .section-card { background: #1c1917; border: 1px solid #44403c; }
+        .nav-tab.active { background-color: #166534; color: white; }
     </style>
 </head>
 <body class="bg-[#1c1917] text-[#e7e5e4]">
@@ -24,12 +25,21 @@
                 </div>
                 
                 <div class="flex items-center gap-x-3">
-                    <div id="currentUserDisplay" class="bg-white/20 px-4 py-1.5 rounded-2xl text-sm flex items-center gap-x-2">
+                    <!-- Current User Display -->
+                    <div id="currentUserDisplay" class="bg-white/20 px-4 py-1.5 rounded-2xl text-sm flex items-center gap-x-2 hidden">
                         <i class="fa-solid fa-user"></i>
-                        <span id="currentUserName">未登入</span>
+                        <span id="currentUserName"></span>
                     </div>
-                    <button onclick="logoutUser()" class="px-4 py-1.5 bg-white/20 hover:bg-white/30 rounded-2xl text-sm">登出</button>
-                    <button onclick="showAddUserModal()" class="px-4 py-1.5 bg-white text-[#166534] font-semibold rounded-2xl text-sm">新增用戶</button>
+                    
+                    <!-- Login / Logout Button -->
+                    <button id="loginBtn" onclick="showLoginModal()" class="px-4 py-1.5 bg-white text-[#166534] font-semibold rounded-2xl text-sm">
+                        登入
+                    </button>
+                    <button id="logoutBtn" onclick="logoutUser()" class="px-4 py-1.5 bg-white/20 hover:bg-white/30 rounded-2xl text-sm hidden">
+                        登出
+                    </button>
+                    
+                    <button onclick="showAddUserModal()" class="px-4 py-1.5 bg-white/20 hover:bg-white/30 rounded-2xl text-sm">新增用戶</button>
                 </div>
             </div>
         </div>
@@ -39,13 +49,29 @@
 
         <!-- Navigation -->
         <div class="flex flex-wrap gap-2 mb-8 border-b border-[#44403c] pb-4">
-            <button onclick="switchTab('log')" id="tab-log" class="nav-tab active px-5 py-2 rounded-2xl text-sm font-semibold bg-[#166534] text-white flex items-center gap-x-2">
+            <button onclick="switchTab('overview')" id="tab-overview" class="nav-tab active px-5 py-2 rounded-2xl text-sm font-semibold bg-[#166534] text-white flex items-center gap-x-2">
+                <i class="fa-solid fa-home"></i> <span>概覽</span>
+            </button>
+            <button onclick="switchTab('sponsor')" id="tab-sponsor" class="nav-tab px-5 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2 hover:bg-[#292524]">
+                <i class="fa-solid fa-trophy"></i> <span>金主排行榜</span>
+            </button>
+            <button onclick="switchTab('log')" id="tab-log" class="nav-tab px-5 py-2 rounded-2xl text-sm font-semibold flex items-center gap-x-2 hover:bg-[#292524]">
                 <i class="fa-solid fa-clipboard-list"></i> <span>Workout Log</span>
             </button>
         </div>
 
+        <!-- 概覽 -->
+        <div id="content-overview" class="tab-content">
+            <div class="text-center py-12 text-[#a8a29e]">概覽頁面</div>
+        </div>
+
+        <!-- 金主排行榜 -->
+        <div id="content-sponsor" class="tab-content hidden">
+            <div class="text-center py-12 text-[#a8a29e]">金主排行榜</div>
+        </div>
+
         <!-- Workout Log -->
-        <div id="content-log" class="tab-content">
+        <div id="content-log" class="tab-content hidden">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-xl">Workout Log <span id="logUserName" class="text-[#4ade80]"></span></h3>
                 <button onclick="showAddLogModal()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
@@ -70,6 +96,21 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-6">
+            <h3 class="font-bold text-xl mb-4">用戶登入</h3>
+            <div class="space-y-4">
+                <input type="text" id="loginUsername" placeholder="用戶名稱" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
+                <input type="password" id="loginPin" placeholder="PIN 碼" class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5 text-sm">
+            </div>
+            <div class="flex gap-x-3 mt-6">
+                <button onclick="hideLoginModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
+                <button onclick="loginUser()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">登入</button>
+            </div>
+        </div>
     </div>
 
     <!-- Add User Modal -->
@@ -109,7 +150,7 @@
 
     <script>
         // ==================== 請修改呢行 ====================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhdwkW7y-xmQ1UT1nvSzi5kP4v838Hs7AQzQ6LxuKdUovY3ubdBMtGJMcSbWWivELm/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhdwkW7y-xmQ1UT1nvSzi5kP4v838Hs7AQzQ6LxuKdUovY3ubdBMtGJMcSbWWivELm/exec";
         // ===================================================
 
         let currentUser = null;
@@ -137,52 +178,55 @@
             }
         }
 
-        function updateCurrentUserDisplay() {
-            const display = document.getElementById('currentUserName');
-            if (currentUser) {
-                display.textContent = currentUser;
-                document.getElementById('logUserName').textContent = `(${currentUser})`;
-            } else {
-                display.textContent = "未登入";
-                document.getElementById('logUserName').textContent = "";
-            }
+        function updateUIAfterLogin() {
+            document.getElementById('currentUserDisplay').classList.remove('hidden');
+            document.getElementById('currentUserName').textContent = currentUser;
+            document.getElementById('loginBtn').classList.add('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
+            document.getElementById('logUserName').textContent = `(${currentUser})`;
         }
 
-        async function addNewUser() {
-            const username = document.getElementById('newUsername').value.trim();
-            const pin = document.getElementById('newPin').value.trim();
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginModal').classList.add('flex');
+        }
+
+        function hideLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('flex');
+        }
+
+        async function loginUser() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const pin = document.getElementById('loginPin').value.trim();
 
             if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
 
-            const result = await callAppsScript("addUser", { user: username, pin: pin });
-
-            if (result.status === "success") {
-                alert(`用戶 ${username} 已建立！`);
-                hideAddUserModal();
-                currentUser = username;
-                localStorage.setItem('currentUser', currentUser);
-                updateCurrentUserDisplay();
-                await loadUserLogs();
-            } else {
-                alert("建立用戶失敗");
+            // 簡單驗證（實際應由後端驗證）
+            const result = await callAppsScript("getLogs", { user: username });
+            
+            if (result.status === "error") {
+                alert("登入失敗，請檢查用戶名稱或 PIN");
+                return;
             }
-        }
 
-        function showAddUserModal() {
-            document.getElementById('addUserModal').classList.remove('hidden');
-            document.getElementById('addUserModal').classList.add('flex');
-        }
-
-        function hideAddUserModal() {
-            document.getElementById('addUserModal').classList.add('hidden');
-            document.getElementById('addUserModal').classList.remove('flex');
+            currentUser = username;
+            localStorage.setItem('currentUser', currentUser);
+            hideLoginModal();
+            updateUIAfterLogin();
+            await loadUserLogs();
         }
 
         function logoutUser() {
             currentUser = null;
             localStorage.removeItem('currentUser');
             workoutLogs = [];
-            updateCurrentUserDisplay();
+            
+            document.getElementById('currentUserDisplay').classList.add('hidden');
+            document.getElementById('loginBtn').classList.remove('hidden');
+            document.getElementById('logoutBtn').classList.add('hidden');
+            document.getElementById('logUserName').textContent = "";
+            
             renderLogTable();
         }
 
@@ -197,16 +241,18 @@
             tbody.innerHTML = '';
 
             if (!currentUser) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-[#a8a29e]">請先登入用戶</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-[#a8a29e]">請先登入</td></tr>`;
                 return;
             }
 
-            if (!workoutLogs || workoutLogs.length === 0) {
+            const myLogs = workoutLogs.filter(log => log.user === currentUser);
+            
+            if (myLogs.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-[#a8a29e]">暫無記錄</td></tr>`;
                 return;
             }
 
-            workoutLogs.sort((a, b) => b.date.localeCompare(a.date)).forEach(log => {
+            myLogs.sort((a, b) => b.date.localeCompare(a.date)).forEach(log => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="py-3 px-5 text-xs">${log.date}</td>
@@ -223,7 +269,7 @@
         }
 
         function showAddLogModal() {
-            if (!currentUser) return alert("請先登入用戶");
+            if (!currentUser) return alert("請先登入");
             document.getElementById('addLogModal').classList.remove('hidden');
             document.getElementById('addLogModal').classList.add('flex');
             document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
@@ -239,6 +285,7 @@
 
             const newLog = {
                 id: Date.now(),
+                user: currentUser,
                 date: document.getElementById('logDate').value,
                 exercise: document.getElementById('logExercise').value,
                 sets: document.getElementById('logSets').value,
@@ -259,21 +306,54 @@
             await loadUserLogs();
         }
 
+        function showAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('hidden');
+            document.getElementById('addUserModal').classList.add('flex');
+        }
+
+        function hideAddUserModal() {
+            document.getElementById('addUserModal').classList.add('hidden');
+            document.getElementById('addUserModal').classList.remove('flex');
+        }
+
+        async function addNewUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const pin = document.getElementById('newPin').value.trim();
+
+            if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
+
+            const result = await callAppsScript("addUser", { user: username, pin: pin });
+
+            if (result.status === "success") {
+                alert(`用戶 ${username} 已建立！`);
+                hideAddUserModal();
+            } else {
+                alert("建立用戶失敗");
+            }
+        }
+
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-[#166534]', 'text-white'));
+            
             document.getElementById('content-' + tab).classList.remove('hidden');
+            document.getElementById('tab-' + tab).classList.add('active', 'bg-[#166534]', 'text-white');
         }
 
         async function initialize() {
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
                 currentUser = savedUser;
-                updateCurrentUserDisplay();
+                document.getElementById('currentUserDisplay').classList.remove('hidden');
+                document.getElementById('currentUserName').textContent = currentUser;
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                document.getElementById('logUserName').textContent = `(${currentUser})`;
                 await loadUserLogs();
             }
             
-            document.getElementById('content-log').classList.remove('hidden');
-            document.getElementById('tab-log').classList.add('active', 'bg-[#166534]', 'text-white');
+            document.getElementById('content-overview').classList.remove('hidden');
+            document.getElementById('tab-overview').classList.add('active', 'bg-[#166534]', 'text-white');
         }
 
         window.onload = initialize;
