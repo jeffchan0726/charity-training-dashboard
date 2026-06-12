@@ -1,10 +1,47 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
+<!--
+Local Development Instructions:
+- DO NOT open this file directly with file:// (causes security origin errors like 'file: URLs are treated as unique security origins' and blocks some features like localStorage in strict mode).
+- Always run a local server, e.g.:
+  - python -m http.server 8000
+  - npx serve .
+  - VS Code Live Server extension
+- Then access via http://localhost:8000 (or your port).
+- For production (GitHub Pages etc.): Run `npx tailwindcss -i ./input.css -o ./tailwind.css --minify` (input.css + tailwind.config.js are pre-created), then replace the Tailwind CDN <script> with <link rel="stylesheet" href="tailwind.css">. A console.warn suppression hack is active while using the CDN.
+- Google Apps Script backend still required for per-user data.
+-->
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jeff 減脂 Recomp 挑戰 • 慈善賽訓練中心</title>
+    <!-- 
+      Tailwind CSS (CDN for zero-setup dev/demo)
+
+      ⚠️ The cdn.tailwindcss.com script shows a "production warning" in console because
+         it's intended for development only.
+
+      開發階段解決方案：
+      - 已在 CDN script 之前加入 console.warn 攔截腳本，隱藏 production warning。
+      - 此方法僅適用於開發階段（prototype / local demo）。
+      - 之後建議改用 Tailwind CLI 產生 production CSS（已準備 input.css 與 tailwind.config.js）：
+        npx tailwindcss -i ./input.css -o ./tailwind.css --minify
+        然後將 CDN script 替換為 <link rel="stylesheet" href="tailwind.css">
+
+      這樣可以完全移除外部 CDN，提升效能與安全性。
+    -->
+    <!-- 隱藏 Tailwind CDN production warning（必須在 CDN script 之前執行） -->
+    <script>
+      // 隱藏 Tailwind CDN production warning
+      const originalWarn = console.warn;
+      console.warn = function (msg, ...args) {
+        if (typeof msg === 'string' && msg.includes('cdn.tailwindcss.com')) {
+          return;
+        }
+        originalWarn.apply(console, [msg, ...args]);
+      };
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -119,6 +156,105 @@
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
         }
 
+        /* === Full-Screen / Immersive Training Mode (Start New Training) === */
+        .fullscreen-training .nav-tab,
+        .fullscreen-training .charity-header,
+        .fullscreen-training #content-log > .flex:first-child, /* log top header with buttons */
+        .fullscreen-training .flex.gap-1\.5.mb-3.text-sm.border-b, /* sub-tabs */
+        .fullscreen-training #log-empty-state {
+            display: none !important;
+        }
+
+        .fullscreen-training #live-log-panel {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 60 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            background-color: #1c1917;
+            overflow: hidden;
+            display: block !important;
+        }
+
+        .fullscreen-training #live-log-panel .immersive-container {
+            height: 100vh !important;
+            min-height: 100vh !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fullscreen-training .immersive-sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 70;
+            background: #1c1917;
+            border-bottom: 1px solid #57534e;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+            flex-shrink: 0;
+            pointer-events: auto; /* ensure buttons inside remain clickable even if layout glitches */
+        }
+
+        .fullscreen-training .immersive-sticky-bottom {
+            position: sticky;
+            bottom: 0;
+            z-index: 70;
+            background: #1c1917;
+            border-top: 1px solid #57534e;
+            box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.3);
+            flex-shrink: 0;
+            pointer-events: auto; /* ensure buttons inside remain clickable even if layout glitches */
+        }
+
+        .fullscreen-training .immersive-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            min-height: 0; /* important for flex scrolling */
+        }
+
+        /* Fallback / previous near-fullscreen styles (for non-fullscreen immersive if needed) */
+        .workout-immersive #log-empty-state,
+        .workout-immersive .flex.gap-1\.5.mb-3.text-sm.border-b,
+        .workout-immersive #content-log > .flex.flex-col.sm\:flex-row {
+            display: none !important;
+        }
+
+        .workout-immersive #live-log-panel {
+            margin-bottom: 0;
+        }
+
+        .workout-immersive .immersive-container {
+            min-height: calc(100vh - 120px);
+            max-height: calc(100vh - 90px);
+        }
+
+        .immersive-sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: #1c1917;
+            border-bottom: 1px solid #57534e;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);
+        }
+
+        .immersive-sticky-bottom {
+            position: sticky;
+            bottom: 0;
+            z-index: 30;
+            background: #1c1917;
+            border-top: 1px solid #57534e;
+            box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.2);
+        }
+
+        .immersive-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .muscle-chip {
             font-size: 0.65rem;
             padding: 1px 8px;
@@ -162,10 +298,30 @@
             .set-row { font-size: 0.7rem; }
             .log-input { font-size: 0.8rem; padding: 0.25rem 0.5rem; }
             .volume-number { font-size: 2.25rem !important; }
+            .workout-history-card { font-size: 0.8rem; }
+            .exercise-log-card { font-size: 0.75rem; }
         }
         .touch-target {
             min-height: 44px;
             min-width: 44px;
+        }
+        /* Prevent overflow in bilingual names and history */
+        .exercise-log-card .font-semibold,
+        .workout-history-card,
+        .exercise-log-card {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+        /* Mobile specific for long Last lines and bilingual text */
+        @media (max-width: 380px) {
+            .exercise-log-card .text-\[10px\] {
+                font-size: 0.65rem !important;
+                line-height: 1.1;
+            }
+            .exercise-log-card {
+                font-size: 0.7rem;
+            }
         }
     </style>
 </head>
@@ -192,7 +348,7 @@
                         class="px-4 sm:px-5 py-1.5 sm:py-2 bg-white text-[#166534] font-semibold rounded-2xl text-sm">登入</button>
                     <button id="logoutBtn" onclick="logoutUser()"
                         class="hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-sm">登出</button>
-                    <button onclick="showAddUserModal()"
+                    <button id="addUserBtn" onclick="showAddUserModal()"
                         class="px-4 sm:px-5 py-1.5 sm:py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-sm">新增用戶</button>
                 </div>
             </div>
@@ -412,27 +568,27 @@
                     <div class="space-y-3">
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/incline_dumbbell_press.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">1. Incline Dumbbell Press<br><span class="text-xs text-[#a8a29e]">斜板啞鈴推胸</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">1. 上斜啞鈴推胸 (Incline Dumbbell Press)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/flat_dumbbell_press.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">2. Flat Dumbbell Press<br><span class="text-xs text-[#a8a29e]">平板啞鈴推胸</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">2. 平板啞鈴推胸 (Flat Dumbbell Press)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/lower_chest_cable_fly.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">3. Lower Chest Cable Fly<br><span class="text-xs text-[#a8a29e]">下胸繩索飛鳥</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">3. 下胸繩索飛鳥 (Lower Chest Cable Fly)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/tricep_rope_pushdown.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">4. Tricep Rope Pushdown<br><span class="text-xs text-[#a8a29e]">繩索三頭肌下壓</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">4. 繩索三頭下壓 (Tricep Rope Pushdown)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/cable_overhead_triceps.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">5. Cable Overhead Triceps Extension<br><span class="text-xs text-[#a8a29e]">繩索過頭三頭肌伸展</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">5. 繩索過頭三頭伸展 (Cable Overhead Triceps Extension)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/wood_chopper.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">6. Wood Chopper<br><span class="text-xs text-[#a8a29e]">繩索伐木式</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">6. 斬木 (Wood Chopper)</div>
                         </div>
                     </div>
                 </div>
@@ -457,27 +613,27 @@
                     <div class="space-y-3">
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/pull_ups.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">1. Pull-ups<br><span class="text-xs text-[#a8a29e]">引體向上</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">1. 引體向上 (Pull-ups)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/seated_cable_row.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">2. Seated Cable Row<br><span class="text-xs text-[#a8a29e]">坐姿繩索划船</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">2. 坐姿繩索拉背 (Seated Cable Row)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/deadlift.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">3. Deadlift<br><span class="text-xs text-[#a8a29e]">硬拉</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">3. 硬拉 (Deadlift)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/bayesian_cable_curls.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">4. Bayesian Cable Curls<br><span class="text-xs text-[#a8a29e]">繩索彎舉</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">4. 貝葉斯繩索彎舉 (Bayesian Cable Curls)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/preacher_curls.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">5. Preacher Curls<br><span class="text-xs text-[#a8a29e]">固定錘式彎舉</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">5. 牧師椅彎舉 (Preacher Curls)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/ab_wheel_rollout.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">6. Ab Wheel Rollout<br><span class="text-xs text-[#a8a29e]">腹輪推出</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">6. 腹輪 (Ab Wheel Rollout)</div>
                         </div>
                     </div>
                 </div>
@@ -502,23 +658,23 @@
                     <div class="space-y-3">
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/zercher_squats.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">1. Zercher Squats<br><span class="text-xs text-[#a8a29e]">澤奇深蹲</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">1. 澤奇深蹲 (Zercher Squats)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/reverse_forearm_curl.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">2. Reverse Forearm Curl<br><span class="text-xs text-[#a8a29e]">反向前臂彎舉</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">2. 反向腕彎舉 (Reverse Forearm Curl)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/lateral_raises.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">3. Lateral Raises<br><span class="text-xs text-[#a8a29e]">側平舉</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">3. 側舉 (Lateral Raises)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/rear_delt_raises.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">4. Rear Delt Raises<br><span class="text-xs text-[#a8a29e]">後肩三角肌飛鳥</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">4. 後飛 (Rear Delt Raises)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/dragon_flag.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">5. Dragon Flag<br><span class="text-xs text-[#a8a29e]">龍旗</span></div>
+                            <div class="text-sm sm:text-base pt-0.5">5. 龍旗 (Dragon Flag)</div>
                         </div>
                     </div>
                 </div>
@@ -551,101 +707,115 @@
             </div>
         </div>
 
-        <!-- LIVE LOGGING PANEL (most important UX) -->
+        <!-- LIVE LOGGING PANEL - Immersive / Near Full-Screen Mode -->
         <div id="live-log-panel" class="hidden mb-6">
-            <div class="log-card rounded-3xl p-4 sm:p-6 border border-emerald-900/50">
-                <!-- Workout Header -->
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                    <div class="flex items-center gap-x-3">
-                        <div class="text-emerald-400">
-                            <i class="fa-solid fa-stopwatch text-2xl"></i>
-                        </div>
-                        <div>
-                            <div class="font-bold text-lg">進行中訓練</div>
-                            <div class="flex items-center gap-x-2 text-sm">
-                                <input type="date" id="current-workout-date" class="log-input px-3 py-1 rounded-xl text-sm w-auto" onchange="updateCurrentWorkoutDate()">
-                                <span id="current-workout-exercise-count" class="mini-stat"></span>
+            <!-- Main immersive container using log-card style -->
+            <div class="immersive-container log-card rounded-3xl border border-emerald-900/50 flex flex-col overflow-hidden">
+                
+                <!-- STICKY TOP: Rest Timer (always visible) + header info -->
+                <div class="immersive-sticky-top px-4 sm:px-6 py-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-x-3">
+                            <div class="text-emerald-400">
+                                <i class="fa-solid fa-stopwatch text-2xl"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-lg">進行中訓練</div>
+                                <div class="flex items-center gap-x-2 text-sm">
+                                    <label for="current-workout-date" class="sr-only">訓練日期</label>
+                                    <input type="date" id="current-workout-date" class="log-input px-3 py-1 rounded-xl text-sm w-auto" onchange="updateCurrentWorkoutDate()">
+                                    <span id="current-workout-exercise-count" class="mini-stat"></span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="quickLoadFromPlan(1)" class="text-xs px-3 py-1.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl">載入日1</button>
-                        <button onclick="quickLoadFromPlan(2)" class="text-xs px-3 py-1.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl">載入日2</button>
-                        <button onclick="quickLoadFromPlan(3)" class="text-xs px-3 py-1.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl">載入日3</button>
-                        <button onclick="finishCurrentWorkout()" 
-                            class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl text-sm font-semibold flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-flag-checkered"></i> 完成訓練
-                        </button>
-                        <button onclick="cancelCurrentWorkout()" class="px-3 py-1.5 text-xs text-red-400 hover:text-red-300">取消</button>
-                    </div>
-                </div>
-
-                <!-- Running Volume + Timer Row -->
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-5">
-                    <!-- Volume -->
-                    <div class="lg:col-span-2 bg-[#292524] rounded-2xl p-4 flex items-center justify-between">
-                        <div>
-                            <div class="text-xs text-[#a8a29e]">本次訓練量</div>
-                            <div id="session-volume" class="volume-number text-4xl sm:text-5xl font-bold text-emerald-400">0</div>
-                            <div class="text-xs text-[#a8a29e]"><span id="session-sets-count">0 組</span></div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-[10px] text-amber-400">慈善影響</div>
-                            <div id="session-tonnes" class="text-xl font-semibold text-amber-400">0.00 t</div>
-                            <div class="text-[10px]">今日移動噸數</div>
+                        <!-- Dynamic Workout Sets bar (backend-driven, no hard-coded plans). + for add/edit/delete custom sets. -->
+                        <div id="workout-sets-bar" class="flex items-center gap-1.5 flex-wrap min-h-[28px]">
+                            <!-- Populated by renderWorkoutSetsBar() after loadWorkoutSets() -->
                         </div>
                     </div>
 
-                    <!-- Rest Timer -->
-                    <div class="lg:col-span-3 bg-[#1f1c1a] border border-[#57534e] rounded-2xl p-4">
-                        <div class="flex items-center justify-between mb-2">
+                    <!-- Rest Timer - Fixed at top -->
+                    <div class="bg-[#1f1c1a] border border-[#57534e] rounded-2xl p-3">
+                        <div class="flex items-center justify-between mb-1.5">
                             <div class="flex items-center gap-x-2">
                                 <i class="fa-solid fa-hourglass-half text-emerald-400"></i>
                                 <span class="font-semibold text-sm">休息計時器</span>
                             </div>
-                            <div class="flex gap-1">
-                                <button onclick="setRestPreset(60)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">60s</button>
-                                <button onclick="setRestPreset(90)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">90s</button>
-                                <button onclick="setRestPreset(120)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">120s</button>
-                                <button onclick="setRestPreset(180)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">180s</button>
+                            <div class="flex gap-1 text-[10px]">
+                                <button onclick="setRestPreset(60)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">60s</button>
+                                <button onclick="setRestPreset(90)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">90s</button>
+                                <button onclick="setRestPreset(120)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">120s</button>
+                                <button onclick="setRestPreset(180)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">180s</button>
                             </div>
                         </div>
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <button onclick="pauseRestTimer()" class="flex-1 px-3 py-1 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">暫停</button>
+                            <button onclick="resetRestTimer()" class="flex-1 px-3 py-1 bg-[#292524] hover:bg-red-900/30 text-red-400 rounded-2xl text-sm">重設</button>
+                            <button onclick="addTimeToTimer(30)" class="flex-1 px-3 py-1 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">+30秒</button>
+                        </div>
                         <div class="flex items-end gap-3">
-                            <div id="timer-display" class="timer-display text-emerald-400 tabular-nums">01:30</div>
+                            <div id="timer-display" class="timer-display text-emerald-400 tabular-nums text-3xl">01:00</div>
                             <div class="flex-1 flex items-center gap-2">
                                 <button id="timer-start-btn" onclick="startRestTimer()" 
                                     class="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始</button>
-                                <button onclick="pauseRestTimer()" class="px-4 py-2 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">暫停</button>
-                                <button onclick="resetRestTimer()" class="px-3 py-2 text-xs bg-[#292524] hover:bg-red-900/30 text-red-400 rounded-2xl">重設</button>
-                                <button onclick="addTimeToTimer(30)" class="px-3 py-2 text-xs bg-[#292524] hover:bg-[#3f3a36] rounded-2xl">+30秒</button>
                             </div>
                         </div>
-                        <div id="timer-status" class="text-[10px] text-[#a8a29e] mt-1 h-3"></div>
+                        <div id="timer-status" class="text-[10px] text-[#a8a29e] mt-0.5 h-3"></div>
+                    </div>
+
+                    <!-- Session Summary Bar - will be sticky in fullscreen (below timer) -->
+                    <div class="mt-3 bg-[#292524] rounded-2xl p-3 flex items-center justify-between text-sm">
+                        <div>
+                            <span class="text-[#a8a29e]">訓練量</span>
+                            <span id="session-volume" class="volume-number font-bold text-emerald-400 tabular-nums ml-2">0</span>
+                            <span class="text-xs text-[#a8a29e] ml-1">kg</span>
+                        </div>
+                        <div class="text-[#a8a29e]">
+                            <span id="session-sets-count">0 組</span>
+                            <span class="mx-1">•</span>
+                            <span id="session-tonnes" class="text-amber-400">0.00 t</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Exercises in current workout -->
-                <div id="current-workout-exercises" class="space-y-4">
-                    <!-- Populated dynamically by JS -->
+                <!-- SCROLLABLE MIDDLE: Exercises + Add form -->
+                <div class="immersive-scroll px-4 sm:px-6 py-4 space-y-4">
+                    <!-- Exercises in current workout -->
+                    <div id="current-workout-exercises" class="space-y-3">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+
+                    <!-- Add Exercise -->
+                    <div class="pt-3 border-t border-[#57534e]">
+                        <div class="flex flex-col sm:flex-row gap-2 items-end">
+                            <div class="flex-1">
+                                <label for="add-exercise-input" class="text-xs text-[#a8a29e] mb-1 block">加入動作</label>
+                                <div class="flex gap-2">
+                                    <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..." 
+                                        class="log-input flex-1 px-4 py-2 rounded-2xl text-sm" onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
+                                    <datalist id="exercise-datalist"></datalist>
+                                    <button onclick="addExerciseToCurrentWorkout()" 
+                                        class="px-4 py-2 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap">+ 加入</button>
+                                </div>
+                            </div>
+                            <button onclick="showLibraryModal(true)" class="px-4 py-2 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524] whitespace-nowrap">動作庫</button>
+                        </div>
+                        <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 h-4"></div>
+                    </div>
                 </div>
 
-                <!-- Add Exercise to current workout -->
-                <div class="mt-4 pt-4 border-t border-[#57534e]">
-                    <div class="flex flex-col sm:flex-row gap-2 items-end">
-                        <div class="flex-1">
-                            <label class="text-xs text-[#a8a29e] mb-1 block">加入動作到本次訓練</label>
-                            <div class="flex gap-2">
-                                <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..." 
-                                    class="log-input flex-1 px-4 py-2 rounded-2xl text-sm" onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
-                                <datalist id="exercise-datalist"></datalist>
-                                <button onclick="addExerciseToCurrentWorkout()" 
-                                    class="px-5 py-2 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap">+ 加入</button>
-                            </div>
-                        </div>
-                        <button onclick="showLibraryModal(true)" class="px-4 py-2 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524]">瀏覽動作庫</button>
+                <!-- STICKY BOTTOM: Finish button (always accessible) -->
+                <div class="immersive-sticky-bottom px-4 sm:px-6 py-3">
+                    <button onclick="finishCurrentWorkout()" 
+                        class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-x-2 shadow-lg">
+                        <i class="fa-solid fa-flag-checkered"></i> 
+                        <span>完成訓練</span>
+                    </button>
+                    <div class="text-center mt-1">
+                        <button onclick="cancelCurrentWorkout()" class="text-xs text-red-400 hover:text-red-300">放棄本次訓練</button>
                     </div>
-                    <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 h-4"></div>
                 </div>
+
             </div>
         </div>
 
@@ -682,7 +852,7 @@
                     <i class="fa-solid fa-download text-[10px]"></i> <span>匯出 CSV</span>
                 </button>
             </div>
-            <div id="workout-history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div id="workout-history-list" class="flex flex-col gap-2">
                 <!-- Populated by JS -->
             </div>
         </div>
@@ -726,7 +896,6 @@
                                     <th class="py-2 px-3 text-left">Date</th>
                                     <th class="py-2 px-2 text-center">Weight</th>
                                     <th class="py-2 px-2 text-center">Reps</th>
-                                    <th class="py-2 px-2 text-center">RPE</th>
                                     <th class="py-2 px-2 text-center">Vol (kg)</th>
                                     <th class="py-2 px-2 text-center">e1RM</th>
                                     <th class="py-2 px-3">Notes</th>
@@ -879,10 +1048,13 @@
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
             <h3 class="font-bold text-xl mb-4">用戶登入</h3>
             <div class="space-y-4">
-                <input type="text" id="loginUsername" placeholder="用戶名稱"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
-                <input type="password" id="loginPin" placeholder="PIN 碼"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="text" id="loginUsername" placeholder="用戶名稱 (只限小寫英文字母 + 數字)"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                    oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
+                <input type="password" id="loginPin" placeholder="PIN 碼 (只限數字)"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                    inputmode="numeric" pattern="[0-9]*"
+                    oninput="this.value = this.value.replace(/\D/g, '')">
             </div>
             <div class="flex gap-x-3 mt-6">
                 <button onclick="hideLoginModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
@@ -901,10 +1073,13 @@
                 <i class="fa-solid fa-exclamation-triangle mr-1"></i> 安全提示：請勿使用平時用開嘅密碼作為 PIN
             </div>
             <div class="space-y-4">
-                <input type="text" id="newUsername" placeholder="用戶名稱"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
-                <input type="password" id="newPin" placeholder="設定 PIN 碼"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5">
+                <input type="text" id="newUsername" placeholder="用戶名稱 (只限小寫英文字母 + 數字)"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                    oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
+                <input type="password" id="newPin" placeholder="設定 PIN 碼 (只限數字)"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                    inputmode="numeric" pattern="[0-9]*"
+                    oninput="this.value = this.value.replace(/\D/g, '')">
             </div>
             <div class="flex gap-x-3 mt-6">
                 <button onclick="hideAddUserModal()"
@@ -920,7 +1095,7 @@
         </div>
     </div>
 
-    <!-- Add Log Modal (kept for legacy compatibility) -->
+    <!-- Add Log Modal (kept for compatibility) -->
     <div id="addLogModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
             <h3 class="font-bold mb-3 sm:mb-4">新增訓練記錄（舊版）</h3>
@@ -968,10 +1143,6 @@
                     <div class="text-xs text-[#a8a29e]">組數 / 動作</div>
                     <div id="finish-sets" class="text-2xl font-bold"></div>
                 </div>
-                <div class="bg-[#292524] rounded-2xl p-3 text-center">
-                    <div class="text-xs text-[#a8a29e]">平均 RPE</div>
-                    <div id="finish-rpe" class="text-2xl font-bold"></div>
-                </div>
             </div>
 
             <div id="finish-prs" class="mb-4"></div>
@@ -1008,6 +1179,54 @@
         </div>
     </div>
 
+    <!-- Workout Sets Modal: backend-driven (Google Sheets per user). Supports + add, edit, delete, and direct load into training. -->
+    <!-- All sets (defaults + custom) come from GAS getWorkoutSets / save / delete. No hard-coded sets in HTML/JS data. -->
+    <div id="workoutSetModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-lg p-5 sm:p-6 mx-4 max-h-[88vh] overflow-auto">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="font-bold text-lg">Workout Sets（訓練組合）</h3>
+                    <div class="text-xs text-[#a8a29e]">自訂你的快速訓練組合，資料存於後端</div>
+                </div>
+                <button onclick="hideWorkoutSetModal()" class="text-[#a8a29e] hover:text-white text-xl leading-none">×</button>
+            </div>
+
+            <!-- Editor form -->
+            <div class="mb-4 p-3 bg-[#292524] rounded-2xl border border-[#57534e]">
+                <div class="text-xs text-[#a8a29e] mb-1">Set 名稱（可自訂）</div>
+                <input id="wset-name" class="log-input w-full px-3 py-2 rounded-2xl text-sm mb-3" placeholder="例如：Chest + Triceps（胸部 + 三頭肌）">
+
+                <div class="text-xs text-[#a8a29e] mb-1">包含的動作（點擊 × 移除）</div>
+                <div id="wset-exercises-list" class="flex flex-wrap gap-1.5 min-h-[28px] mb-2"></div>
+
+                <div class="flex gap-2">
+                    <input id="wset-add-exercise" list="exercise-datalist" placeholder="輸入或選擇動作..." 
+                           class="log-input flex-1 px-3 py-1.5 rounded-2xl text-sm" onkeydown="if(event.key==='Enter') addExerciseToEditingSet()">
+                    <button onclick="addExerciseToEditingSet()" 
+                            class="px-3 py-1.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm whitespace-nowrap">+ 加入</button>
+                    <button onclick="showLibraryModalForSet()" 
+                            class="px-3 py-1.5 border border-[#57534e] rounded-2xl text-sm hover:bg-[#3f3a36]">動作庫</button>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="saveCurrentWorkoutSet()" 
+                            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">儲存 Set</button>
+                    <button onclick="deleteCurrentEditingSet()" id="wset-delete-btn"
+                            class="px-3 py-2 text-red-400 hover:bg-red-900/30 border border-red-900/50 rounded-2xl text-sm hidden">刪除此 Set</button>
+                    <button onclick="clearWorkoutSetForm()" 
+                            class="px-3 py-2 border border-[#57534e] rounded-2xl text-sm hover:bg-[#3f3a36]">新增/清除</button>
+                </div>
+            </div>
+
+            <!-- Existing sets list (click to edit, or use the bar buttons to load directly) -->
+            <div class="text-xs text-[#a8a29e] mb-1">你嘅 Workout Sets（點擊「編輯」管理，訓練中直接點擊載入）</div>
+            <div id="wset-existing-list" class="space-y-2 text-sm max-h-[220px] overflow-auto"></div>
+
+            <div class="mt-4 text-[10px] text-[#a8a29e]">
+                提示：預設 3 個 Set 會在你首次使用時自動建立（由後端或前端 seed）。所有資料 per-user 存 Google Sheets。
+            </div>
+        </div>
+    </div>
+
     <!-- Exercise Library Modal -->
     <div id="libraryModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-2xl p-5 sm:p-6 mx-4 max-h-[88vh] overflow-auto">
@@ -1034,12 +1253,12 @@
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-sm p-5 mx-4">
             <h3 class="font-bold mb-3">新增自訂動作</h3>
             <div class="space-y-3 text-sm">
-                <input id="custom-name" placeholder="動作名稱（例如 保加利亞分腿蹲）" class="w-full log-input px-4 py-2 rounded-2xl">
+                <input id="custom-name" placeholder="動作名稱（建議：中文 (English) 例如 保加利亞分腿蹲 (Bulgarian Split Squat)）" class="w-full log-input px-4 py-2 rounded-2xl">
                 <div>
                     <div class="text-xs text-[#a8a29e] mb-1">主要類別</div>
                     <select id="custom-category" class="w-full log-input px-4 py-2 rounded-2xl">
-                        <option>Chest</option><option>Back</option><option>Legs</option><option>Shoulders</option>
-                        <option>Arms</option><option>Core</option><option>Full Body</option><option>Cardio</option>
+                        <option>胸部</option><option>背部</option><option>腿部</option><option>肩膀</option>
+                        <option>手臂</option><option>核心</option><option>全身</option><option>有氧</option>
                     </select>
                 </div>
             </div>
@@ -1051,15 +1270,64 @@
     </div>
 
     <script>
+        /*
+          BACKEND (Google Apps Script) VALIDATION RULES REQUIRED:
+
+          Username:
+            - Must contain ONLY lowercase a-z and 0-9 after normalization.
+            - The server MUST receive already-normalized username (frontend always sends cleaned value).
+            - On server: user = String(user || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            - Reject if after cleaning length === 0 or does not match the sent value.
+
+          PIN:
+            - Must contain ONLY digits 0-9.
+            - Server MUST: pin = String(pin || '').replace(/\D/g, '');
+            - Reject if not purely numeric or empty.
+
+          Recommended server-side (in doPost / login & addUser handlers):
+
+          function normalizeUsername(u) { return String(u||'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+          function normalizePin(p) { return String(p||'').replace(/\D/g,''); }
+
+          Then at the start of login/addUser:
+          const cleanUser = normalizeUsername(e.parameter.user || data.user);
+          const cleanPin  = normalizePin(e.parameter.pin   || data.pin);
+
+          if (cleanUser !== (data.user || e.parameter.user) || cleanPin !== (data.pin || e.parameter.pin)) {
+            return {status: 'error', message: '輸入格式不正確（用戶名只接受小寫英數，PIN 只接受數字）'};
+          }
+
+          // then proceed with cleanUser / cleanPin for storage & comparison
+        */
+
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8C7XUmx5IvhoSQZ-6JKegxyFtDtoK_gWv_xSS7b2vyRO3Nv7Sc6Kz8p6mWsVOrh1/exec";
         let currentUser = null;
         let workoutLogs = [];
+
+        // === Username / PIN normalization helpers (enforce rules on client) ===
+        function normalizeUsername(raw) {
+            if (!raw) return '';
+            return String(raw).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function normalizePin(raw) {
+            if (!raw) return '';
+            return String(raw).trim().replace(/\D/g, '');
+        }
 
         async function callAppsScript(action, data = {}) {
             try {
                 if (action === "getLogs" && currentUser) {
                     const url = new URL(APPS_SCRIPT_URL);
                     url.searchParams.append("action", "getLogs");
+                    url.searchParams.append("user", currentUser);
+                    const res = await fetch(url);
+                    return await res.json();
+                }
+                if (action === "getWorkoutSets" && currentUser) {
+                    // Use query GET for getWorkoutSets (consistent with getLogs; backend should handle ?action=getWorkoutSets&user=xxx)
+                    const url = new URL(APPS_SCRIPT_URL);
+                    url.searchParams.append("action", "getWorkoutSets");
                     url.searchParams.append("user", currentUser);
                     const res = await fetch(url);
                     return await res.json();
@@ -1081,12 +1349,28 @@
             document.getElementById('currentUserName').textContent = currentUser;
             document.getElementById('loginBtn').classList.add('hidden');
             document.getElementById('logoutBtn').classList.remove('hidden');
+            const addUserBtn = document.getElementById('addUserBtn');
+            if (addUserBtn) addUserBtn.classList.add('hidden');
             document.getElementById('logUserName').textContent = `(${currentUser})`;
             // Refresh rich log for the newly logged in user
-            if (typeof loadWorkoutData === 'function') {
-                loadWorkoutData();
+            if (typeof originalLogContent !== 'undefined' && originalLogContent) {
+                const logEl = document.getElementById('content-log');
+                if (logEl && logEl.innerHTML.includes('需要登入')) {
+                    logEl.innerHTML = originalLogContent;
+                }
+            }
+            try {
+                if (typeof loadWorkoutData === 'function') {
+                    loadWorkoutData();
+                }
                 if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
                 if (typeof renderOverallStats === 'function') renderOverallStats();
+                // Load per-user Workout Sets from backend (replaces all hard-coded plans)
+                if (typeof loadWorkoutSets === 'function') {
+                    loadWorkoutSets().catch(e => console.warn('loadWorkoutSets on login failed (non-fatal):', e));
+                }
+            } catch (err) {
+                console.warn('updateUIAfterLogin log refresh error (non-fatal):', err);
             }
         }
 
@@ -1101,17 +1385,32 @@
         }
 
         async function loginUser() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const pin = document.getElementById('loginPin').value.trim();
+            // Frontend normalization: force lowercase username + digits-only PIN
+            let rawUsername = document.getElementById('loginUsername').value.trim();
+            let rawPin = document.getElementById('loginPin').value.trim();
+
+            const username = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const pin = rawPin.replace(/\D/g, '');
+
             if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
 
             const result = await callAppsScript("login", { user: username, pin: pin });
             if (result.status === "success") {
-                currentUser = username;
+                currentUser = username;   // always store the normalized lowercase version
                 localStorage.setItem('currentUser', currentUser);
                 hideLoginModal();
+                // Restore log UI structure if it was replaced by guard
+                if (typeof originalLogContent !== 'undefined' && originalLogContent) {
+                    const logEl = document.getElementById('content-log');
+                    if (logEl) logEl.innerHTML = originalLogContent;
+                }
                 updateUIAfterLogin();
                 await loadUserLogs();
+                try {
+                    if (typeof showLogSubSection === 'function') showLogSubSection('history');
+                } catch (err) {
+                    console.warn('showLogSubSection after login error (non-fatal):', err);
+                }
             } else {
                 const msg = (result.message || "登入失敗");
                 const lower = msg.toLowerCase();
@@ -1128,12 +1427,20 @@
         }
 
         function logoutUser() {
+            console.log('[DEBUG] logoutUser, forcing full-screen exit if active');
+            try {
+                exitImmersiveMode();
+            } catch (e) {
+                // ultra cleanup will happen inside or below
+            }
             currentUser = null;
             localStorage.removeItem('currentUser');
             workoutLogs = [];
             document.getElementById('currentUserDisplay').classList.add('hidden');
             document.getElementById('loginBtn').classList.remove('hidden');
             document.getElementById('logoutBtn').classList.add('hidden');
+            const addUserBtn = document.getElementById('addUserBtn');
+            if (addUserBtn) addUserBtn.classList.remove('hidden');
             document.getElementById('logUserName').textContent = "";
             renderLogTable();
 
@@ -1141,10 +1448,18 @@
             currentWorkout = null;
             workoutHistory = [];
             lastPerformed = {};
+            workoutSets = [];
+            workoutSetsCache = null;
+            workoutSetsCacheTimestamp = 0;
+            currentEditingSet = null;
+            editingSetExercises = [];
             if (document.getElementById('live-log-panel')) document.getElementById('live-log-panel').classList.add('hidden');
             if (document.getElementById('log-empty-state')) document.getElementById('log-empty-state').classList.remove('hidden');
             if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
             if (typeof renderOverallStats === 'function') renderOverallStats();
+            // Clear the dynamic sets bar
+            const bar = document.getElementById('workout-sets-bar');
+            if (bar) bar.innerHTML = '';
         }
 
         async function loadUserLogs() {
@@ -1152,7 +1467,7 @@
             workoutLogs = await callAppsScript("getLogs");
             renderLogTable();
 
-            // === CRITICAL: Load rich per-user data from GAS and rebuild history ===
+            // === Load rich per-user data from backend and rebuild history ===
             try {
                 const rawSets = await callAppsScript("getLogs");  // already has user in URL for some calls
                 // Rebuild workoutHistory by grouping on session_id (or date+exercise as fallback)
@@ -1188,17 +1503,28 @@
                     return w;
                 }).sort((a,b) => b.date.localeCompare(a.date));
 
-                rebuildLastPerformed();
-                saveWorkoutData(); // also cache locally
+                if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
+                if (typeof saveWorkoutData === 'function') saveWorkoutData(); // also cache locally
             } catch (e) {
-                console.warn('Rich GAS load failed, using local cache', e);
+                console.warn('Backend data load failed, using local cache', e);
             }
 
-            // Refresh rich UI views
-            if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
-            if (typeof renderOverallStats === 'function') renderOverallStats();
-            if (typeof renderCalendar === 'function') renderCalendar();
-            if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
+            // Refresh rich UI views - protected
+            try {
+                if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                if (typeof renderOverallStats === 'function') renderOverallStats();
+                if (typeof renderCalendar === 'function') renderCalendar();
+                if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
+            } catch (err) {
+                console.warn('post loadUserLogs render error (non-fatal):', err);
+            }
+
+            // After full user data load, check for unfinished live workout
+            try {
+                if (typeof checkForUnfinishedWorkout === 'function') checkForUnfinishedWorkout();
+            } catch (err) {
+                console.warn('checkForUnfinishedWorkout error (non-fatal):', err);
+            }
         }
 
         function renderLogTable() {
@@ -1246,8 +1572,7 @@
         }
 
         /* ============================================================
-           PROFESSIONAL WORKOUT LOG ENGINE (Rich client-side + localStorage)
-           + Legacy flat log compatibility via GAS
+           WORKOUT LOG ENGINE (Rich client-side with localStorage persistence + optional backend sync)
            ============================================================ */
 
         // --- Core State ---
@@ -1258,7 +1583,7 @@
         let lastPerformed = {};              // { exerciseName: {weight, reps, rpe, date} }
         let personalRecords = {};            // Computed on the fly or cached
         let restTimerInterval = null;
-        let restTimeLeft = 90;
+        let restTimeLeft = 60;
         let restTimerRunning = false;
         let currentLogSub = 'history';
         let analysisChart1RM = null;
@@ -1266,80 +1591,120 @@
         let bodyPartChart = null;
         let weeklyVolumeChart = null;
 
-        const DEFAULT_REST = 90;
+        let workoutSets = [];  // [{id, name, exercises: string[] }] - backend driven per user
+        let workoutSetsCache = null;    // cache for fast access after login/pre-load
+        let workoutSetsCacheTimestamp = 0;
+        const WORKOUT_SETS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL for cache
+
+        let currentEditingSet = null;   // for the workout set editor modal
+        let editingSetExercises = [];   // temp list while editing in modal
+
+        // Full-screen training state management
+        let isInFullScreenTraining = false;
+        let isInitializing = false;
+
+        const DEFAULT_REST = 60;
         const EXERCISE_CATEGORIES = ['胸部', '背部', '腿部', '肩膀', '手臂', '核心', '全身', '有氧'];
 
-        // Bilingual Exercise Database - 55+ common gym exercises
-        // name_zh, name_en, muscle_group, image (local or picsum fallback)
-        // Fallback: reliable picsum.photos (no via.placeholder.com)
+        // Unified Exercise Database - Clean deduplicated, all names in "中文 (English)" format
+        // muscle_group, image (local /images/ or picsum fallback)
+        // Fallback: reliable picsum.photos for missing local images
+        // Unified Exercise Database - Clean, deduplicated, all in "中文 (English)" format
+        // At least 50 common exercises for serious training
+        // All UI (history, analysis, selectors, cards) MUST use this unified bilingual name
         const EXERCISES = [
-            { id: "incline_dumbbell_press", name_zh: "上斜啞鈴推胸", name_en: "Incline Dumbbell Press", muscle_group: "胸部", image: "images/incline_dumbbell_press.jpg" },
-            { id: "flat_dumbbell_press", name_zh: "平板啞鈴推胸", name_en: "Flat Dumbbell Press", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
-            { id: "lower_chest_cable_fly", name_zh: "下胸繩索飛鳥", name_en: "Lower Chest Cable Fly", muscle_group: "胸部", image: "images/lower_chest_cable_fly.jpg" },
-            { id: "barbell_bench_press", name_zh: "槓鈴臥推", name_en: "Barbell Bench Press", muscle_group: "胸部", image: "images/barbell_bench_press.jpg" },
-            { id: "cable_crossover", name_zh: "繩索夾胸", name_en: "Cable Crossover", muscle_group: "胸部", image: "images/cable_crossover.jpg" },
-            { id: "chest_dips", name_zh: "雙槓胸推", name_en: "Chest Dips", muscle_group: "胸部", image: "images/chest_dips.jpg" },
-            { id: "pull_ups", name_zh: "引體向上", name_en: "Pull-ups", muscle_group: "背部", image: "images/pull_ups.jpg" },
-            { id: "seated_cable_row", name_zh: "坐姿繩索划船", name_en: "Seated Cable Row", muscle_group: "背部", image: "images/seated_cable_row.jpg" },
-            { id: "deadlift", name_zh: "硬拉", name_en: "Deadlift", muscle_group: "背部", image: "images/deadlift.jpg" },
-            { id: "barbell_row", name_zh: "槓鈴划船", name_en: "Barbell Bent Over Row", muscle_group: "背部", image: "images/barbell_row.jpg" },
-            { id: "lat_pulldown", name_zh: "寬握下拉", name_en: "Lat Pulldown", muscle_group: "背部", image: "images/lat_pulldown.jpg" },
-            { id: "dumbbell_row", name_zh: "單臂啞鈴划船", name_en: "Single Arm Dumbbell Row", muscle_group: "背部", image: "images/dumbbell_row.jpg" },
-            { id: "face_pulls", name_zh: "臉部拉", name_en: "Face Pulls", muscle_group: "背部", image: "images/face_pulls.jpg" },
-            { id: "zercher_squats", name_zh: "澤奇深蹲", name_en: "Zercher Squats", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
-            { id: "barbell_back_squat", name_zh: "槓鈴後蹲", name_en: "Barbell Back Squat", muscle_group: "腿部", image: "images/barbell_back_squat.jpg" },
-            { id: "romanian_deadlift", name_zh: "羅馬尼亞硬拉", name_en: "Romanian Deadlift", muscle_group: "腿部", image: "images/romanian_deadlift.jpg" },
-            { id: "walking_lunges", name_zh: "行走弓步", name_en: "Walking Lunges", muscle_group: "腿部", image: "images/walking_lunges.jpg" },
-            { id: "leg_press", name_zh: "腿推機", name_en: "Leg Press", muscle_group: "腿部", image: "images/leg_press.jpg" },
-            { id: "standing_calf_raise", name_zh: "站姿小腿提踵", name_en: "Standing Calf Raise", muscle_group: "腿部", image: "images/standing_calf_raise.jpg" },
-            { id: "bayesian_cable_curls", name_zh: "貝葉斯繩索彎舉", name_en: "Bayesian Cable Curls", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
-            { id: "preacher_curls", name_zh: "牧師椅彎舉", name_en: "Preacher Curls", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
-            { id: "barbell_curl", name_zh: "槓鈴彎舉", name_en: "Barbell Curl", muscle_group: "手臂", image: "images/barbell_curl.jpg" },
-            { id: "hammer_curls", name_zh: "錘式彎舉", name_en: "Hammer Curls", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
-            { id: "tricep_rope_pushdown", name_zh: "繩索三頭下壓", name_en: "Tricep Rope Pushdown", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
-            { id: "cable_overhead_triceps", name_zh: "繩索過頭三頭伸展", name_en: "Cable Overhead Triceps Extension", muscle_group: "手臂", image: "images/cable_overhead_triceps.jpg" },
-            { id: "skull_crushers", name_zh: "仰臥三頭伸展", name_en: "Skull Crushers", muscle_group: "手臂", image: "images/skull_crushers.jpg" },
-            { id: "lateral_raises", name_zh: "側平舉", name_en: "Lateral Raises", muscle_group: "肩膀", image: "images/lateral_raises.jpg" },
-            { id: "rear_delt_raises", name_zh: "後肩三角肌飛鳥", name_en: "Rear Delt Raises", muscle_group: "肩膀", image: "images/rear_delt_raises.jpg" },
-            { id: "overhead_press", name_zh: "肩推", name_en: "Overhead Press", muscle_group: "肩膀", image: "images/overhead_press.jpg" },
-            { id: "arnold_press", name_zh: "阿諾肩推", name_en: "Arnold Press", muscle_group: "肩膀", image: "images/arnold_press.jpg" },
-            { id: "ab_wheel_rollout", name_zh: "腹輪推出", name_en: "Ab Wheel Rollout", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg" },
-            { id: "dragon_flag", name_zh: "龍旗", name_en: "Dragon Flag", muscle_group: "核心", image: "images/dragon_flag.jpg" },
-            { id: "hanging_leg_raise", name_zh: "懸垂舉腿", name_en: "Hanging Leg Raise", muscle_group: "核心", image: "images/hanging_leg_raise.jpg" },
-            { id: "plank", name_zh: "平板支撐", name_en: "Plank", muscle_group: "核心", image: "images/plank.jpg" },
-            { id: "cable_wood_chopper", name_zh: "繩索伐木", name_en: "Cable Wood Chopper", muscle_group: "核心", image: "images/wood_chopper.jpg" },
-            { id: "reverse_forearm_curl", name_zh: "反向腕彎舉", name_en: "Reverse Forearm Curl", muscle_group: "手臂", image: "images/reverse_forearm_curl.jpg" },
-            { id: "finger_curls", name_zh: "指力彎舉", name_en: "Finger Curls", muscle_group: "手臂", image: "images/finger_curls.jpg" },
-            { id: "barbell_shrugs", name_zh: "槓鈴聳肩", name_en: "Barbell Shrugs", muscle_group: "肩膀", image: "images/barbell_shrugs.jpg" },
-            { id: "romanian_lunge", name_zh: "羅馬尼亞弓步", name_en: "Romanian Lunge", muscle_group: "腿部", image: "images/romanian_lunge.jpg" },
-            { id: "goblet_squat", name_zh: "高腳杯深蹲", name_en: "Goblet Squat", muscle_group: "腿部", image: "images/goblet_squat.jpg" },
-            { id: "incline_bench_row", name_zh: "上斜啞鈴划船", name_en: "Incline Dumbbell Row", muscle_group: "背部", image: "images/incline_bench_row.jpg" },
-            { id: "seated_dumbbell_press", name_zh: "坐姿啞鈴肩推", name_en: "Seated Dumbbell Shoulder Press", muscle_group: "肩膀", image: "images/seated_dumbbell_press.jpg" },
-            { id: "cable_lateral_raise", name_zh: "繩索側平舉", name_en: "Cable Lateral Raise", muscle_group: "肩膀", image: "images/cable_lateral_raise.jpg" },
-            { id: "machine_chest_press", name_zh: "機器胸推", name_en: "Machine Chest Press", muscle_group: "胸部", image: "images/machine_chest_press.jpg" },
-            { id: "t_bar_row", name_zh: "T槓划船", name_en: "T-Bar Row", muscle_group: "背部", image: "images/t_bar_row.jpg" },
-            { id: "leg_curl", name_zh: "腿彎舉", name_en: "Leg Curl", muscle_group: "腿部", image: "images/leg_curl.jpg" },
-            { id: "leg_extension", name_zh: "腿伸展", name_en: "Leg Extension", muscle_group: "腿部", image: "images/leg_extension.jpg" },
-            { id: "hip_thrust", name_zh: "臀推", name_en: "Hip Thrust", muscle_group: "腿部", image: "images/hip_thrust.jpg" },
-            { id: "cable_crunch", name_zh: "繩索捲腹", name_en: "Cable Crunch", muscle_group: "核心", image: "images/cable_crunch.jpg" },
-            { id: "farmer_carry", name_zh: "農夫行走", name_en: "Farmer's Carry", muscle_group: "全身", image: "images/farmer_carry.jpg" },
-            { id: "battle_ropes", name_zh: "戰繩", name_en: "Battle Ropes", muscle_group: "全身", image: "images/battle_ropes.jpg" },
-            { id: "burpees", name_zh: "波比跳", name_en: "Burpees", muscle_group: "全身", image: "images/burpees.jpg" },
-            { id: "rowing_machine", name_zh: "划船機", name_en: "Rowing Machine", muscle_group: "有氧", image: "images/rowing_machine.jpg" },
+            // 胸部 (香港gym常用「推胸」講法)
+            { id: "incline_dumbbell_press", name: "上斜啞鈴推胸 (Incline Dumbbell Press)", muscle_group: "胸部", image: "images/incline_dumbbell_press.jpg" },
+            { id: "flat_dumbbell_press", name: "平板啞鈴推胸 (Flat Dumbbell Press)", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
+            { id: "barbell_bench_press", name: "槓鈴臥推 (Barbell Bench Press)", muscle_group: "胸部", image: "images/barbell_bench_press.jpg" },
+            { id: "lower_chest_cable_fly", name: "下胸繩索飛鳥 (Lower Chest Cable Fly)", muscle_group: "胸部", image: "images/lower_chest_cable_fly.jpg" },
+            { id: "cable_crossover", name: "繩索夾胸 (Cable Crossover)", muscle_group: "胸部", image: "images/cable_crossover.jpg" },
+            { id: "chest_dips", name: "雙槓胸推 (Chest Dips)", muscle_group: "胸部", image: "images/chest_dips.jpg" },
+            { id: "machine_chest_press", name: "機器胸推 (Machine Chest Press)", muscle_group: "胸部", image: "images/machine_chest_press.jpg" },
+
+            // 背部 (香港常用「拉背」「划船」)
+            { id: "pull_ups", name: "引體向上 (Pull-ups)", muscle_group: "背部", image: "images/pull_ups.jpg" },
+            { id: "deadlift", name: "硬拉 (Deadlift)", muscle_group: "背部", image: "images/deadlift.jpg" },
+            { id: "seated_cable_row", name: "坐姿繩索拉背 (Seated Cable Row)", muscle_group: "背部", image: "images/seated_cable_row.jpg" },
+            { id: "barbell_row", name: "槓鈴划船 (Barbell Bent Over Row)", muscle_group: "背部", image: "images/barbell_row.jpg" },
+            { id: "lat_pulldown", name: "寬握下拉 (Lat Pulldown)", muscle_group: "背部", image: "images/lat_pulldown.jpg" },
+            { id: "dumbbell_row", name: "單臂啞鈴拉 (Single Arm Dumbbell Row)", muscle_group: "背部", image: "images/dumbbell_row.jpg" },
+            { id: "incline_bench_row", name: "上斜啞鈴划船 (Incline Dumbbell Row)", muscle_group: "背部", image: "images/incline_bench_row.jpg" },
+            { id: "t_bar_row", name: "T槓划船 (T-Bar Row)", muscle_group: "背部", image: "images/t_bar_row.jpg" },
+            { id: "face_pulls", name: "臉部拉 (Face Pulls)", muscle_group: "背部", image: "images/face_pulls.jpg" },
+
+            // 腿部 (香港常用「深蹲」「弓步」「保加利亞蹲」)
+            { id: "barbell_back_squat", name: "槓鈴深蹲 (Barbell Back Squat)", muscle_group: "腿部", image: "images/barbell_back_squat.jpg" },
+            { id: "zercher_squats", name: "澤奇深蹲 (Zercher Squats)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+            { id: "goblet_squat", name: "高腳杯深蹲 (Goblet Squat)", muscle_group: "腿部", image: "images/goblet_squat.jpg" },
+            { id: "romanian_deadlift", name: "羅馬尼亞硬拉 (Romanian Deadlift)", muscle_group: "腿部", image: "images/romanian_deadlift.jpg" },
+            { id: "walking_lunges", name: "行走弓步 (Walking Lunges)", muscle_group: "腿部", image: "images/walking_lunges.jpg" },
+            { id: "bulgarian_split_squat", name: "保加利亞蹲 (Bulgarian Split Squat)", muscle_group: "腿部", image: "images/bulgarian_split_squat.jpg" },
+            { id: "leg_press", name: "腿推機 (Leg Press)", muscle_group: "腿部", image: "images/leg_press.jpg" },
+            { id: "leg_curl", name: "腿彎舉 (Leg Curl)", muscle_group: "腿部", image: "images/leg_curl.jpg" },
+            { id: "leg_extension", name: "腿伸展 (Leg Extension)", muscle_group: "腿部", image: "images/leg_extension.jpg" },
+            { id: "hip_thrust", name: "臀推 (Hip Thrust)", muscle_group: "腿部", image: "images/hip_thrust.jpg" },
+            { id: "standing_calf_raise", name: "站姿小腿提踵 (Standing Calf Raise)", muscle_group: "腿部", image: "images/standing_calf_raise.jpg" },
+
+            // 手臂 (香港常用「彎」「下壓」「牧師椅」)
+            { id: "barbell_curl", name: "槓鈴彎舉 (Barbell Curl)", muscle_group: "手臂", image: "images/barbell_curl.jpg" },
+            { id: "preacher_curls", name: "牧師椅彎舉 (Preacher Curls)", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
+            { id: "bayesian_cable_curls", name: "貝葉斯繩索彎舉 (Bayesian Cable Curls)", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
+            { id: "hammer_curls", name: "錘式彎舉 (Hammer Curls)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
+            { id: "tricep_rope_pushdown", name: "繩索三頭下壓 (Tricep Rope Pushdown)", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
+            { id: "cable_overhead_triceps", name: "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)", muscle_group: "手臂", image: "images/cable_overhead_triceps.jpg" },
+            { id: "skull_crushers", name: "仰臥三頭伸展 (Skull Crushers)", muscle_group: "手臂", image: "images/skull_crushers.jpg" },
+            { id: "reverse_forearm_curl", name: "反向腕彎舉 (Reverse Forearm Curl)", muscle_group: "手臂", image: "images/reverse_forearm_curl.jpg" },
+            { id: "finger_curls", name: "指力彎舉 (Finger Curls)", muscle_group: "手臂", image: "images/finger_curls.jpg" },
+
+            // 肩膀 (香港超常用「側舉」「後飛」「肩推」)
+            { id: "overhead_press", name: "肩推 (Overhead Press)", muscle_group: "肩膀", image: "images/overhead_press.jpg" },
+            { id: "seated_dumbbell_press", name: "坐姿啞鈴肩推 (Seated Dumbbell Shoulder Press)", muscle_group: "肩膀", image: "images/seated_dumbbell_press.jpg" },
+            { id: "arnold_press", name: "阿諾肩推 (Arnold Press)", muscle_group: "肩膀", image: "images/arnold_press.jpg" },
+            { id: "lateral_raises", name: "側舉 (Lateral Raises)", muscle_group: "肩膀", image: "images/lateral_raises.jpg" },
+            { id: "cable_lateral_raise", name: "繩索側舉 (Cable Lateral Raise)", muscle_group: "肩膀", image: "images/cable_lateral_raise.jpg" },
+            { id: "rear_delt_raises", name: "後飛 (Rear Delt Raises)", muscle_group: "肩膀", image: "images/rear_delt_raises.jpg" },
+            { id: "barbell_shrugs", name: "槓鈴聳肩 (Barbell Shrugs)", muscle_group: "肩膀", image: "images/barbell_shrugs.jpg" },
+
+            // 核心 (香港常用「腹輪」「平板撐」「斬木」)
+            { id: "ab_wheel_rollout", name: "腹輪 (Ab Wheel Rollout)", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg" },
+            { id: "dragon_flag", name: "龍旗 (Dragon Flag)", muscle_group: "核心", image: "images/dragon_flag.jpg" },
+            { id: "hanging_leg_raise", name: "懸垂舉腿 (Hanging Leg Raise)", muscle_group: "核心", image: "images/hanging_leg_raise.jpg" },
+            { id: "plank", name: "平板撐 (Plank)", muscle_group: "核心", image: "images/plank.jpg" },
+            { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/wood_chopper.jpg" },
+            { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
+
+            // 全身 / 有氧
+            { id: "farmer_carry", name: "農夫行走 (Farmer's Carry)", muscle_group: "全身", image: "images/farmer_carry.jpg" },
+            { id: "battle_ropes", name: "戰繩 (Battle Ropes)", muscle_group: "全身", image: "images/battle_ropes.jpg" },
+            { id: "burpees", name: "波比跳 (Burpees)", muscle_group: "全身", image: "images/burpees.jpg" },
+            { id: "rowing_machine", name: "划船機 (Rowing Machine)", muscle_group: "有氧", image: "images/rowing_machine.jpg" },
+            { id: "jump_rope", name: "跳繩 (Jump Rope)", muscle_group: "有氧", image: "images/jump_rope.jpg" },
         ];
 
-        // Helper to get display name (bilingual for UI)
+        // Unified helpers - all exercises use "中文 (English)" via .name
         function getExerciseDisplay(ex) {
             if (typeof ex === 'string') {
-                // Fallback for legacy names
-                const found = EXERCISES.find(e => e.name_en === ex || e.name_zh === ex);
-                return found ? `${found.name_zh} (${found.name_en})` : ex;
+                const lower = ex.toLowerCase();
+                const found = EXERCISES.find(e =>
+                    e.name === ex ||
+                    e.name.toLowerCase() === lower ||
+                    e.name.toLowerCase().includes(lower)
+                );
+                return found ? found.name : ex;
             }
-            return `${ex.name_zh} (${ex.name_en})`;
+            return ex && ex.name ? ex.name : ex;
         }
 
         function getExerciseByName(name) {
-            return EXERCISES.find(e => e.name_zh === name || e.name_en === name || `${e.name_zh} (${e.name_en})` === name) || null;
+            if (!name) return null;
+            const lower = name.toLowerCase().trim();
+            return EXERCISES.find(e =>
+                e.name === name ||
+                e.name.toLowerCase() === lower ||
+                e.name.toLowerCase().includes(lower) ||
+                e.id === name
+            ) || null;
         }
 
         function getExerciseImage(name) {
@@ -1362,7 +1727,8 @@
                     history: workoutHistory,
                     library: exerciseLibrary,
                     routines: routines,
-                    lastPerformed: lastPerformed
+                    lastPerformed: lastPerformed,
+                    currentWorkout: currentWorkout || null   // persist in-progress training for resume
                 };
                 localStorage.setItem(getUserStorageKey(), JSON.stringify(data));
             } catch (e) { console.warn('Local storage save failed', e); }
@@ -1376,19 +1742,65 @@
                     workoutHistory = data.history || [];
                     // Use EXERCISES as the source of truth for library (bilingual)
                     // Keep any custom if stored, but default to EXERCISES
-                    exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: `${e.name_zh} (${e.name_en})`, category: e.muscle_group}));
+                    exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
                     routines = data.routines || [];
                     lastPerformed = data.lastPerformed || {};
+                    // Restore in-progress workout (for crash/refresh/resume support)
+                    if (data.currentWorkout && data.currentWorkout.exercises) {
+                        currentWorkout = data.currentWorkout;
+                    }
                 } else {
-                    // Initialize with bilingual display names from EXERCISES
-                    exerciseLibrary = EXERCISES.map(e => ({name: `${e.name_zh} (${e.name_en})`, category: e.muscle_group}));
+                    // Initialize with unified bilingual display names from EXERCISES
+                    exerciseLibrary = EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
                     workoutHistory = [];
                     routines = [];
                     lastPerformed = {};
                 }
             } catch (e) {
-                exerciseLibrary = EXERCISES.map(e => ({name: `${e.name_zh} (${e.name_en})`, category: e.muscle_group}));
+                exerciseLibrary = EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
                 workoutHistory = [];
+            }
+        }
+
+        function checkForUnfinishedWorkout() {
+            // Called after loadWorkoutData + initialize
+            if (!currentWorkout || !currentWorkout.exercises || currentWorkout.exercises.length === 0) return;
+
+            // Use setTimeout so UI has time to render.
+            // The actual prompt and resume logic is inside to re-validate state.
+            setTimeout(() => {
+                // Re-check because between scheduling and now, the workout may have been cancelled, finished,
+                // or currentWorkout nulled by force exit / tab switch / other actions (e.g. switching tabs while fullscreen).
+                if (!currentWorkout || !currentWorkout.exercises || currentWorkout.exercises.length === 0) {
+                    return;
+                }
+                const exCount = currentWorkout.exercises.length;
+                const msg = `偵測到未完成的訓練（日期 ${currentWorkout.date}，${exCount} 個動作）。\n\n是否繼續之前的訓練？`;
+                if (confirm(msg)) {
+                    // Resume - show in normal (non-fullscreen) log view so other tabs remain clickable
+                    // User can explicitly use "開始新訓練" button to enter full-screen if desired
+                    document.getElementById('live-log-panel').classList.remove('hidden');
+                    document.getElementById('log-empty-state').classList.add('hidden');
+                    const dateInput = document.getElementById('current-workout-date');
+                    if (dateInput) dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
+                    renderCurrentWorkout();
+                    updateSessionSummary();
+                    // Do NOT auto enter full screen here to keep site interactive
+                    console.log('[DEBUG] Resumed unfinished workout in normal mode (no auto full-screen to allow tab clicks)');
+                } else {
+                    // Discard the draft
+                    currentWorkout = null;
+                    saveWorkoutData();
+                }
+            }, 300);
+        }
+
+        function saveDraftBeforeUnload() {
+            console.log('[DEBUG] beforeunload triggered, currentWorkout=' + (currentWorkout ? 'exists' : 'null') + ', isFullscreen=' + document.body.classList.contains('fullscreen-training'));
+            if (currentWorkout) {
+                saveWorkoutData();
+                // Best-effort: if user is logged in we could push a lightweight draft here,
+                // but main persistence is localStorage + final push on finish.
             }
         }
 
@@ -1418,7 +1830,7 @@
                 exercises: [
                     {name: "引體向上 (Pull-ups)", sets: [{weight: 0, reps: 7, rpe: 8, notes: "Bodyweight"}, {weight: 0, reps: 6, rpe: 9, notes: ""}]},
                     {name: "硬拉 (Deadlift)", sets: [{weight: 80, reps: 5, rpe: 8, notes: ""}, {weight: 85, reps: 4, rpe: 9, notes: ""}]},
-                    {name: "腹輪推出 (Ab Wheel Rollout)", sets: [{weight: 0, reps: 12, rpe: 7, notes: ""}]}
+                    {name: "腹輪 (Ab Wheel Rollout)", sets: [{weight: 0, reps: 12, rpe: 7, notes: ""}]}
                 ],
                 notes: ""
             });
@@ -1430,7 +1842,7 @@
                 date: d3.toISOString().split('T')[0],
                 exercises: [
                     {name: "澤奇深蹲 (Zercher Squats)", sets: [{weight: 42, reps: 8, rpe: 7, notes: ""}, {weight: 45, reps: 6, rpe: 8, notes: ""}]},
-                    {name: "側平舉 (Lateral Raises)", sets: [{weight: 8, reps: 15, rpe: 6, notes: ""}, {weight: 8, reps: 14, rpe: 7, notes: ""}]},
+                    {name: "側舉 (Lateral Raises)", sets: [{weight: 8, reps: 15, rpe: 6, notes: ""}, {weight: 8, reps: 14, rpe: 7, notes: ""}]},
                     {name: "龍旗 (Dragon Flag)", sets: [{weight: 0, reps: 6, rpe: 8, notes: "Controlled"}]}
                 ],
                 notes: "Good leg pump."
@@ -1443,7 +1855,7 @@
                 date: d4.toISOString().split('T')[0],
                 exercises: [
                     {name: "硬拉 (Deadlift)", sets: [{weight: 75, reps: 6, rpe: 7, notes: ""}]},
-                    {name: "坐姿繩索划船 (Seated Cable Row)", sets: [{weight: 55, reps: 10, rpe: 7, notes: ""}, {weight: 60, reps: 8, rpe: 8, notes: ""}]}
+                    {name: "坐姿繩索拉背 (Seated Cable Row)", sets: [{weight: 55, reps: 10, rpe: 7, notes: ""}, {weight: 60, reps: 8, rpe: 8, notes: ""}]}
                 ],
                 notes: ""
             });
@@ -1453,7 +1865,7 @@
                 workoutHistory.push(s);
             });
 
-            // Update last performed from seed (store full sets for multi-set Last display support, no RPE in display)
+            // Update last performed from seed (store full sets for multi-set Last display support)
             lastPerformed = {};
             workoutHistory.forEach(w => {
                 w.exercises.forEach(ex => {
@@ -1495,7 +1907,6 @@
         function getAllExercisesFromHistory() {
             const set = new Set();
             workoutHistory.forEach(w => w.exercises.forEach(ex => set.add(ex.name)));
-            exerciseLibrary.forEach(e => set.add(e.name));
             return Array.from(set).sort();
         }
 
@@ -1505,7 +1916,6 @@
                 w.exercises.forEach(ex => {
                     if (!lastPerformed[ex.name] && ex.sets && ex.sets.length) {
                         // Store FULL sets from the last historical workout for this exercise (for "Last" display with multi-set support)
-                        // No RPE in the Last display per requirements
                         lastPerformed[ex.name] = {
                             sets: ex.sets.map(s => ({weight: s.weight, reps: s.reps})),
                             date: w.date
@@ -1517,29 +1927,236 @@
 
         // --- Current Workout Management (the fast logging core) ---
         function startNewWorkout(dateStr = null) {
-            const date = dateStr || new Date().toISOString().split('T')[0];
-            currentWorkout = { id: Date.now(), date, exercises: [], notes: '' };
+            const alreadyInFullscreen = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
+            console.log(`[DEBUG] startNewWorkout called, alreadyInFullscreen=${alreadyInFullscreen}, hasCurrent=${!!currentWorkout}`);
+
+            if (!currentUser) {
+                showLoginModal();
+                return;
+            }
+
+            // If there's already a currentWorkout loaded from storage, reuse it (resume case handled in check)
+            if (!currentWorkout) {
+                const date = dateStr || new Date().toISOString().split('T')[0];
+                currentWorkout = { id: Date.now(), date, exercises: [], notes: '' };
+            }
+
             document.getElementById('live-log-panel').classList.remove('hidden');
             document.getElementById('log-empty-state').classList.add('hidden');
-            document.getElementById('current-workout-date').value = currentWorkout.date;
+
+            const dateInput = document.getElementById('current-workout-date');
+            if (dateInput) dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
+
             renderCurrentWorkout();
-            updateSessionVolume();
+            updateSessionSummary();
             // Prefill first quick exercise hint
             updateLastPerformedHint();
+
+            // Use cache for instant Workout Sets bar display (key for perceived speed after "開始新訓練")
+            if (workoutSetsCache && workoutSetsCache.length > 0 && (!workoutSets || workoutSets.length === 0)) {
+                workoutSets = JSON.parse(JSON.stringify(workoutSetsCache));
+                console.log('[DEBUG] startNewWorkout: populated workoutSets from cache for instant bar');
+            }
+
+            // Always re-render the dynamic Workout Sets bar (important for full-screen) - now instant if cached
+            if (typeof renderWorkoutSetsBar === 'function') renderWorkoutSetsBar();
+
+            // Trigger background refresh if no cache or stale (non-blocking)
+            if (!workoutSetsCache && currentUser && typeof loadWorkoutSets === 'function') {
+                loadWorkoutSets().catch(e => console.warn('[DEBUG] background loadWorkoutSets in startNewWorkout failed (non-fatal):', e));
+            }
+
+            // Only enter immersive mode if we are not already in full-screen training.
+            // This prevents clicking a Set button from kicking us out or causing re-entry flicker.
+            if (alreadyInFullscreen) {
+                console.log('[DEBUG] startNewWorkout: already in full-screen — skipping enterImmersiveMode, just refreshing content');
+            } else {
+                // Enter immersive full-screen training mode
+                enterImmersiveMode();
+            }
+
+            // Immediate auto-save of the new/ resumed session
+            saveWorkoutData();
         }
 
         function updateCurrentWorkoutDate() {
             if (!currentWorkout) return;
             currentWorkout.date = document.getElementById('current-workout-date').value;
+            saveWorkoutData();
         }
 
         function cancelCurrentWorkout() {
+            console.log('[DEBUG] cancelCurrentWorkout called, exiting full-screen');
             if (!currentWorkout) return;
             if (!confirm('Discard current workout?')) return;
             currentWorkout = null;
             document.getElementById('live-log-panel').classList.add('hidden');
             document.getElementById('log-empty-state').classList.remove('hidden');
             resetRestTimer();
+            exitImmersiveMode();
+            saveWorkoutData(); // clear the draft
+        }
+
+        function enterImmersiveMode() {
+            try {
+                console.log('[DEBUG] ENTERING full-screen immersive mode (開始新訓練)');
+                console.log(`[DEBUG] Before enter: body.className="${document.body.className}", currentUser=${currentUser}`);
+
+                // Use fullscreen-training class for true full-screen immersive mode
+                document.body.classList.add('fullscreen-training');
+                document.body.style.overflow = 'hidden';  // Prevent body scroll leaking during full-screen
+
+                isInFullScreenTraining = true;
+
+                const panel = document.getElementById('live-log-panel');
+                if (panel) {
+                    // Ensure it pops to full viewport (CSS rules handle most, but force important styles)
+                    panel.style.position = 'fixed';
+                    panel.style.inset = '0';
+                    panel.style.zIndex = '60';
+                    panel.style.margin = '0';
+                    panel.style.borderRadius = '0';
+                    panel.style.backgroundColor = '#1c1917';
+                    panel.style.overflow = 'hidden';
+                    panel.classList.remove('hidden');  // ensure visible
+                }
+
+                const container = panel ? panel.querySelector('.immersive-container') : null;
+                if (container) {
+                    container.style.height = '100vh';
+                    container.style.minHeight = '100vh';
+                    container.style.maxHeight = '100vh';
+                    container.style.borderRadius = '0';
+                    container.style.border = 'none';
+                }
+
+                // Hide main navigation elements for focus (in addition to CSS)
+                const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
+                if (mainNav) mainNav.style.display = 'none';
+
+                // Debug: attach scroll listener to the scroll area to monitor during full screen
+                const scrollArea = document.querySelector('.immersive-scroll');
+                if (scrollArea) {
+                    // Remove previous if any (for re-entrancy)
+                    if (window._debugFullscreenScroll) {
+                        scrollArea.removeEventListener('scroll', window._debugFullscreenScroll);
+                    }
+                    window._debugFullscreenScroll = function(e) {
+                        console.log('[DEBUG] SCROLL event inside .immersive-scroll while in full-screen. ScrollTop=' + scrollArea.scrollTop + '. No tab switch should occur.');
+                    };
+                    scrollArea.addEventListener('scroll', window._debugFullscreenScroll, { passive: true });
+                    console.log('[DEBUG] Attached debug scroll listener to .immersive-scroll');
+                }
+
+                // Also log window scroll if it bubbles (should not affect fixed panel)
+                if (window._debugWindowScroll) {
+                    window.removeEventListener('scroll', window._debugWindowScroll);
+                }
+                window._debugWindowScroll = function() {
+                    if (document.body.classList.contains('fullscreen-training')) {
+                        console.log('[DEBUG] WINDOW scroll detected during full-screen (should be isolated to .immersive-scroll)');
+                    }
+                };
+                window.addEventListener('scroll', window._debugWindowScroll, { passive: true });
+
+                // Auto-save when entering full screen
+                saveWorkoutData();
+
+                // Re-render Workout Sets bar AFTER the panel and container have been forced into full-screen styles.
+                // This ensures the dynamic buttons (+ and Set buttons) are correctly created inside the immersive view.
+                if (typeof renderWorkoutSetsBar === 'function') {
+                    console.log('[DEBUG] enterImmersiveMode: re-rendering #workout-sets-bar after immersive styles applied');
+                    renderWorkoutSetsBar();
+                }
+
+                console.log(`[DEBUG] After enter: body.className="${document.body.className}", isInFullScreenTraining=${isInFullScreenTraining}`);
+            } catch (err) {
+                console.error('[DEBUG] Error in enterImmersiveMode, attempting cleanup', err);
+                // safety
+                document.body.classList.remove('fullscreen-training');
+                document.body.style.overflow = '';
+                isInFullScreenTraining = false;
+            }
+        }
+
+        function exitImmersiveMode() {
+            try {
+                console.log('[DEBUG] EXITING full-screen immersive mode');
+                console.log(`[DEBUG] Before exit: body.className="${document.body.className}"`);
+
+                document.body.classList.remove('fullscreen-training');
+                document.body.style.overflow = '';  // Restore body scroll
+
+                isInFullScreenTraining = false;
+
+                const panel = document.getElementById('live-log-panel');
+                if (panel) {
+                    // Reset inline styles so normal layout resumes
+                    panel.style.position = '';
+                    panel.style.inset = '';
+                    panel.style.zIndex = '';
+                    panel.style.margin = '';
+                    panel.style.borderRadius = '';
+                    panel.style.backgroundColor = '';
+                    panel.style.overflow = '';
+                    panel.classList.add('hidden');
+                }
+
+                const container = panel ? panel.querySelector('.immersive-container') : null;
+                if (container) {
+                    container.style.height = '';
+                    container.style.minHeight = '';
+                    container.style.maxHeight = '';
+                    container.style.borderRadius = '';
+                    container.style.border = '';
+                }
+
+                // Restore main navigation
+                const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
+                if (mainNav) mainNav.style.display = '';
+
+                // Also restore any previously hidden elements from older logic
+                const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
+                if (topHeader) topHeader.style.display = '';
+                const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
+                if (subNav) subNav.style.display = '';
+
+                // Cleanup debug listeners
+                const scrollArea = document.querySelector('.immersive-scroll');
+                if (scrollArea && window._debugFullscreenScroll) {
+                    scrollArea.removeEventListener('scroll', window._debugFullscreenScroll);
+                    console.log('[DEBUG] Removed debug scroll listener');
+                }
+                if (window._debugWindowScroll) {
+                    window.removeEventListener('scroll', window._debugWindowScroll);
+                    window._debugWindowScroll = null;
+                }
+
+                console.log(`[DEBUG] After exit: body.className="${document.body.className}", isInFullScreenTraining=${isInFullScreenTraining}`);
+            } catch (err) {
+                console.error('[DEBUG] Error in exitImmersiveMode, doing manual ultra-cleanup', err);
+                // Force recovery
+                document.body.classList.remove('fullscreen-training');
+                document.body.style.overflow = '';
+                isInFullScreenTraining = false;
+                const panel = document.getElementById('live-log-panel');
+                if (panel) {
+                    panel.classList.add('hidden');
+                    panel.style.position = '';
+                    panel.style.inset = '';
+                    panel.style.zIndex = '';
+                    panel.style.margin = '';
+                    panel.style.borderRadius = '';
+                    panel.style.backgroundColor = '';
+                    panel.style.overflow = '';
+                }
+                const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
+                if (mainNav) mainNav.style.display = '';
+                const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
+                if (topHeader) topHeader.style.display = '';
+                const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
+                if (subNav) subNav.style.display = '';
+            }
         }
 
         function addExerciseToCurrentWorkout(nameFromInput = null) {
@@ -1564,10 +2181,17 @@
         }
 
         function removeExerciseFromCurrent(idx) {
+            console.log(`[DEBUG] removeExerciseFromCurrent called: idx=${idx}`);
             if (!currentWorkout) return;
+            if (idx < 0 || idx >= currentWorkout.exercises.length) {
+                console.warn('[DEBUG] removeExerciseFromCurrent: invalid idx');
+                return;
+            }
+            const removedName = currentWorkout.exercises[idx].name;
             currentWorkout.exercises.splice(idx, 1);
+            console.log(`[DEBUG] removed exercise "${removedName}", remaining=${currentWorkout.exercises.length}`);
             renderCurrentWorkout();
-            updateSessionVolume();
+            updateSessionSummary();
         }
 
         function addSetToExercise(exIdx) {
@@ -1584,9 +2208,7 @@
                 return;
             }
 
-            // RPE: prefer last performed, else default 7 (no input in quick add row)
-            const last = lastPerformed[ex.name];
-            const rpe = (last && last.rpe) ? last.rpe : 7;
+            const rpe = 7;
 
             const vol = weight * reps;
             const newSet = { weight, reps, rpe, notes: '', volume: vol };
@@ -1601,7 +2223,7 @@
             if (repsInput) repsInput.value = reps || '';
 
             renderCurrentWorkout();
-            updateSessionVolume();
+            updateSessionSummary();
             saveWorkoutData();
 
             // Auto-start rest timer (very useful between sets)
@@ -1612,10 +2234,38 @@
         }
 
         function deleteSet(exIdx, setIdx) {
-            if (!currentWorkout) return;
-            currentWorkout.exercises[exIdx].sets.splice(setIdx, 1);
+            console.log(`[DEBUG] deleteSet called: exIdx=${exIdx}, setIdx=${setIdx}`);
+
+            if (!currentWorkout) {
+                console.warn('[DEBUG] deleteSet: no currentWorkout');
+                return;
+            }
+
+            // Error handling: validate indexes
+            if (typeof exIdx !== 'number' || exIdx < 0 || exIdx >= currentWorkout.exercises.length) {
+                console.warn(`[DEBUG] deleteSet: invalid exIdx=${exIdx}`);
+                return;
+            }
+
+            const ex = currentWorkout.exercises[exIdx];
+            if (!ex || !Array.isArray(ex.sets)) {
+                console.warn('[DEBUG] deleteSet: exercise or sets array missing');
+                return;
+            }
+
+            if (typeof setIdx !== 'number' || setIdx < 0 || setIdx >= ex.sets.length) {
+                console.warn(`[DEBUG] deleteSet: invalid setIdx=${setIdx} for exercise ${exIdx}`);
+                return;
+            }
+
+            // Perform deletion
+            ex.sets.splice(setIdx, 1);
+
+            console.log(`[DEBUG] deleteSet: removed set, remaining sets for ex ${exIdx}: ${ex.sets.length}`);
+
+            // Re-render everything for consistency (works in fullscreen + normal mode)
             renderCurrentWorkout();
-            updateSessionVolume();
+            updateSessionSummary();
             saveWorkoutData();
         }
 
@@ -1626,11 +2276,13 @@
             if (field === 'weight' || field === 'reps') {
                 set.volume = calculateSetVolume(set);
             }
-            updateSessionVolume();
-            // No full re-render for speed on every keystroke; user can blur or we can debounce
+            updateSessionSummary();
+            // Auto-save on field edits (debounce not strictly needed for localStorage)
+            saveWorkoutData();
         }
 
         function renderCurrentWorkout() {
+            console.log(`[DEBUG] renderCurrentWorkout called. isInFullScreenTraining=${isInFullScreenTraining}, isFullscreenClass=${document.body.classList.contains('fullscreen-training')}, exercisesCount=${currentWorkout ? currentWorkout.exercises.length : 0}`);
             const container = document.getElementById('current-workout-exercises');
             const countEl = document.getElementById('current-workout-exercise-count');
             if (!currentWorkout || !container) return;
@@ -1647,15 +2299,10 @@
                 const lastPerf = lastPerformed[ex.name];
                 let lastHtml = '';
                 if (lastPerf && lastPerf.sets && lastPerf.sets.length) {
-                    // Completely remove @ RPE from Last lines per spec
-                    // Support multiple sets from last session: "Last: 10kg × 8, 10kg × 7"
-                    if (lastPerf.sets.length > 1) {
-                        const setsStr = lastPerf.sets.map(s => `${s.weight}kg × ${s.reps}`).join(', ');
-                        lastHtml = `Last: ${setsStr}`;
-                    } else {
-                        const s = lastPerf.sets[0];
-                        lastHtml = `Last: ${s.weight}kg × ${s.reps}`;
-                    }
+                    lastHtml = '<div>Last:</div>';
+                    lastPerf.sets.forEach((s, i) => {
+                        lastHtml += `<div>set ${i+1} : ${s.weight}kg × ${s.reps}</div>`;
+                    });
                 }
 
                 let imgSrc = getExerciseImage(ex.name);
@@ -1664,19 +2311,30 @@
                 // Reliable fallback to picsum (no via.placeholder)
                 const fallbackImg = 'https://picsum.photos/id/1011/56/56';
 
-                // Build added sets list (display only, with delete) - keep @ RPE here for current session sets (as per prior design)
-                let setsHtml = '';
-                ex.sets.forEach((set, sIdx) => {
-                    const rpe = set.rpe || 7;
-                    setsHtml += `
-                        <div class="flex items-center justify-between px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
-                            <span class="font-medium">${set.weight}kg × ${set.reps} @ RPE ${rpe}</span>
-                            <button onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded"><i class="fa-solid fa-times"></i></button>
-                        </div>`;
-                });
+                // Build added sets list (display only, with delete) - "set 1 : 10kg × 10"
+                // Always show a section so we can display "尚未有組數" when empty.
+                let setsListHtml = '';
+                if (ex.sets.length > 0) {
+                    ex.sets.forEach((set, sIdx) => {
+                        setsListHtml += `
+                            <div class="flex items-center justify-between px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
+                                <span class="font-medium">set ${sIdx+1} : ${set.weight}kg × ${set.reps}</span>
+                                <button onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded" title="刪除此組"><i class="fa-solid fa-times"></i></button>
+                            </div>`;
+                    });
+                    setsListHtml = `<div class="mt-2 space-y-0.5">${setsListHtml}</div>`;
+                } else {
+                    setsListHtml = `<div class="mt-1 px-1 text-[10px] text-[#a8a29e]">尚未有組數</div>`;
+                }
 
                 html += `
-                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-2 border border-[#57534e]">
+                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-2 border border-[#57534e] relative">
+                        <!-- Delete entire exercise button - top right, always visible even if 0 sets -->
+                        <button onclick="removeExerciseFromCurrent(${exIdx})" 
+                                class="absolute top-1 right-1 text-red-400 hover:text-red-300 px-1.5 py-0.5 text-base leading-none z-10 active:bg-red-900/30 rounded"
+                                title="刪除此動作">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
                         <div class="flex gap-2 items-start">
                             <!-- Left: Image 56x56 rounded -->
                             <img src="${imgSrc}" 
@@ -1690,7 +2348,7 @@
                                 <div class="flex items-center gap-1 mt-0.5">
                                     <span class="muscle-chip text-[9px] px-1.5">${muscle}</span>
                                 </div>
-                                <!-- Last line (no @ RPE, full multi-set if applicable) -->
+                                <!-- Last line: multi-set format -->
                                 ${lastHtml ? `<div class="text-[10px] text-emerald-300/80 mt-0.5">${lastHtml}</div>` : ''}
                                 <!-- 使用上次 button -->
                                 <button onclick="copyLastToExercise(${exIdx})" 
@@ -1698,15 +2356,15 @@
                             </div>
                         </div>
 
-                        <!-- Quick Add: ONLY kg + reps (NO RPE input) -->
+                        <!-- Quick Add: ONLY kg + reps  -->
                         <div class="mt-2 grid grid-cols-12 gap-1.5 items-end">
                             <div class="col-span-5">
-                                <div class="text-[9px] text-[#a8a29e] mb-0.5">重量 (kg)</div>
+                                <label for="set-weight-${exIdx}" class="text-[9px] text-[#a8a29e] mb-0.5 block">重量 (kg)</label>
                                 <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg" 
                                        class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
                             </div>
                             <div class="col-span-4">
-                                <div class="text-[9px] text-[#a8a29e] mb-0.5">次數</div>
+                                <label for="set-reps-${exIdx}" class="text-[9px] text-[#a8a29e] mb-0.5 block">次數</label>
                                 <input id="set-reps-${exIdx}" type="number" placeholder="reps" 
                                        class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
                             </div>
@@ -1718,15 +2376,21 @@
                             </div>
                         </div>
 
-                        <!-- Below: list of added sets "weight × reps @ RPE" (current session) -->
-                        ${setsHtml ? `<div class="mt-2 space-y-0.5">${setsHtml}</div>` : ''}
+                        <!-- Below: list of added sets "set 1 : 10kg × 10" with delete, or empty state prompt -->
+                        <!-- When no sets, show "尚未有組數" as requested -->
+                        <div class="sets-list mt-1">
+                            ${setsListHtml}
+                        </div>
                     </div>`;
             });
             container.innerHTML = html;
 
+            // Ensure summary is up to date after full re-render (especially important in fullscreen)
+            updateSessionSummary();
+
             // Pre-fill quick kg/reps:
             // Priority: last set logged in *this current workout* for the ex (for fast multi-set logging)
-            // Fallback: last set from historical previous session (lastPerformed now stores full sets)
+            // Fallback: last set from historical previous session (lastPerformed stores full sets for Last display)
             currentWorkout.exercises.forEach((ex, idx) => {
                 const wEl = document.getElementById(`set-weight-${idx}`);
                 const rEl = document.getElementById(`set-reps-${idx}`);
@@ -1766,11 +2430,18 @@
             // No rpe input in quick add
         }
 
-        function updateSessionVolume() {
+        function updateSessionSummary() {
+            console.log('[DEBUG] updateSessionSummary called');
+
             if (!currentWorkout) return;
             const volEl = document.getElementById('session-volume');
             const setsEl = document.getElementById('session-sets-count');
             const tonnesEl = document.getElementById('session-tonnes');
+
+            if (!volEl || !setsEl || !tonnesEl) {
+                console.warn('[DEBUG] updateSessionSummary: one or more summary elements not found');
+                return;
+            }
 
             let totalVol = 0;
             let totalSets = 0;
@@ -1780,8 +2451,15 @@
             });
 
             volEl.textContent = totalVol.toLocaleString();
-            setsEl.textContent = `${totalSets} sets`;
+            setsEl.textContent = `${totalSets} 組`;
             tonnesEl.textContent = (totalVol / 1000).toFixed(2) + ' t';
+
+            console.log(`[DEBUG] updateSessionSummary: volume=${totalVol}, sets=${totalSets}, tonnes=${(totalVol/1000).toFixed(2)}`);
+        }
+
+        // Alias for backward compatibility with existing calls
+        function updateSessionVolume() {
+            updateSessionSummary();
         }
 
         function updateLastPerformedHint(specificExercise = null) {
@@ -1887,10 +2565,6 @@
             }
             const vol = calculateWorkoutVolume(currentWorkout);
             const totalSets = currentWorkout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-            let avgRPE = 0;
-            let rpeCount = 0;
-            currentWorkout.exercises.forEach(ex => ex.sets.forEach(s => { if (s.rpe) { avgRPE += s.rpe; rpeCount++; } }));
-            avgRPE = rpeCount ? (avgRPE / rpeCount).toFixed(1) : '—';
 
             // Detect new PRs
             const prs = detectNewPRs(currentWorkout);
@@ -1900,7 +2574,6 @@
             document.getElementById('finish-volume').textContent = vol.toLocaleString() + ' kg';
             document.getElementById('finish-tonnes').textContent = (vol / 1000).toFixed(2) + ' tonnes moved';
             document.getElementById('finish-sets').textContent = `${totalSets} sets • ${currentWorkout.exercises.length} exercises`;
-            document.getElementById('finish-rpe').textContent = avgRPE;
 
             const prContainer = document.getElementById('finish-prs');
             if (prs.length > 0) {
@@ -1977,8 +2650,10 @@
             rebuildLastPerformed();
             saveWorkoutData();
 
-            // Optional: Push flat sets to legacy GAS backend for compatibility
-            pushCurrentWorkoutToLegacyGAS(currentWorkout).catch(console.warn);
+            // Optional: Push to backend for sync
+            if (typeof pushCurrentWorkoutToLegacyGAS === 'function') {
+                pushCurrentWorkoutToLegacyGAS(currentWorkout).catch(console.warn);
+            }
 
             // Reset UI
             hideFinishModal();
@@ -1987,6 +2662,7 @@
             document.getElementById('live-log-panel').classList.add('hidden');
             document.getElementById('log-empty-state').classList.remove('hidden');
             resetRestTimer();
+            exitImmersiveMode();
 
             // Refresh all views
             renderWorkoutHistory();
@@ -2098,19 +2774,457 @@
             saveWorkoutData();
         }
 
-        function quickLoadFromPlan(day) {
-            // Ties beautifully to the existing training plan
-            const planExercises = {
-                1: ["Incline Dumbbell Press", "Flat Dumbbell Press", "Lower Chest Cable Fly", "Tricep Rope Pushdown", "Cable Overhead Triceps Extension", "Wood Chopper"],
-                2: ["Pull-ups", "Seated Cable Row", "Deadlift", "Bayesian Cable Curls", "Preacher Curls", "Ab Wheel Rollout"],
-                3: ["Zercher Squats", "Reverse Forearm Curl", "Lateral Raises", "Rear Delt Raises", "Dragon Flag"]
+        /* ============================================================
+           WORKOUT SETS (訓練組合) - FULLY BACKEND DRIVEN (Google Sheets via GAS)
+           Replaces all previous hard-coded Chest+Tri / Back+Bi / Legs+Shoulder quick buttons.
+           - loadWorkoutSets() has cache (workoutSetsCache) for instant access after login/pre-load. Only fetches backend on force, first time, or TTL expiry.
+           - Defaults (訓練日 1/2/3) are now proactively seeded by backend inside addNewUser at registration time.
+             Their exercises exactly match the static "訓練日 1 / 2 / 3" lists defined in the UI (including order).
+           - Subsequent getWorkoutSets loads prefer cache for speed (key optimization for "開始新訓練").
+           - Cache cleared on logout. Pre-loaded in updateUIAfterLogin / initialize for fast bar in fullscreen.
+           - + button opens modal for full CRUD (create/edit/delete)
+           - Clicking a set button directly loads its exercises into current training (startNewWorkout if needed)
+           - NO set data (defaults or otherwise) is hard-coded in index.html. All data backend-driven.
+           REQUIRED GAS (Apps Script) ACTIONS (implement in backend doGet/doPost):
+             - getWorkoutSets (via ?action=getWorkoutSets&user=xxx OR POST): return {status:"success", sets: [{id, name, exercises: string[]}, ...]}
+               If user has zero sets, backend SHOULD auto-create the 3 defaults below and return them.
+             - saveWorkoutSet (POST {action:"saveWorkoutSet", user, set: {id?, name, exercises:[]}} ): create or update, return {status, set?}
+             - deleteWorkoutSet (POST {action:"deleteWorkoutSet", user?, setId }): {status:"success"}
+           Store per-user in Sheets (e.g. a sheet "workout_sets" with columns user, set_id, name, exercises_json).
+           Exercises always use the canonical "中文 (English)" bilingual strings from EXERCISES.
+           ============================================================ */
+
+        async function loadWorkoutSets(forceRefresh = false) {
+            if (!currentUser) {
+                workoutSets = [];
+                renderWorkoutSetsBar();
+                return;
+            }
+
+            // OPTIMIZATION: Always immediately render the 3 frontend-defined default Workout Sets
+            // so the bar is usable instantly on page load, login, or "開始新訓練".
+            // No waiting for backend.
+            workoutSets = DEFAULT_WORKOUT_SETS.map(s => ({
+                name: s.name,
+                exercises: [...s.exercises]
+            }));
+            renderWorkoutSetsBar();
+            console.log('[DEBUG] loadWorkoutSets: rendered 3 frontend DEFAULT_WORKOUT_SETS immediately for instant bar');
+
+            const now = Date.now();
+
+            // If cache valid and not force, upgrade to cached version (which may include user customs + any edited presets)
+            // This gives better initial UX if cache has more than the 3 defaults.
+            if (!forceRefresh && workoutSetsCache && (now - workoutSetsCacheTimestamp < WORKOUT_SETS_CACHE_TTL)) {
+                console.log('[DEBUG] loadWorkoutSets: upgrading to cache for richer initial set (age=' + Math.round((now - workoutSetsCacheTimestamp)/1000) + 's)');
+                workoutSets = JSON.parse(JSON.stringify(workoutSetsCache));
+                renderWorkoutSetsBar();
+            }
+
+            // Background fetch to sync with backend (custom Sets, any updates to the presets, etc.)
+            // This runs after the instant render.
+            console.log('[DEBUG] loadWorkoutSets: starting background backend fetch' + (forceRefresh ? ' (forced)' : ''));
+            try {
+                const res = await callAppsScript("getWorkoutSets", { user: currentUser });
+                const backendSets = (res && res.sets) ? res.sets : (Array.isArray(res) ? res : []);
+                console.log('[DEBUG] loadWorkoutSets background got', backendSets.length, 'sets');
+
+                if (backendSets.length > 0) {
+                    // Merge strategy:
+                    // - For the 3 known preset names, prefer backend version (in case user edited the Set name/exercises via modal).
+                    // - Add any additional user-created custom Sets from backend.
+                    // This fulfills "合併顯示（預設 + 自訂）" and "以後端資料為準" for updates.
+                    const mergedPresets = DEFAULT_WORKOUT_SETS.map(def => {
+                        const match = backendSets.find(s => s.name === def.name);
+                        return match ? {
+                            name: match.name,
+                            exercises: [...(match.exercises || [])]
+                        } : {
+                            name: def.name,
+                            exercises: [...def.exercises]
+                        };
+                    });
+                    const customs = backendSets.filter(s => !DEFAULT_WORKOUT_SETS.some(def => def.name === s.name));
+                    workoutSets = [...mergedPresets, ...customs];
+
+                    // Update cache with the merged result
+                    workoutSetsCache = JSON.parse(JSON.stringify(workoutSets));
+                    workoutSetsCacheTimestamp = now;
+                } else {
+                    // Backend returned empty (e.g. very first load before seed completed, or error).
+                    // Keep the frontend defaults we already rendered.
+                    console.log('[DEBUG] loadWorkoutSets: backend empty, keeping frontend defaults');
+                }
+
+                renderWorkoutSetsBar();
+            } catch (e) {
+                console.warn('[DEBUG] loadWorkoutSets background fetch failed, keeping the instant frontend defaults or cache:', e);
+                // No change to what we rendered initially; bar stays usable.
+            }
+        }
+
+        function renderWorkoutSetsBar() {
+            const bar = document.getElementById('workout-sets-bar');
+            if (!bar) {
+                console.log('[DEBUG] renderWorkoutSetsBar: #workout-sets-bar not found in DOM');
+                return;
+            }
+            bar.innerHTML = '';
+
+            const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
+            console.log(`[DEBUG] renderWorkoutSetsBar: rendering ${(workoutSets||[]).length} sets + "+" button | currentUser=${currentUser} | fullscreen=${isFs} | barVisible=${bar.offsetParent !== null}`);
+
+            if (!currentUser) {
+                // Show hint only when logged in context (training requires login anyway)
+                const hint = document.createElement('span');
+                hint.className = 'text-[10px] text-[#a8a29e] px-2';
+                hint.textContent = '登入後可使用自訂 Workout Sets';
+                bar.appendChild(hint);
+                return;
+            }
+
+            // Render one button per set (click loads directly into training flow)
+            (workoutSets || []).forEach(set => {
+                const btn = document.createElement('button');
+                btn.className = 'text-xs px-3 py-1 bg-[#166534] hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl transition';
+                btn.title = '載入此訓練組合到目前訓練';
+                btn.innerHTML = `<span class="font-medium">${set.name}</span>`;
+                btn.onclick = (e) => {
+                    console.log(`[DEBUG] Workout Set button clicked in bar (fullscreen=${isFs}): ${set.name}`);
+                    loadWorkoutSet(set);
+                };
+                bar.appendChild(btn);
+            });
+
+            // Prominent + button for managing (add/edit/delete) custom Workout Sets
+            const plus = document.createElement('button');
+            plus.className = 'text-xs px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 active:bg-amber-700 text-white rounded-2xl font-bold flex items-center gap-1 border border-emerald-500/60';
+            plus.title = '新增、編輯或刪除自訂 Workout Set（訓練組合）';
+            plus.innerHTML = `<i class="fa-solid fa-plus"></i> <span class="font-semibold">+</span>`;
+            plus.onclick = (e) => {
+                console.log(`[DEBUG] "+" button clicked in workout-sets-bar (fullscreen=${isFs})`);
+                showWorkoutSetModal();
             };
-            if (!currentWorkout) startNewWorkout();
-            (planExercises[day] || []).forEach(name => {
-                if (!currentWorkout.exercises.find(e => e.name === name)) {
-                    currentWorkout.exercises.push({name, sets: []});
+            bar.appendChild(plus);
+
+            // Small help text if no sets yet
+            if ((workoutSets || []).length === 0) {
+                const empty = document.createElement('span');
+                empty.className = 'text-[10px] text-[#a8a29e] ml-1';
+                empty.textContent = '點 + 建立你的第一個 Set';
+                bar.appendChild(empty);
+            }
+        }
+
+        function loadWorkoutSet(set) {
+            const isFullscreen = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
+            console.log(`[DEBUG] loadWorkoutSet called for set="${set && set.name}", exercises=${set && set.exercises ? set.exercises.length : 0}, hasCurrent=${!!currentWorkout}, fullscreen=${isFullscreen}`);
+
+            if (!set || !set.exercises || !set.exercises.length) return;
+
+            const wasAlreadyTraining = !!currentWorkout;
+
+            if (!currentWorkout) {
+                // This will go through the guarded startNewWorkout (which will enter fullscreen only if not already in it)
+                startNewWorkout();
+            }
+
+            // Append the set's exercises (deduped)
+            set.exercises.forEach(name => {
+                const ex = getExerciseByName(name);
+                const displayName = ex ? getExerciseDisplay(ex) : name;
+                if (!currentWorkout.exercises.find(e => e.name === displayName)) {
+                    currentWorkout.exercises.push({ name: displayName, sets: [] });
                 }
             });
+
+            renderCurrentWorkout();
+            updateSessionSummary();
+
+            // Re-render the sets bar while in fullscreen so it stays fresh and interactive
+            if (typeof renderWorkoutSetsBar === 'function') {
+                renderWorkoutSetsBar();
+            }
+
+            // Explicit guarantee: we never want to exit full-screen just because user loaded a preset Set.
+            console.log(`[DEBUG] loadWorkoutSet completed (stayed in fullscreen=${isFullscreen}). wasAlreadyTraining=${wasAlreadyTraining}, now has ${currentWorkout ? currentWorkout.exercises.length : 0} exercises`);
+        }
+
+        function showWorkoutSetModal(set = null) {
+            const modal = document.getElementById('workoutSetModal');
+            if (!modal) return;
+
+            const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
+            console.log(`[DEBUG] showWorkoutSetModal called (fullscreen=${isFs}), editingSet=${set ? set.name : 'new'}, current sets count=${(workoutSets||[]).length}`);
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // When opened from inside full-screen training, the live-log-panel is forced to z-60.
+            // Raise this modal above it so the Workout Set editor remains usable and interactive.
+            if (isFs) {
+                modal.style.zIndex = '85';
+                console.log('[DEBUG] Raised #workoutSetModal z-index for full-screen mode');
+            } else {
+                modal.style.zIndex = ''; // let the Tailwind z-50 apply in normal mode
+            }
+
+            currentEditingSet = set ? { ...set } : null;
+            editingSetExercises = set && set.exercises ? [...set.exercises] : [];
+
+            // Populate form
+            const nameEl = document.getElementById('wset-name');
+            if (nameEl) nameEl.value = currentEditingSet ? currentEditingSet.name : '';
+
+            const delBtn = document.getElementById('wset-delete-btn');
+            if (delBtn) delBtn.classList.toggle('hidden', !currentEditingSet);
+
+            renderEditingSetExercises();
+            renderExistingSetsList();
+
+            // Focus name for new
+            setTimeout(() => { if (nameEl && !currentEditingSet) nameEl.focus(); }, 50);
+        }
+
+        function hideWorkoutSetModal() {
+            const modal = document.getElementById('workoutSetModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            // Reset any inline z-index we may have raised for full-screen
+            modal.style.zIndex = '';
+
+            currentEditingSet = null;
+            editingSetExercises = [];
+
+            // Refresh the bar (in case sets were added/edited/deleted while in training/fullscreen)
+            if (typeof renderWorkoutSetsBar === 'function') {
+                renderWorkoutSetsBar();
+            }
+        }
+
+        function renderEditingSetExercises() {
+            const container = document.getElementById('wset-exercises-list');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!editingSetExercises.length) {
+                const empty = document.createElement('div');
+                empty.className = 'text-xs text-[#a8a29e] italic';
+                empty.textContent = '尚未加入任何動作。使用下方輸入或動作庫添加。';
+                container.appendChild(empty);
+                return;
+            }
+            editingSetExercises.forEach((name, idx) => {
+                const chip = document.createElement('div');
+                chip.className = 'inline-flex items-center gap-1 px-2 py-0.5 bg-[#3f3a36] text-xs rounded-2xl border border-[#57534e]';
+                chip.innerHTML = `
+                    <span class="max-w-[180px] truncate">${name}</span>
+                    <button class="text-red-400 hover:text-red-300 px-1" title="移除">×</button>
+                `;
+                chip.querySelector('button').onclick = () => {
+                    editingSetExercises.splice(idx, 1);
+                    renderEditingSetExercises();
+                };
+                container.appendChild(chip);
+            });
+        }
+
+        function addExerciseToEditingSet(nameFromInput = null) {
+            const input = document.getElementById('wset-add-exercise');
+            let name = nameFromInput || (input ? input.value.trim() : '');
+            if (!name) return;
+            // Normalize to bilingual display name if possible
+            const ex = getExerciseByName(name);
+            const display = ex ? getExerciseDisplay(ex) : name;
+            if (!editingSetExercises.find(n => n.toLowerCase() === display.toLowerCase())) {
+                editingSetExercises.push(display);
+            }
+            if (input) input.value = '';
+            renderEditingSetExercises();
+        }
+
+        // Helper: open library; for simplicity user can note name and paste, or we add to current workout if open.
+        // To keep non-intrusive we just open library (existing add-to-current is separate).
+        function showLibraryModalForSet() {
+            // Open library. User can use search, then manually type the name in the set editor input.
+            // (Advanced: could extend library to support "add to set" target, but out of scope for this change.)
+            if (typeof showLibraryModal === 'function') {
+                const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
+                const libModal = document.getElementById('libraryModal');
+                if (libModal && isFs) {
+                    libModal.style.zIndex = '90'; // ensure it sits above the immersive panel
+                }
+                showLibraryModal(false);
+            }
+        }
+
+        async function saveCurrentWorkoutSet() {
+            const nameEl = document.getElementById('wset-name');
+            const name = nameEl ? nameEl.value.trim() : '';
+            if (!name) return alert('請輸入 Set 名稱');
+            if (!editingSetExercises.length) return alert('請至少加入一個動作');
+
+            const payload = {
+                id: currentEditingSet && currentEditingSet.id ? currentEditingSet.id : undefined,
+                name: name,
+                exercises: [...editingSetExercises]
+            };
+            console.log('[DEBUG] saveCurrentWorkoutSet payload:', payload);
+
+            try {
+                const res = await callAppsScript("saveWorkoutSet", { user: currentUser, set: payload });
+                if (res && res.status === 'error') {
+                    alert('儲存失敗：' + (res.message || ''));
+                    return;
+                }
+                hideWorkoutSetModal();
+                await loadWorkoutSets(true);  // force refresh after mutation to get latest from backend
+                alert('Workout Set 已儲存！');
+            } catch (e) {
+                console.error(e);
+                alert('儲存 Workout Set 時發生錯誤');
+            }
+        }
+
+        async function deleteCurrentEditingSet() {
+            if (!currentEditingSet || !currentEditingSet.id) {
+                // For unsaved new, just clear form
+                clearWorkoutSetForm();
+                return;
+            }
+            if (!confirm('確定刪除此 Workout Set？')) return;
+            try {
+                await callAppsScript("deleteWorkoutSet", { user: currentUser, setId: currentEditingSet.id });
+                hideWorkoutSetModal();
+                await loadWorkoutSets(true);  // force refresh after mutation
+            } catch (e) {
+                alert('刪除失敗');
+            }
+        }
+
+        function clearWorkoutSetForm() {
+            currentEditingSet = null;
+            editingSetExercises = [];
+            const nameEl = document.getElementById('wset-name');
+            if (nameEl) nameEl.value = '';
+            const delBtn = document.getElementById('wset-delete-btn');
+            if (delBtn) delBtn.classList.add('hidden');
+            renderEditingSetExercises();
+            // keep the existing list visible
+        }
+
+        async function renderExistingSetsList() {
+            const container = document.getElementById('wset-existing-list');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!workoutSets || !workoutSets.length) {
+                container.innerHTML = `<div class="text-xs text-[#a8a29e]">尚未有任何 Workout Set。使用上方表單新增，或等預設自動建立。</div>`;
+                return;
+            }
+            workoutSets.forEach(set => {
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center bg-[#292524] px-3 py-1.5 rounded-2xl text-sm';
+                row.innerHTML = `
+                    <div class="flex-1 pr-2 truncate" title="${set.name}">${set.name} <span class="text-[10px] text-[#a8a29e]">(${set.exercises ? set.exercises.length : 0} 動作)</span></div>
+                    <div class="flex gap-1">
+                        <button class="text-emerald-400 text-xs px-2 py-0.5 hover:bg-emerald-900/30 rounded" title="載入到訓練">載入</button>
+                        <button class="text-[#a8a29e] text-xs px-2 py-0.5 hover:bg-[#3f3a36] rounded" title="編輯">編輯</button>
+                        <button class="text-red-400 text-xs px-2 py-0.5 hover:bg-red-900/30 rounded" title="刪除">刪</button>
+                    </div>
+                `;
+                // Bind
+                const [loadBtn, editBtn, delBtn] = row.querySelectorAll('button');
+                loadBtn.onclick = () => { hideWorkoutSetModal(); loadWorkoutSet(set); };
+                editBtn.onclick = () => { showWorkoutSetModal(set); };  // re-open in edit mode (will reset list)
+                delBtn.onclick = async () => {
+                    if (!confirm('確定刪除？')) return;
+                    if (!set.id) { alert('此 Set 暫無穩定 ID（請刷新頁面後再試，或等後端返回 id）。'); return; }
+                    try {
+                        await callAppsScript("deleteWorkoutSet", { user: currentUser, setId: set.id });
+                        await loadWorkoutSets(true);  // force refresh after mutation
+                        renderExistingSetsList();  // refresh inside modal too
+                    } catch (e) { alert('刪除失敗'); }
+                };
+                container.appendChild(row);
+            });
+        }
+
+        // Legacy quickLoadFromPlan kept ONLY for backward compatibility / direct calls.
+        // The 3 original hard-coded plans are NO LONGER used for the training UI buttons (replaced by backend workoutSets).
+        // Canonical defaults + seed logic live ONLY in Google Apps Script backend.
+
+        // Source of truth for the 3 Training Days (matches the static HTML sections above).
+        // The backend (Google_Apps_Script.txt seedDefaultWorkoutSetsForNewUser + DEFAULT_WORKOUT_SETS)
+        // MUST stay in sync with this data for new user registration.
+        const TRAINING_DAYS = [
+          {
+            id: 1,
+            label: "訓練日 1",
+            subtitle: "Chest + Triceps",
+            fullName: "訓練日 1（Chest + Triceps）",
+            exercises: [
+              "上斜啞鈴推胸 (Incline Dumbbell Press)",
+              "平板啞鈴推胸 (Flat Dumbbell Press)",
+              "下胸繩索飛鳥 (Lower Chest Cable Fly)",
+              "繩索三頭下壓 (Tricep Rope Pushdown)",
+              "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)",
+              "斬木 (Wood Chopper)"
+            ]
+          },
+          {
+            id: 2,
+            label: "訓練日 2",
+            subtitle: "Back + Biceps + Core",
+            fullName: "訓練日 2（Back + Biceps + Core）",
+            exercises: [
+              "引體向上 (Pull-ups)",
+              "坐姿繩索拉背 (Seated Cable Row)",
+              "硬拉 (Deadlift)",
+              "貝葉斯繩索彎舉 (Bayesian Cable Curls)",
+              "牧師椅彎舉 (Preacher Curls)",
+              "腹輪 (Ab Wheel Rollout)"
+            ]
+          },
+          {
+            id: 3,
+            label: "訓練日 3",
+            subtitle: "Legs + Shoulders + Forearms + Core",
+            fullName: "訓練日 3（Legs + Shoulders + Forearms + Core）",
+            exercises: [
+              "澤奇深蹲 (Zercher Squats)",
+              "反向腕彎舉 (Reverse Forearm Curl)",
+              "側舉 (Lateral Raises)",
+              "後飛 (Rear Delt Raises)",
+              "龍旗 (Dragon Flag)"
+            ]
+          }
+        ];
+
+        // Frontend defaults for instant Workout Sets bar rendering (optimization for load speed)
+        // These are used immediately on login / startNewTraining for the 3 presets.
+        // Backend is still the source of truth for persisted (possibly customized) versions + user customs.
+        const DEFAULT_WORKOUT_SETS = TRAINING_DAYS.map(day => ({
+          name: day.fullName,
+          exercises: [...day.exercises]
+        }));
+
+        // Note: The 3 defaults here must stay in sync with the TRAINING_DAYS lists and the
+        // backend DEFAULT_WORKOUT_SETS in Google_Apps_Script.txt (for registration-time seeding).
+
+        function quickLoadFromPlan(day) {
+            // LEGACY ONLY - the original hard-coded 3 plans have been removed from UI and from this function body.
+            // All Workout Sets now come from backend (seeded at registration to exactly match TRAINING_DAYS above).
+            console.warn('[DEBUG] quickLoadFromPlan legacy called for day=', day, '- redirecting to dynamic sets if possible');
+            const kwMap = {1: 'chest', 2: 'back', 3: 'leg'};
+            const kw = kwMap[day] || '';
+            const match = (workoutSets || []).find(s => (s.name || '').toLowerCase().includes(kw));
+            if (match) {
+                loadWorkoutSet(match);
+                return;
+            }
+            if (!currentWorkout) startNewWorkout();
+            alert('舊版快速載入已棄用。請使用訓練面板上的 Workout Sets 按鈕（或 + 自訂）。');
             renderCurrentWorkout();
         }
 
@@ -2133,13 +3247,33 @@
                 return;
             }
 
-            const recent = [...workoutHistory].slice(0, 12);
-            recent.forEach((w, idx) => {
-                const vol = w.totalVolume || calculateWorkoutVolume(w);
-                const setsCount = w.exercises.reduce((a, e) => a + e.sets.length, 0);
-                const exCount = w.exercises.length;
-                // Fix date to clean YYYY-MM-DD (remove any ISO time part)
-                const cleanDate = (w.date || '').split('T')[0];
+            // Group by date, aggregate stats, sort newest first
+            const grouped = {};
+            workoutHistory.forEach(w => {
+                const d = (w.date || '').split('T')[0];
+                if (!grouped[d]) {
+                    grouped[d] = {
+                        date: d,
+                        exercises: [],
+                        totalSets: 0,
+                        totalVolume: 0,
+                        notes: w.notes || ''
+                    };
+                }
+                grouped[d].exercises.push(...w.exercises);
+                grouped[d].totalSets += w.exercises.reduce((a, e) => a + e.sets.length, 0);
+                grouped[d].totalVolume += (w.totalVolume || calculateWorkoutVolume(w));
+                if (w.notes && !grouped[d].notes) grouped[d].notes = w.notes;
+            });
+
+            const dates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+
+            dates.forEach((d, idx) => {
+                const g = grouped[d];
+                const vol = g.totalVolume;
+                const exCount = [...new Set(g.exercises.map(e => e.name))].length;
+                const setsCount = g.totalSets;
+                const cleanDate = d;
                 const card = document.createElement('div');
                 card.className = 'workout-history-card log-card rounded-2xl p-3.5 cursor-pointer';
                 card.innerHTML = `
@@ -2148,9 +3282,12 @@
                         <div class="text-emerald-400 text-sm tabular-nums">${vol.toLocaleString()}kg</div>
                     </div>
                     <div class="text-xs text-[#a8a29e]">${exCount} 動作 • ${setsCount} 組 • ${vol.toLocaleString()}kg</div>
-                    ${w.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${w.notes}"</div>` : ''}
+                    ${g.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${g.notes}"</div>` : ''}
                 `;
-                card.onclick = () => showWorkoutDetail(w, idx);
+                // For detail, pick one representative workout for delete (simplified; could enhance to delete all for date)
+                const repW = workoutHistory.find(ww => (ww.date || '').split('T')[0] === d) || {date: d, exercises: g.exercises, totalVolume: vol};
+                const repIdx = workoutHistory.indexOf(repW);
+                card.onclick = () => showWorkoutDetail(repW, repIdx >=0 ? repIdx : 0);
                 container.appendChild(card);
             });
         }
@@ -2161,7 +3298,7 @@
             let txt = `日期: ${cleanDate}\n總量: ${workout.totalVolume || calculateWorkoutVolume(workout)} kg\n\n`;
             workout.exercises.forEach(ex => {
                 txt += `${ex.name}:\n`;
-                ex.sets.forEach((s, i) => txt += `  Set ${i+1}: ${s.weight}kg × ${s.reps}${s.notes ? ' ('+s.notes+')' : ''}\n`);
+                ex.sets.forEach((s, i) => txt += `  set ${i+1} : ${s.weight}kg × ${s.reps}${s.notes ? ' ('+s.notes+')' : ''}\n`);
             });
             if (confirm(txt + '\n\n確定刪除這次訓練？')) {
                 workoutHistory.splice(historyIndex, 1);
@@ -2176,6 +3313,10 @@
         function updateExerciseSelectForAnalysis() {
             const sel = document.getElementById('analysis-exercise-select');
             if (!sel) return;
+            if (!currentUser || workoutHistory.length === 0) {
+                sel.innerHTML = '';
+                return;
+            }
             const exercises = getAllExercisesFromHistory();
             sel.innerHTML = exercises.map(e => `<option value="${e}">${e}</option>`).join('');
             if (exercises.length) sel.value = exercises[0];
@@ -2189,24 +3330,39 @@
             const summaryEl = document.getElementById('analysis-summary');
             const tableBody = document.getElementById('analysis-sets-table');
 
-            // Collect all sets for this exercise across history
-            let allSets = [];
+            // Collect per day (group by date as one entry per day for the exercise)
+            const dayGroups = {};
             workoutHistory.forEach(w => {
                 const ex = w.exercises.find(e => e.name === exercise);
                 if (ex) {
+                    const d = (w.date || '').split('T')[0];
+                    if (!dayGroups[d]) {
+                        dayGroups[d] = {
+                            date: d,
+                            sets: [],
+                            volume: 0,
+                            e1rm: 0,
+                            notes: ''
+                        };
+                    }
                     ex.sets.forEach(s => {
-                        allSets.push({
-                            date: w.date,
-                            weight: s.weight,
-                            reps: s.reps,
-                            rpe: s.rpe,
-                            volume: s.volume || calculateSetVolume(s),
-                            e1rm: estimate1RM(s.weight, s.reps),
-                            notes: s.notes || ''
-                        });
+                        const vol = s.volume || calculateSetVolume(s);
+                        const e1 = estimate1RM(s.weight, s.reps);
+                        dayGroups[d].sets.push(s);
+                        dayGroups[d].volume += vol;
+                        if (e1 > dayGroups[d].e1rm) dayGroups[d].e1rm = e1;
+                        if (s.notes && !dayGroups[d].notes) dayGroups[d].notes = s.notes;
                     });
                 }
             });
+            let allSets = Object.values(dayGroups).map(g => ({
+                date: g.date,
+                weight: g.sets.length > 0 ? Math.max(...g.sets.map(s => s.weight)) : 0, // best weight that day
+                reps: g.sets.length > 0 ? g.sets.reduce((sum, s) => sum + s.reps, 0) : 0, // total reps
+                volume: g.volume,
+                e1rm: g.e1rm,
+                notes: g.notes
+            }));
             allSets.sort((a,b) => b.date.localeCompare(a.date));
 
             // Summary
@@ -2222,7 +3378,7 @@
                     <div class="bg-[#292524] rounded-2xl p-3"><div class="text-xs text-[#a8a29e]">最高重量</div><div class="text-xl font-semibold">${bestWeight} kg</div></div>
                     <div class="bg-[#292524] rounded-2xl p-3"><div class="text-xs text-[#a8a29e]">總訓練量</div><div class="text-xl font-semibold tabular-nums">${totalVol.toLocaleString()} kg</div></div>
                 </div>
-                <div class="text-xs mt-2 text-[#a8a29e]">此動作已記錄 ${allSets.length} 組</div>
+                <div class="text-xs mt-2 text-[#a8a29e]">此動作已記錄 ${allSets.length} 天</div>
             `;
 
             // Table
@@ -2231,12 +3387,11 @@
                     <td class="py-1 px-3">${s.date}</td>
                     <td class="py-1 px-2 text-center tabular-nums">${s.weight}</td>
                     <td class="py-1 px-2 text-center">${s.reps}</td>
-                    <td class="py-1 px-2 text-center">${s.rpe || '-'}</td>
                     <td class="py-1 px-2 text-center text-emerald-300 tabular-nums">${s.volume}</td>
                     <td class="py-1 px-2 text-center text-amber-300 tabular-nums">${s.e1rm}</td>
                     <td class="py-1 px-3 text-xs text-[#a8a29e]">${s.notes}</td>
                 </tr>
-            `).join('') || `<tr><td colspan="7" class="py-3 text-center text-[#a8a29e]">尚未記錄此動作的組數。</td></tr>`;
+            `).join('') || `<tr><td colspan="6" class="py-3 text-center text-[#a8a29e]">尚未記錄此動作的組數。</td></tr>`;
 
             // Charts (destroy old)
             if (analysisChart1RM) analysisChart1RM.destroy();
@@ -2452,16 +3607,32 @@
 
         function showLibraryModal(addToCurrent = false) {
             const modal = document.getElementById('libraryModal');
+            const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             window._libraryAddToCurrent = addToCurrent;
+
+            // In full-screen immersive mode, the live-log-panel is forced to z-60.
+            // Boost library modal above it so it can open and be interactive.
+            if (isFs) {
+                modal.style.zIndex = '90';
+                console.log('[DEBUG] showLibraryModal: boosted z-index for fullscreen mode');
+            } else {
+                modal.style.zIndex = '';
+            }
+
             renderLibraryList();
             renderCategoryFilters();
         }
 
         function hideLibraryModal() {
-            document.getElementById('libraryModal').classList.add('hidden');
-            document.getElementById('libraryModal').classList.remove('flex');
+            const lib = document.getElementById('libraryModal');
+            if (lib) {
+                lib.classList.add('hidden');
+                lib.classList.remove('flex');
+                lib.style.zIndex = ''; // reset any fullscreen boost
+            }
         }
 
         function renderCategoryFilters() {
@@ -2498,8 +3669,7 @@
             if (currentLibraryFilter) filtered = filtered.filter(e => e.muscle_group === currentLibraryFilter);
             if (searchVal) {
                 filtered = filtered.filter(e => 
-                    e.name_zh.toLowerCase().includes(searchVal) || 
-                    e.name_en.toLowerCase().includes(searchVal)
+                    e.name.toLowerCase().includes(searchVal)
                 );
             }
 
@@ -2518,7 +3688,7 @@
                         <div class="truncate">${display}</div>
                         <div class="text-[10px] text-[#a8a29e]">${ex.muscle_group}</div>
                     </div>
-                    <button class="text-xs px-2.5 py-1 bg-emerald-900/70 hover:bg-emerald-800 rounded touch-target" onclick="useExerciseFromLibrary('${ex.name_zh}')">加入</button>
+                    <button class="text-xs px-2.5 py-1 bg-emerald-900/70 hover:bg-emerald-800 rounded touch-target" onclick="useExerciseFromLibrary('${ex.name}')">加入</button>
                 `;
                 container.appendChild(div);
             });
@@ -2526,9 +3696,22 @@
 
         function useExerciseFromLibrary(name) {
             const addToCurrent = window._libraryAddToCurrent;
-            hideLibraryModal();
-            const ex = getExerciseByName(name) || {name_zh: name, name_en: name};
+            const setModal = document.getElementById('workoutSetModal');
+            const isEditingSet = setModal && !setModal.classList.contains('hidden');
+            const ex = getExerciseByName(name) || {name: name};
             const displayName = getExerciseDisplay(ex);
+
+            if (isEditingSet) {
+                // Special: adding to the Workout Set editor instead of current workout
+                if (!editingSetExercises.find(n => n.toLowerCase() === displayName.toLowerCase())) {
+                    editingSetExercises.push(displayName);
+                }
+                renderEditingSetExercises();
+                hideLibraryModal();
+                return;
+            }
+
+            hideLibraryModal();
             if (addToCurrent && currentWorkout) {
                 if (!currentWorkout.exercises.find(e => e.name === displayName)) {
                     currentWorkout.exercises.push({name: displayName, sets: []});
@@ -2561,9 +3744,11 @@
         }
 
         function saveCustomExercise() {
-            const name = document.getElementById('custom-name').value.trim();
+            let name = document.getElementById('custom-name').value.trim();
             const category = document.getElementById('custom-category').value;
             if (!name) return;
+            const ex = getExerciseByName(name);
+            if (ex) name = ex.name; // normalize to canonical bilingual if matches
             if (exerciseLibrary.find(e => e.name.toLowerCase() === name.toLowerCase())) {
                 alert('動作已存在');
                 return;
@@ -2571,7 +3756,6 @@
             exerciseLibrary.push({name, category});
             saveWorkoutData();
             hideCustomExerciseModal();
-            // Refresh library
             showLibraryModal(window._libraryAddToCurrent);
         }
 
@@ -2640,46 +3824,86 @@
             input.click();
         }
 
+        let originalLogContent = null;
+
         function initializeWorkoutLog() {
-            loadWorkoutData();
-            // Only seed demo data for guest / initial anon use. 
-            // Logged-in users load real data via loadUserLogs() from per-user GAS sheet (prevents test/dup data in history)
-            if (!currentUser) {
-                seedSampleDataIfNeeded();
-            }
-            rebuildLastPerformed();
-
-            // Populate datalist for quick add (bilingual)
-            const dl = document.getElementById('exercise-datalist');
-            if (dl) {
-                dl.innerHTML = EXERCISES.map(e => `<option value="${e.name_zh}"> <option value="${e.name_en}"> <option value="${getExerciseDisplay(e)}">`).join('');
-            }
-
-            // Initial renders
-            renderWorkoutHistory();
-            updateExerciseSelectForAnalysis();
-            renderOverallStats();
-            renderCalendar();
-
-            // Default timer
-            resetRestTimer(DEFAULT_REST);
-
-            // Make sure sub sections start correctly
-            showLogSubSection('history');
-
-            // Keyboard niceties: Enter on add-exercise-input already wired in HTML
-            // Global key for timer pause/resume? (optional)
-            document.addEventListener('keydown', function(e) {
-                if (document.getElementById('content-log').classList.contains('hidden')) return;
-                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
-                    e.preventDefault();
-                    const input = document.getElementById('add-exercise-input');
-                    if (input) input.focus();
+            try {
+                // Save original early for protection (before any possible guard replace on tab switch)
+                if (!originalLogContent) {
+                    const logContentEl = document.getElementById('content-log');
+                    if (logContentEl) {
+                        originalLogContent = logContentEl.innerHTML;
+                    }
                 }
-            });
 
-            // If user already logged in on load, the data is per-user
-            console.log('%c[WorkoutLog] 專業訓練日誌已初始化（本機儲存 + 舊版 GAS 同步）', 'color:#4ade80');
+                if (typeof loadWorkoutData === 'function') {
+                    loadWorkoutData();
+                }
+
+                // Load backend Workout Sets for logged-in user on init (page refresh / direct load while logged)
+                if (currentUser && typeof loadWorkoutSets === 'function') {
+                    loadWorkoutSets().catch(e => console.warn('loadWorkoutSets during init (non-fatal):', e));
+                }
+
+                // Only seed demo data for guest / initial anon use. 
+                // Logged-in users load real data via loadUserLogs() from backend (per-user data)
+                if (!currentUser && typeof seedSampleDataIfNeeded === 'function') {
+                    seedSampleDataIfNeeded();
+                }
+
+                if (typeof rebuildLastPerformed === 'function') {
+                    rebuildLastPerformed();
+                }
+
+                // Populate datalist for quick add (unified bilingual)
+                const dl = document.getElementById('exercise-datalist');
+                if (dl && typeof EXERCISES !== 'undefined') {
+                    dl.innerHTML = EXERCISES.map(e => `<option value="${e.name}">`).join('');
+                }
+
+                // Initial renders - each wrapped individually for partial failure tolerance
+                try { if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory(); } catch (e) { console.warn('renderWorkoutHistory init error (non-fatal):', e); }
+                try { if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis(); } catch (e) { console.warn('updateExerciseSelectForAnalysis init error (non-fatal):', e); }
+                try { if (typeof renderOverallStats === 'function') renderOverallStats(); } catch (e) { console.warn('renderOverallStats init error (non-fatal):', e); }
+                try { if (typeof renderCalendar === 'function') renderCalendar(); } catch (e) { console.warn('renderCalendar init error (non-fatal):', e); }
+
+                // Default timer
+                if (typeof resetRestTimer === 'function') {
+                    resetRestTimer(typeof DEFAULT_REST !== 'undefined' ? DEFAULT_REST : 60);
+                }
+
+                // Make sure sub sections start correctly
+                if (typeof showLogSubSection === 'function') {
+                    showLogSubSection('history');
+                }
+
+                // Keyboard niceties
+                document.addEventListener('keydown', function(e) {
+                    const logContent = document.getElementById('content-log');
+                    if (logContent && logContent.classList.contains('hidden')) return;
+                    if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                        e.preventDefault();
+                        const input = document.getElementById('add-exercise-input');
+                        if (input) input.focus();
+                    }
+                    if (document.body.classList.contains('fullscreen-training')) {
+                        console.log(`[DEBUG] keydown in full-screen: key=${e.key}`);
+                    }
+                });
+
+                // Resume unfinished workout (after data load)
+                if (typeof checkForUnfinishedWorkout === 'function') {
+                    checkForUnfinishedWorkout();
+                }
+
+                // Global beforeunload protection for in-progress training
+                if (typeof saveDraftBeforeUnload === 'function') {
+                    window.addEventListener('beforeunload', saveDraftBeforeUnload);
+                }
+            } catch (err) {
+                // Critical: never let Workout Log initialization error break the tab or page
+                console.error('initializeWorkoutLog encountered error (non-fatal - Workout Log should still be usable):', err);
+            }
         }
 
         function showLogSubSection(section) {
@@ -2704,19 +3928,7 @@
         }
 
         // Hook into existing tab switching so we refresh on entering the log tab
-        const originalSwitchTab = window.switchTab || switchTab;
-        window.switchTab = function(tab) {
-            if (typeof originalSwitchTab === 'function') originalSwitchTab(tab);
-            if (tab === 'log') {
-                // Refresh key views
-                setTimeout(() => {
-                    renderWorkoutHistory();
-                    renderOverallStats();
-                    renderCalendar();
-                    if (currentLogSub === 'analysis') renderExerciseAnalysis();
-                }, 80);
-            }
-        };
+        // Note: The switchTab hook for log refresh is installed after the switchTab definition below for execution order safety.
 
         // Expose a couple helpers for console / future
         window.__resetWorkoutDemoData = () => { localStorage.removeItem(getUserStorageKey()); location.reload(); };
@@ -2732,19 +3944,47 @@
         }
 
         async function addNewUser() {
-            const username = document.getElementById('newUsername').value.trim();
-            const pin = document.getElementById('newPin').value.trim();
+            // Read raw values first (before any normalization)
+            const rawUsername = document.getElementById('newUsername').value.trim();
+            const rawPin = document.getElementById('newPin').value.trim();
+
+            // Enforce rules: username = lowercase a-z0-9 only; PIN = digits only
+            const username = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const pin = rawPin.replace(/\D/g, '');
+
             if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
+
+            // Registration UX: if user typed uppercase or invalid chars, auto-convert + notify
+            const hadUpperOrInvalid = (rawUsername !== username) || (rawPin !== pin);
+            if (hadUpperOrInvalid) {
+                alert("已自動將用戶名轉為小寫，並移除無效字元（只接受 a-z 及 0-9）。");
+            }
 
             const result = await callAppsScript("addUser", { user: username, pin: pin });
             if (result.status === "success") {
                 alert(`用戶 ${username} 已建立！`);
                 hideAddUserModal();
                 // Auto login the user after successful registration (mainstream UX)
-                currentUser = username;
+                currentUser = username;   // store normalized lowercase version
                 localStorage.setItem('currentUser', currentUser);
+                // Restore log UI structure if it was replaced by guard
+                if (typeof originalLogContent !== 'undefined' && originalLogContent) {
+                    const logEl = document.getElementById('content-log');
+                    if (logEl) logEl.innerHTML = originalLogContent;
+                }
                 updateUIAfterLogin();
                 await loadUserLogs();
+                try {
+                    if (typeof showLogSubSection === 'function') showLogSubSection('history');
+                } catch (err) {
+                    console.warn('showLogSubSection after login error (non-fatal):', err);
+                }
+
+                // For new users: proactively load the 3 default Workout Sets that were just seeded on the backend
+                // during addNewUser registration. This populates the workout-sets-bar immediately.
+                if (typeof loadWorkoutSets === 'function') {
+                    loadWorkoutSets().catch(e => console.warn('loadWorkoutSets after new user registration (non-fatal):', e));
+                }
             } else {
                 const msg = result.message || "";
                 if (msg.includes('已被使用') || msg.includes('已存在') || msg.toLowerCase().includes('exist')) {
@@ -2760,10 +4000,127 @@
         }
 
         function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-[#166534]', 'text-white'));
-            document.getElementById('content-' + tab).classList.remove('hidden');
-            document.getElementById('tab-' + tab).classList.add('active', 'bg-[#166534]', 'text-white');
+            console.log(`[DEBUG] switchTab called with tab="${tab}", currentUser=${currentUser}, body classes=${document.body.className}, isInFullScreenTraining=${isInFullScreenTraining}, isInitializing=${isInitializing}`);
+
+            // Improved full-screen protection:
+            // - If in full-screen training, and target is not "log":
+            //   - During initialization (isInitializing), ignore the switch to keep full-screen stable (prevents init's final switchTab('overview') from kicking us out).
+            //   - For user-initiated clicks (not initializing), force exit first, then allow the switch.
+            if (isInFullScreenTraining && tab !== 'log') {
+                if (isInitializing) {
+                    console.log(`[DEBUG] switchTab to "${tab}" during initialization while in full-screen - IGNORING to preserve full-screen training mode.`);
+                    return;  // Do not perform the tab switch or force exit
+                } else {
+                    console.log(`[DEBUG] User-initiated switchTab to non-log "${tab}" while in full-screen - exiting full-screen first.`);
+                    try {
+                        const p = document.getElementById('live-log-panel');
+                        if (p) p.classList.add('hidden');
+                        exitImmersiveMode();
+                    } catch (e) {
+                        document.body.classList.remove('fullscreen-training');
+                        document.body.style.overflow = '';
+                        isInFullScreenTraining = false;
+                    }
+                    // Fall through to perform the normal tab switch after exit
+                }
+            }
+
+            try {
+                // Always attempt to activate the requested tab first (robustness) - do this early
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-[#166534]', 'text-white'));
+
+                const targetContent = document.getElementById('content-' + tab);
+                const targetTab = document.getElementById('tab-' + tab);
+                if (targetContent) targetContent.classList.remove('hidden');
+                if (targetTab) targetTab.classList.add('active', 'bg-[#166534]', 'text-white');
+
+                // If switching to log and currently logged in, ensure we have the proper original content structure
+                // (in case it was previously replaced by the not-logged-in prompt)
+                if (tab === 'log' && typeof currentUser !== 'undefined' && currentUser && typeof originalLogContent !== 'undefined' && originalLogContent) {
+                    const logEl = document.getElementById('content-log');
+                    if (logEl && logEl.innerHTML.includes('需要登入')) {
+                        console.log('[DEBUG] Restoring originalLogContent for log tab while logged in');
+                        logEl.innerHTML = originalLogContent;
+                    }
+                }
+
+                console.log(`[DEBUG] switchTab: after activation, tab=${tab}, isFullscreen=${document.body.classList.contains('fullscreen-training')}`);
+
+                // Workout Log protection: require login - block access and show clear message
+                // Only block if explicitly not logged in (typeof check prevents blocking on init/scope errors)
+                if (tab === 'log' && typeof currentUser !== 'undefined' && !currentUser) {
+                    const logEl = document.getElementById('content-log');
+                    if (logEl) {
+                        logEl.innerHTML = `
+                            <div class="section-card rounded-3xl p-8 text-center">
+                                <i class="fa-solid fa-lock text-4xl text-emerald-400 mb-4"></i>
+                                <h3 class="font-bold text-xl mb-2">需要登入</h3>
+                                <p class="text-[#a8a29e] mb-4">請登入以使用訓練日誌，記錄您的訓練並追蹤慈善影響。</p>
+                                <button onclick="showLoginModal()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">登入 / 註冊</button>
+                            </div>
+                        `;
+                        logEl.classList.remove('hidden');
+                        const logTabBtn = document.getElementById('tab-log');
+                        if (logTabBtn) logTabBtn.classList.add('active', 'bg-[#166534]', 'text-white');
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.error('switchTab error (non-fatal, tab activation attempted):', err);
+                console.log(`[DEBUG] switchTab ERROR for tab=${tab}, bodyClasses=${document.body.className}`);
+                // Fallback: at least try to show the target content and mark tab active
+                try {
+                    const fallbackContent = document.getElementById('content-' + tab);
+                    if (fallbackContent) fallbackContent.classList.remove('hidden');
+                    const fallbackTab = document.getElementById('tab-' + tab);
+                    if (fallbackTab) fallbackTab.classList.add('active', 'bg-[#166534]', 'text-white');
+                } catch (e) {}
+            }
+        }
+
+        // Hook into existing tab switching so we refresh on entering the log tab
+        // Installed AFTER switchTab definition for safe hoisting and execution order.
+        // This ensures switchTab is always the wrapper after this point.
+        try {
+            const originalSwitchTab = (typeof window.switchTab === 'function' ? window.switchTab : null) || (typeof switchTab === 'function' ? switchTab : null);
+            if (originalSwitchTab) {
+                window.switchTab = function(tab) {
+                    try {
+                        if (typeof originalSwitchTab === 'function') {
+                            originalSwitchTab(tab);
+                        }
+                    } catch (err) {
+                        console.error('originalSwitchTab call failed (non-fatal):', err);
+                    }
+                    if (tab === 'log') {
+                        console.log(`[DEBUG] switchTab wrapper: log tab activated while isInFullScreenTraining=${isInFullScreenTraining}`);
+                        // Refresh key views - wrapped to prevent any render error from breaking the tab
+                        setTimeout(() => {
+                            try {
+                                if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                                if (typeof renderOverallStats === 'function') renderOverallStats();
+                                if (typeof renderCalendar === 'function') renderCalendar();
+                                if (typeof currentLogSub !== 'undefined' && currentLogSub === 'analysis' && typeof renderExerciseAnalysis === 'function') renderExerciseAnalysis();
+                            } catch (err) {
+                                console.error('Log tab refresh renders error (non-fatal, tab should still be usable):', err);
+                            }
+                        }, 80);
+                    } else if (isInFullScreenTraining) {
+                        console.warn(`[DEBUG] WARNING: switchTab("${tab}") called while in full-screen! This may cause jump back.`);
+                    }
+                };
+            }
+            // Also ensure the original switchTab function is available on window for direct access if needed
+            if (typeof switchTab === 'function' && typeof window.switchTab !== 'function') {
+                window.switchTab = switchTab;
+            }
+        } catch (e) {
+            console.error('Failed to install switchTab hook for log refresh (non-fatal):', e);
+            // Fallback: make sure switchTab is on window
+            if (typeof switchTab === 'function') {
+                window.switchTab = switchTab;
+            }
         }
 
         function toggleSession(buttonEl) {
@@ -2856,22 +4213,98 @@
 
 
         async function initialize() {
+            isInitializing = true;
+            console.log('[DEBUG] initialize started, isInitializing=true');
+
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
-                currentUser = savedUser;
+                // Always normalize restored user (in case old data had uppercase)
+                currentUser = normalizeUsername(savedUser);
+                if (currentUser !== savedUser) {
+                    localStorage.setItem('currentUser', currentUser);
+                }
                 document.getElementById('currentUserDisplay').classList.remove('hidden');
                 document.getElementById('currentUserName').textContent = currentUser;
                 document.getElementById('loginBtn').classList.add('hidden');
                 document.getElementById('logoutBtn').classList.remove('hidden');
+                const addUserBtn = document.getElementById('addUserBtn');
+                if (addUserBtn) addUserBtn.classList.add('hidden');
                 document.getElementById('logUserName').textContent = `(${currentUser})`;
                 await loadUserLogs();
+            } else {
+                // Not logged in: ensure addUserBtn is visible
+                const addUserBtn = document.getElementById('addUserBtn');
+                if (addUserBtn) addUserBtn.classList.remove('hidden');
+            }
+
+            // Safety: on init, if full-screen class is present but no currentWorkout object at all, force exit to restore clicks.
+            // Note: We allow length===0 because a brand new training starts empty and user adds exercises inside full-screen.
+            // The main protection for active full-screen during init is handled in switchTab using isInitializing flag.
+            if (document.body.classList.contains('fullscreen-training') && !currentWorkout) {
+                console.log('[DEBUG] Stray fullscreen class on init without currentWorkout, forcing exit for interactivity');
+                try {
+                    exitImmersiveMode();
+                } catch (e) {
+                    document.body.classList.remove('fullscreen-training');
+                    document.body.style.overflow = '';
+                    isInFullScreenTraining = false;
+                    const p = document.getElementById('live-log-panel');
+                    if (p) p.classList.add('hidden');
+                }
             }
             // Initialize the rich professional Workout Log system
-            if (typeof initializeWorkoutLog === 'function') {
-                initializeWorkoutLog();
+            try {
+                if (typeof initializeWorkoutLog === 'function') {
+                    initializeWorkoutLog();
+                }
+            } catch (err) {
+                console.error('initializeWorkoutLog top level call error (non-fatal):', err);
             }
-            switchTab('overview');
+            try {
+                switchTab('overview');
+            } catch (err) {
+                console.error('initial switchTab error (non-fatal):', err);
+            }
+
+            isInitializing = false;
+            console.log('[DEBUG] initialize finished, isInitializing=false');
         }
+
+        // Global protection: Esc key to force exit full-screen training mode if stuck
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.body.classList.contains('fullscreen-training')) {
+                console.log('[DEBUG] ESC pressed - forcing exit from full-screen to restore interactivity');
+                const panel = document.getElementById('live-log-panel');
+                if (panel) {
+                    panel.classList.add('hidden');
+                }
+                try {
+                    exitImmersiveMode();
+                } catch (err) {
+                    // Ultra fallback: manually clean
+                    console.error('exitImmersiveMode failed during ESC force, doing manual cleanup', err);
+                    document.body.classList.remove('fullscreen-training');
+                    document.body.style.overflow = '';
+                    isInFullScreenTraining = false;
+                    if (panel) {
+                        panel.style.position = '';
+                        panel.style.inset = '';
+                        panel.style.zIndex = '';
+                        panel.style.margin = '';
+                        panel.style.borderRadius = '';
+                        panel.style.backgroundColor = '';
+                        panel.style.overflow = '';
+                    }
+                    // Restore key elements
+                    const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
+                    if (mainNav) mainNav.style.display = '';
+                    const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
+                    if (topHeader) topHeader.style.display = '';
+                    const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
+                    if (subNav) subNav.style.display = '';
+                }
+            }
+        });
 
         window.onload = initialize;
     </script>
