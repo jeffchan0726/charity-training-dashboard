@@ -256,122 +256,168 @@
 
     <!-- 訓練計劃 -->
     <div id="content-training" class="tab-content hidden">
-        <h2 class="text-xl sm:text-2xl font-bold mb-5 sm:mb-8">每週訓練分拆（3 set）</h2>
-        <div class="grid md:grid-cols-3 gap-4 sm:gap-6">
-
-            <!-- Set 1 -->
-            <div class="section-card rounded-3xl p-4 sm:p-6">
-                <h3 class="font-bold text-emerald-400 mb-6">Set 1: Chest + Triceps（胸部 + 三頭肌）</h3>
-                <div class="space-y-3 sm:space-y-4">
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/incline_dumbbell_press.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>1. Incline Dumbbell Press<br><span class="text-xs text-[#a8a29e]">斜板啞鈴推胸</span></div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/flat_dumbbell_press.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>2. Flat Dumbbell Press<br><span class="text-xs text-[#a8a29e]">平板啞鈴推胸</span></div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/lower_chest_cable_fly.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>3. Lower Chest Cable Fly<br><span class="text-xs text-[#a8a29e]">下胸繩索飛鳥</span></div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/tricep_rope_pushdown.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>4. Tricep Rope Pushdown<br><span class="text-xs text-[#a8a29e]">繩索三頭肌下壓</span></div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/cable_overhead_triceps.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>5. Cable Overhead Triceps Extension<br><span
-                                class="text-xs text-[#a8a29e]">繩索過頭三頭肌伸展</span>
-                        </div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/wood_chopper.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>6. Wood Chopper<br><span class="text-xs text-[#a8a29e]">繩索伐木式</span></div>
-                    </div>
-
-                </div>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6 gap-3">
+            <h2 class="text-xl sm:text-2xl font-bold">每週 3 日訓練計劃 <span class="text-base font-normal text-[#a8a29e]">（單擊展開）</span></h2>
+            <div class="flex gap-2">
+                <button onclick="expandAllSessions()" 
+                    class="px-3 py-1.5 text-xs sm:text-sm bg-[#292524] hover:bg-[#3f3a36] border border-[#57534e] rounded-2xl">全部展開</button>
+                <button onclick="collapseAllSessions()" 
+                    class="px-3 py-1.5 text-xs sm:text-sm bg-[#292524] hover:bg-[#3f3a36] border border-[#57534e] rounded-2xl">全部收起</button>
             </div>
+        </div>
 
-            <!-- Set 2 -->
-            <div class="section-card rounded-3xl p-4 sm:p-6">
-                <h3 class="font-bold text-emerald-400 mb-6">Set 2: Back + Biceps + Core（背部 + 二頭肌 + 核心）</h3>
-                <div class="space-y-3 sm:space-y-4">
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/pull_ups.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>1. Pull-ups<br><span class="text-xs text-[#a8a29e]">引體向上</span></div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/seated_cable_row.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>2. Seated Cable Row<br><span class="text-xs text-[#a8a29e]">坐姿繩索划船</span></div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/deadlift.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>3. Deadlift<br><span class="text-xs text-[#a8a29e]">硬拉</span></div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/bayesian_cable_curls.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>4. Bayesian Cable Curls<br><span class="text-xs text-[#a8a29e]">繩索彎舉</span>
+        <!-- Weekly mini schedule -->
+        <div class="section-card rounded-3xl p-4 sm:p-5 mb-5 sm:mb-6">
+            <div class="text-sm font-semibold mb-3 flex items-center gap-x-2">
+                <i class="fa-solid fa-calendar text-emerald-400"></i> 
+                <span>推薦每週安排（每節訓練後至少休息 1 日）</span>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-center text-[10px] sm:text-xs">
+                <div class="bg-[#166534] text-white rounded-xl py-1">週一<br><span class="font-bold">日 1</span></div>
+                <div class="bg-[#292524] rounded-xl py-1 text-[#a8a29e]">週二<br><span class="text-[9px]">休息</span></div>
+                <div class="bg-[#166534] text-white rounded-xl py-1">週三<br><span class="font-bold">日 2</span></div>
+                <div class="bg-[#292524] rounded-xl py-1 text-[#a8a29e]">週四<br><span class="text-[9px]">休息</span></div>
+                <div class="bg-[#166534] text-white rounded-xl py-1">週五<br><span class="font-bold">日 3</span></div>
+                <div class="bg-[#292524] rounded-xl py-1 text-[#a8a29e]">週六<br><span class="text-[9px]">恢復</span></div>
+                <div class="bg-[#292524] rounded-xl py-1 text-[#a8a29e]">週日<br><span class="text-[9px]">休息</span></div>
+            </div>
+            <div class="mt-3 text-[10px] text-[#a8a29e]">提示：可依個人時間調整，重點保持每週完成 3 節並逐步增加重量。</div>
+        </div>
+
+        <div class="space-y-4" id="training-sessions">
+            <!-- Session 1 -->
+            <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
+                <button onclick="toggleSession(this)" class="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
+                    <div>
+                        <div class="flex items-center gap-x-2">
+                            <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 1</span>
+                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Chest + Triceps</span>
                         </div>
+                        <div class="text-[#a8a29e] text-sm mt-0.5">胸部 + 三頭肌 • 6 個動作</div>
                     </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/preacher_curls.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>5. Preacher Curls<br><span class="text-xs text-[#a8a29e]">固定錘式彎舉</span>
+                    <i class="fa-solid fa-chevron-down text-xl text-[#a8a29e] transition-transform duration-200"></i>
+                </button>
+                <div class="session-content hidden px-4 sm:px-6 pb-5 sm:pb-6">
+                    <div class="mb-4 text-xs bg-[#292524] inline-block px-3 py-1 rounded-2xl text-emerald-300">
+                        建議：每動作 3 組 • 8-12 次 • 休息 60-90 秒
+                    </div>
+                    <div class="space-y-3">
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/incline_dumbbell_press.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">1. Incline Dumbbell Press<br><span class="text-xs text-[#a8a29e]">斜板啞鈴推胸</span></div>
                         </div>
-                    </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/ab_wheel_rollout.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>6. Ab Wheel Rollout<br><span class="text-xs text-[#a8a29e]">腹輪推出</span>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/flat_dumbbell_press.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">2. Flat Dumbbell Press<br><span class="text-xs text-[#a8a29e]">平板啞鈴推胸</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/lower_chest_cable_fly.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">3. Lower Chest Cable Fly<br><span class="text-xs text-[#a8a29e]">下胸繩索飛鳥</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/tricep_rope_pushdown.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">4. Tricep Rope Pushdown<br><span class="text-xs text-[#a8a29e]">繩索三頭肌下壓</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/cable_overhead_triceps.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">5. Cable Overhead Triceps Extension<br><span class="text-xs text-[#a8a29e]">繩索過頭三頭肌伸展</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/wood_chopper.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">6. Wood Chopper<br><span class="text-xs text-[#a8a29e]">繩索伐木式</span></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Set 3 -->
-            <div class="section-card rounded-3xl p-4 sm:p-6">
-                <h3 class="font-bold text-emerald-400 mb-6">Set 3: Legs + Shoulders + Forearms + Core（腿部 + 肩膀 + 前臂 + 核心）
-                </h3>
-                <div class="space-y-3 sm:space-y-4">
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/zercher_squats.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>1. Zercher Squats<br><span class="text-xs text-[#a8a29e]">澤奇深蹲</span></div>
+            <!-- Session 2 -->
+            <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
+                <button onclick="toggleSession(this)" class="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
+                    <div>
+                        <div class="flex items-center gap-x-2">
+                            <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 2</span>
+                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Back + Biceps + Core</span>
+                        </div>
+                        <div class="text-[#a8a29e] text-sm mt-0.5">背部 + 二頭肌 + 核心 • 6 個動作</div>
                     </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/reverse_forearm_curl.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>2. Reverse Forearm Curl<br><span class="text-xs text-[#a8a29e]">反向前臂彎舉</span></div>
+                    <i class="fa-solid fa-chevron-down text-xl text-[#a8a29e] transition-transform duration-200"></i>
+                </button>
+                <div class="session-content hidden px-4 sm:px-6 pb-5 sm:pb-6">
+                    <div class="mb-4 text-xs bg-[#292524] inline-block px-3 py-1 rounded-2xl text-emerald-300">
+                        建議：每動作 3 組 • 8-12 次 • 休息 60-90 秒
                     </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/lateral_raises.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>3. Lateral Raises<br><span class="text-xs text-[#a8a29e]">側平舉</span></div>
+                    <div class="space-y-3">
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/pull_ups.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">1. Pull-ups<br><span class="text-xs text-[#a8a29e]">引體向上</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/seated_cable_row.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">2. Seated Cable Row<br><span class="text-xs text-[#a8a29e]">坐姿繩索划船</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/deadlift.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">3. Deadlift<br><span class="text-xs text-[#a8a29e]">硬拉</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/bayesian_cable_curls.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">4. Bayesian Cable Curls<br><span class="text-xs text-[#a8a29e]">繩索彎舉</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/preacher_curls.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">5. Preacher Curls<br><span class="text-xs text-[#a8a29e]">固定錘式彎舉</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/ab_wheel_rollout.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">6. Ab Wheel Rollout<br><span class="text-xs text-[#a8a29e]">腹輪推出</span></div>
+                        </div>
                     </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/rear_delt_raises.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>4. Rear Delt Raises<br><span class="text-xs text-[#a8a29e]">後肩三角肌飛鳥</span></div>
+                </div>
+            </div>
+
+            <!-- Session 3 -->
+            <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
+                <button onclick="toggleSession(this)" class="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
+                    <div>
+                        <div class="flex items-center gap-x-2">
+                            <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 3</span>
+                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Legs + Shoulders + Core</span>
+                        </div>
+                        <div class="text-[#a8a29e] text-sm mt-0.5">腿部 + 肩膀 + 前臂 + 核心 • 5 個動作</div>
                     </div>
-                    <div class="exercise-card bg-[#292524] p-3 sm:p-4 rounded-2xl flex gap-3 sm:gap-4">
-                        <img src="images/dragon_flag.jpg"
-                            class="w-14 h-14 sm:w-20 sm:h-20 object-contain bg-white rounded-xl flex-shrink-0">
-                        <div>5. Dragon Flag<br><span class="text-xs text-[#a8a29e]">龍旗</span></div>
+                    <i class="fa-solid fa-chevron-down text-xl text-[#a8a29e] transition-transform duration-200"></i>
+                </button>
+                <div class="session-content hidden px-4 sm:px-6 pb-5 sm:pb-6">
+                    <div class="mb-4 text-xs bg-[#292524] inline-block px-3 py-1 rounded-2xl text-emerald-300">
+                        建議：每動作 3 組 • 8-12 次 • 休息 60-90 秒
+                    </div>
+                    <div class="space-y-3">
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/zercher_squats.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">1. Zercher Squats<br><span class="text-xs text-[#a8a29e]">澤奇深蹲</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/reverse_forearm_curl.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">2. Reverse Forearm Curl<br><span class="text-xs text-[#a8a29e]">反向前臂彎舉</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/lateral_raises.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">3. Lateral Raises<br><span class="text-xs text-[#a8a29e]">側平舉</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/rear_delt_raises.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">4. Rear Delt Raises<br><span class="text-xs text-[#a8a29e]">後肩三角肌飛鳥</span></div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/dragon_flag.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">5. Dragon Flag<br><span class="text-xs text-[#a8a29e]">龍旗</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <div class="mt-5 text-xs text-[#a8a29e] px-1">* 記得每次訓練前做 10 分鐘動態暖身，訓練後做伸展。使用 Workout Log 記錄你的進度。</div>
     </div>
 
     <!-- Workout Log -->
@@ -722,6 +768,40 @@
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-[#166534]', 'text-white'));
             document.getElementById('content-' + tab).classList.remove('hidden');
             document.getElementById('tab-' + tab).classList.add('active', 'bg-[#166534]', 'text-white');
+        }
+
+        function toggleSession(buttonEl) {
+            const content = buttonEl.nextElementSibling;
+            const icon = buttonEl.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (!content || !icon) return;
+            const isHidden = content.classList.toggle('hidden');
+            if (isHidden) {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                icon.style.transform = '';
+            } else {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        function expandAllSessions() {
+            document.querySelectorAll('#content-training .session-content').forEach(el => el.classList.remove('hidden'));
+            document.querySelectorAll('#content-training .fa-chevron-down, #content-training .fa-chevron-up').forEach(icon => {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                icon.style.transform = 'rotate(180deg)';
+            });
+        }
+
+        function collapseAllSessions() {
+            document.querySelectorAll('#content-training .session-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('#content-training .fa-chevron-down, #content-training .fa-chevron-up').forEach(icon => {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                icon.style.transform = '';
+            });
         }
 
 
