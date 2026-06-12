@@ -175,16 +175,33 @@ Local Development Instructions:
             background-color: #1c1917;
             overflow: hidden;
             display: block !important;
+            /* Dynamic viewport height: adapts when browser address bar / chrome appears or hides */
+            height: 100dvh !important;
+        }
+
+        /* Ensure the root elements use dynamic viewport in immersive training mode (iOS Safari + Android Chrome) */
+        .fullscreen-training,
+        .fullscreen-training body {
+            height: 100dvh !important;
+            overflow: hidden !important;
+        }
+
+        /* Additional safety: the bottom bar always reserves space for safe-area even if Tailwind arbitrary value not processed */
+        .fullscreen-training .immersive-sticky-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 8px);
         }
 
         .fullscreen-training #live-log-panel .immersive-container {
-            height: 100vh !important;
-            min-height: 100vh !important;
-            max-height: 100vh !important;
+            /* Use dvh instead of vh so the container shrinks/expands with the visual viewport */
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            max-height: 100dvh !important;
             border-radius: 0 !important;
             border: none !important;
             display: flex;
             flex-direction: column;
+            /* Prevent any body/html scroll leaking into the immersive view */
+            overscroll-behavior: none;
         }
 
         .fullscreen-training .immersive-sticky-top {
@@ -195,7 +212,7 @@ Local Development Instructions:
             border-bottom: 1px solid #57534e;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
             flex-shrink: 0;
-            pointer-events: auto; /* ensure buttons inside remain clickable even if layout glitches */
+            pointer-events: auto;
         }
 
         .fullscreen-training .immersive-sticky-bottom {
@@ -206,14 +223,20 @@ Local Development Instructions:
             border-top: 1px solid #57534e;
             box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.3);
             flex-shrink: 0;
-            pointer-events: auto; /* ensure buttons inside remain clickable even if layout glitches */
+            pointer-events: auto;
+            /* The actual safe-area + visual breathing room lives on the inner wrapper (see HTML).
+               We only need to ensure the bar itself doesn't collapse and has good tap area. */
+            padding-top: 0;
+            padding-bottom: 0;
         }
 
         .fullscreen-training .immersive-scroll {
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            min-height: 0; /* important for flex scrolling */
+            min-height: 0; /* critical for flex child to scroll properly */
+            /* Add bottom padding inside scroll so last exercise card is never hidden behind the sticky bar */
+            padding-bottom: 12px;
         }
 
         /* Fallback / previous near-fullscreen styles (for non-fullscreen immersive if needed) */
@@ -248,6 +271,8 @@ Local Development Instructions:
             background: #1c1917;
             border-top: 1px solid #57534e;
             box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.2);
+            /* Safe area support for all immersive (non-fullscreen) cases */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         .immersive-scroll {
@@ -903,15 +928,18 @@ Local Development Instructions:
                     </div>
                 </div>
 
-                <!-- STICKY BOTTOM: Finish button (always accessible) -->
-                <div class="immersive-sticky-bottom px-4 sm:px-6 py-3">
-                    <button onclick="finishCurrentWorkout()" 
-                        class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-x-2 shadow-lg">
-                        <i class="fa-solid fa-flag-checkered"></i> 
-                        <span>完成訓練</span>
-                    </button>
-                    <div class="text-center mt-1">
-                        <button onclick="cancelCurrentWorkout()" class="text-xs text-red-400 hover:text-red-300">放棄本次訓練</button>
+                <!-- STICKY BOTTOM: Finish + Abandon buttons (address bar / safe-area safe) -->
+                <div class="immersive-sticky-bottom px-4 sm:px-6">
+                    <!-- Inner wrapper absorbs safe-area padding so buttons stay fully visible and tappable -->
+                    <div class="pt-3 pb-[max(env(safe-area-inset-bottom,14px),14px)]">
+                        <button onclick="finishCurrentWorkout()" 
+                            class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-x-2 shadow-lg">
+                            <i class="fa-solid fa-flag-checkered"></i> 
+                            <span>完成訓練</span>
+                        </button>
+                        <div class="text-center mt-2">
+                            <button onclick="cancelCurrentWorkout()" class="text-xs text-red-400 hover:text-red-300 underline-offset-2 active:text-red-200">放棄本次訓練</button>
+                        </div>
                     </div>
                 </div>
 
@@ -2413,14 +2441,16 @@ Local Development Instructions:
                     panel.style.borderRadius = '0';
                     panel.style.backgroundColor = '#1c1917';
                     panel.style.overflow = 'hidden';
+                    panel.style.height = '100dvh';  /* reinforce dynamic viewport height */
                     panel.classList.remove('hidden');  // ensure visible
                 }
 
                 const container = panel ? panel.querySelector('.immersive-container') : null;
                 if (container) {
-                    container.style.height = '100vh';
-                    container.style.minHeight = '100vh';
-                    container.style.maxHeight = '100vh';
+                    // Use 100dvh so height dynamically matches the visible viewport (address bar hide/show)
+                    container.style.height = '100dvh';
+                    container.style.minHeight = '100dvh';
+                    container.style.maxHeight = '100dvh';
                     container.style.borderRadius = '0';
                     container.style.border = 'none';
                 }
