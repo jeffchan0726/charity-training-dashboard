@@ -7,6 +7,7 @@
     <title>Jeff 減脂 Recomp 挑戰 • 慈善賽訓練中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
@@ -58,6 +59,113 @@
             .max-w-md {
                 max-width: calc(100vw - 2rem) !important;
             }
+        }
+
+        /* === Professional Workout Log Styles === */
+        .log-card {
+            background: #1c1917;
+            border: 1px solid #44403c;
+            transition: all 0.2s;
+        }
+
+        .set-row {
+            transition: background 0.1s;
+        }
+        .set-row:hover {
+            background: #292524;
+        }
+
+        .rest-timer {
+            font-variant-numeric: tabular-nums;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .timer-display {
+            font-size: 3.5rem;
+            line-height: 1;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .exercise-log-card {
+            border: 1px solid #57534e;
+        }
+
+        .pr-badge {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            color: #1c1917;
+            font-weight: 700;
+            font-size: 0.65rem;
+            padding: 1px 7px;
+            border-radius: 9999px;
+        }
+
+        .volume-number {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mini-stat {
+            font-size: 0.75rem;
+            background: #292524;
+            padding: 1px 6px;
+            border-radius: 6px;
+        }
+
+        .workout-history-card {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .workout-history-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+        }
+
+        .muscle-chip {
+            font-size: 0.65rem;
+            padding: 1px 8px;
+            border-radius: 999px;
+            background: #292524;
+            color: #a8a29e;
+        }
+
+        .log-input {
+            background: #292524;
+            border: 1px solid #57534e;
+            color: #e7e5e4;
+            font-size: 0.875rem;
+        }
+        .log-input:focus {
+            border-color: #4ade80;
+            outline: none;
+        }
+
+        .quick-add-btn {
+            background: #166534;
+            transition: all 0.1s;
+        }
+        .quick-add-btn:hover {
+            background: #14532d;
+            transform: scale(1.02);
+        }
+
+        .section-header {
+            font-size: 0.95rem;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+            color: #a8a29e;
+        }
+
+        /* Mobile-first Workout Log refinements */
+        @media (max-width: 380px) {
+            .timer-display { font-size: 2.75rem !important; }
+            .log-card { padding: 0.75rem !important; }
+            .exercise-log-card { padding: 0.5rem !important; }
+            .set-row { font-size: 0.7rem; }
+            .log-input { font-size: 0.8rem; padding: 0.25rem 0.5rem; }
+            .volume-number { font-size: 2.25rem !important; }
+        }
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
         }
     </style>
 </head>
@@ -155,7 +263,7 @@
                         <div class="flex-1"><strong>伸展 + 回家</strong> — 5分鐘靜態伸展</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">7:25am–12:00pm</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">7:25am-12:00pm</div>
                         <div class="flex-1"><strong>回家/沖涼/上班</strong> — 每小時喝水200-300ml（目標12:00前喝1.5L）</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
@@ -420,31 +528,271 @@
         <div class="mt-5 text-xs text-[#a8a29e] px-1">* 記得每次訓練前做 10 分鐘動態暖身，訓練後做伸展。使用 Workout Log 記錄你的進度。</div>
     </div>
 
-    <!-- Workout Log -->
+    <!-- Workout Log - Professional Grade (Mobile-First) -->
     <div id="content-log" class="tab-content hidden">
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
-            <h3 class="font-bold text-lg sm:text-xl">Workout Log <span id="logUserName" class="text-[#4ade80]"></span></h3>
-            <button onclick="showAddLogModal()"
-                class="self-start sm:self-auto px-5 sm:px-6 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold flex items-center gap-x-2">
-                <i class="fa-solid fa-plus"></i> 新增記錄
-            </button>
-        </div>
-        <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm min-w-[560px]">
-                    <thead>
-                        <tr class="border-b border-[#57534e]">
-                            <th class="py-3 px-4 text-left">日期</th>
-                            <th class="py-3 px-3">動作</th>
-                            <th class="py-3 px-3 text-center">組數</th>
-                            <th class="py-3 px-3 text-center">次數</th>
-                            <th class="py-3 px-3 text-center">重量 (kg)</th>
-                            <th class="py-3 px-2"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="logTableBody" class="divide-y divide-[#44403c]"></tbody>
-                </table>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <div>
+                <h3 class="font-bold text-lg sm:text-xl">訓練日誌 <span id="logUserName" class="text-[#4ade80]"></span></h3>
+                <p class="text-[10px] sm:text-xs text-[#a8a29e]">快速記錄 • 每組間休息計時 • 慈善噸數追蹤</p>
             </div>
+            <div class="flex flex-wrap gap-1.5">
+                <button onclick="startNewWorkout()" 
+                    class="min-h-[42px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl text-sm font-semibold flex items-center gap-x-1.5 shadow">
+                    <i class="fa-solid fa-play"></i> <span>開始新訓練</span>
+                </button>
+                <button onclick="showRoutinesModal()" 
+                    class="min-h-[42px] px-3 py-2 bg-[#292524] hover:bg-[#3f3a36] border border-[#57534e] rounded-2xl text-xs sm:text-sm flex items-center gap-x-1">
+                    <i class="fa-solid fa-list-check"></i> <span>模板</span>
+                </button>
+                <button onclick="showLibraryModal()" 
+                    class="min-h-[42px] px-3 py-2 bg-[#292524] hover:bg-[#3f3a36] border border-[#57534e] rounded-2xl text-xs sm:text-sm flex items-center gap-x-1">
+                    <i class="fa-solid fa-dumbbell"></i> <span>動作庫</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- LIVE LOGGING PANEL (most important UX) -->
+        <div id="live-log-panel" class="hidden mb-6">
+            <div class="log-card rounded-3xl p-4 sm:p-6 border border-emerald-900/50">
+                <!-- Workout Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div class="flex items-center gap-x-3">
+                        <div class="text-emerald-400">
+                            <i class="fa-solid fa-stopwatch text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-lg">進行中訓練</div>
+                            <div class="flex items-center gap-x-2 text-sm">
+                                <input type="date" id="current-workout-date" class="log-input px-3 py-1 rounded-xl text-sm w-auto" onchange="updateCurrentWorkoutDate()">
+                                <span id="current-workout-exercise-count" class="mini-stat"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="quickLoadFromPlan(1)" class="text-xs px-3 py-1.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl">載入日1</button>
+                        <button onclick="quickLoadFromPlan(2)" class="text-xs px-3 py-1.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl">載入日2</button>
+                        <button onclick="quickLoadFromPlan(3)" class="text-xs px-3 py-1.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl">載入日3</button>
+                        <button onclick="finishCurrentWorkout()" 
+                            class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl text-sm font-semibold flex items-center gap-x-1.5">
+                            <i class="fa-solid fa-flag-checkered"></i> 完成訓練
+                        </button>
+                        <button onclick="cancelCurrentWorkout()" class="px-3 py-1.5 text-xs text-red-400 hover:text-red-300">取消</button>
+                    </div>
+                </div>
+
+                <!-- Running Volume + Timer Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-5">
+                    <!-- Volume -->
+                    <div class="lg:col-span-2 bg-[#292524] rounded-2xl p-4 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs text-[#a8a29e]">本次訓練量</div>
+                            <div id="session-volume" class="volume-number text-4xl sm:text-5xl font-bold text-emerald-400">0</div>
+                            <div class="text-xs text-[#a8a29e]"><span id="session-sets-count">0 組</span></div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[10px] text-amber-400">慈善影響</div>
+                            <div id="session-tonnes" class="text-xl font-semibold text-amber-400">0.00 t</div>
+                            <div class="text-[10px]">今日移動噸數</div>
+                        </div>
+                    </div>
+
+                    <!-- Rest Timer -->
+                    <div class="lg:col-span-3 bg-[#1f1c1a] border border-[#57534e] rounded-2xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-x-2">
+                                <i class="fa-solid fa-hourglass-half text-emerald-400"></i>
+                                <span class="font-semibold text-sm">休息計時器</span>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="setRestPreset(60)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">60s</button>
+                                <button onclick="setRestPreset(90)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">90s</button>
+                                <button onclick="setRestPreset(120)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">120s</button>
+                                <button onclick="setRestPreset(180)" class="px-2 py-0.5 text-xs rounded bg-[#292524] hover:bg-[#3f3a36]">180s</button>
+                            </div>
+                        </div>
+                        <div class="flex items-end gap-3">
+                            <div id="timer-display" class="timer-display text-emerald-400 tabular-nums">01:30</div>
+                            <div class="flex-1 flex items-center gap-2">
+                                <button id="timer-start-btn" onclick="startRestTimer()" 
+                                    class="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始</button>
+                                <button onclick="pauseRestTimer()" class="px-4 py-2 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">暫停</button>
+                                <button onclick="resetRestTimer()" class="px-3 py-2 text-xs bg-[#292524] hover:bg-red-900/30 text-red-400 rounded-2xl">重設</button>
+                                <button onclick="addTimeToTimer(30)" class="px-3 py-2 text-xs bg-[#292524] hover:bg-[#3f3a36] rounded-2xl">+30秒</button>
+                            </div>
+                        </div>
+                        <div id="timer-status" class="text-[10px] text-[#a8a29e] mt-1 h-3"></div>
+                    </div>
+                </div>
+
+                <!-- Exercises in current workout -->
+                <div id="current-workout-exercises" class="space-y-4">
+                    <!-- Populated dynamically by JS -->
+                </div>
+
+                <!-- Add Exercise to current workout -->
+                <div class="mt-4 pt-4 border-t border-[#57534e]">
+                    <div class="flex flex-col sm:flex-row gap-2 items-end">
+                        <div class="flex-1">
+                            <label class="text-xs text-[#a8a29e] mb-1 block">加入動作到本次訓練</label>
+                            <div class="flex gap-2">
+                                <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..." 
+                                    class="log-input flex-1 px-4 py-2 rounded-2xl text-sm" onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
+                                <datalist id="exercise-datalist"></datalist>
+                                <button onclick="addExerciseToCurrentWorkout()" 
+                                    class="px-5 py-2 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap">+ 加入</button>
+                            </div>
+                        </div>
+                        <button onclick="showLibraryModal(true)" class="px-4 py-2 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524]">瀏覽動作庫</button>
+                    </div>
+                    <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 h-4"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Start / Empty State -->
+        <div id="log-empty-state" class="mb-6">
+            <div class="log-card rounded-3xl p-6 text-center">
+                <i class="fa-solid fa-dumbbell text-4xl text-emerald-400/70 mb-3"></i>
+                <div class="font-semibold mb-1">準備好訓練了嗎？</div>
+                <p class="text-sm text-[#a8a29e] max-w-md mx-auto mb-4">點擊上方開始新訓練。使用上次數據可快速記錄，計時器幫助你在組間適當休息。</p>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <button onclick="startNewWorkout()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始新訓練</button>
+                    <button onclick="loadLastWorkoutAsTemplate()" class="px-4 py-2 border border-[#57534e] rounded-2xl text-sm hover:bg-[#292524]">載入上次訓練作為模板</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub navigation for History / Analysis / Stats -->
+        <div class="flex gap-1.5 mb-3 text-sm border-b border-[#44403c] pb-2 overflow-x-auto">
+            <button onclick="showLogSubSection('history')" id="logsub-history"
+                class="log-subtab active px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap bg-[#292524]">訓練歷史</button>
+            <button onclick="showLogSubSection('analysis')" id="logsub-analysis"
+                class="log-subtab px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap hover:bg-[#292524]">單一動作分析</button>
+            <button onclick="showLogSubSection('stats')" id="logsub-stats"
+                class="log-subtab px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap hover:bg-[#292524]">整體數據</button>
+            <button onclick="showLogSubSection('calendar')" id="logsub-calendar"
+                class="log-subtab px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap hover:bg-[#292524]">訓練日曆</button>
+        </div>
+
+        <!-- HISTORY -->
+        <div id="log-section-history">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="section-header">近期訓練</div>
+                <button onclick="exportAllData()" class="text-xs px-3 py-1 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl flex items-center gap-x-1">
+                    <i class="fa-solid fa-download text-[10px]"></i> <span>匯出 CSV</span>
+                </button>
+            </div>
+            <div id="workout-history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- ANALYSIS -->
+        <div id="log-section-analysis" class="hidden">
+            <div class="log-card rounded-3xl p-5">
+                <div class="flex flex-wrap items-center gap-3 mb-4">
+                    <div class="font-semibold">動作進度</div>
+                    <select id="analysis-exercise-select" onchange="renderExerciseAnalysis()" class="log-input px-3 py-1.5 rounded-2xl text-sm flex-1 max-w-[260px]">
+                        <!-- options populated dynamically -->
+                    </select>
+                    <button onclick="renderExerciseAnalysis()" class="text-xs px-3 py-1 bg-emerald-900/60 hover:bg-emerald-800 rounded">刷新圖表</button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <!-- Stats summary -->
+                    <div class="lg:col-span-2 space-y-3 text-sm" id="analysis-summary">
+                        <!-- JS injected -->
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="lg:col-span-3 space-y-4">
+                        <div>
+                            <div class="text-xs text-[#a8a29e] mb-1">預估 1RM 趨勢（Epley 公式）</div>
+                            <canvas id="chart-1rm" height="90"></canvas>
+                        </div>
+                        <div>
+                            <div class="text-xs text-[#a8a29e] mb-1">此動作每次訓練量</div>
+                            <canvas id="chart-volume" height="90"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <div class="text-xs text-[#a8a29e] mb-2">所有組數歷史（最新優先）</div>
+                    <div class="overflow-x-auto max-h-[220px] border border-[#57534e] rounded-2xl">
+                        <table class="w-full text-xs min-w-[620px]">
+                            <thead class="bg-[#292524]">
+                                <tr>
+                                    <th class="py-2 px-3 text-left">Date</th>
+                                    <th class="py-2 px-2 text-center">Weight</th>
+                                    <th class="py-2 px-2 text-center">Reps</th>
+                                    <th class="py-2 px-2 text-center">RPE</th>
+                                    <th class="py-2 px-2 text-center">Vol (kg)</th>
+                                    <th class="py-2 px-2 text-center">e1RM</th>
+                                    <th class="py-2 px-3">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analysis-sets-table" class="divide-y divide-[#44403c]"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OVERALL STATS -->
+        <div id="log-section-stats" class="hidden">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">目前連續訓練天數</div>
+                    <div id="stat-streak" class="text-4xl font-bold text-emerald-400 mt-1">--</div>
+                    <div class="text-xs">天</div>
+                </div>
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">累計訓練量</div>
+                    <div id="stat-lifetime-volume" class="text-4xl font-bold text-emerald-400 mt-1 tabular-nums">--</div>
+                    <div class="text-xs"><span id="stat-lifetime-tonnes">--</span> 噸</div>
+                </div>
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">總訓練次數</div>
+                    <div id="stat-total-workouts" class="text-4xl font-bold text-emerald-400 mt-1">--</div>
+                    <div class="text-xs">已記錄 <span id="stat-total-sets">--</span> 組</div>
+                </div>
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">個人紀錄</div>
+                    <div id="stat-pr-count" class="text-4xl font-bold text-amber-400 mt-1">--</div>
+                    <div class="text-xs">已達成 PR 次數</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="log-card rounded-3xl p-5">
+                    <div class="section-header mb-3">Body Part Volume Distribution (Lifetime)</div>
+                    <canvas id="chart-bodypart" height="140"></canvas>
+                </div>
+                <div class="log-card rounded-3xl p-5">
+                    <div class="section-header mb-3">Recent Volume Trend (Last 8 Weeks)</div>
+                    <canvas id="chart-weekly-volume" height="140"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- CALENDAR + MUSCLE VOLUME -->
+        <div id="log-section-calendar" class="hidden">
+            <div class="log-card rounded-3xl p-5">
+                <div class="section-header mb-3">訓練日曆（訓練量熱圖）</div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-[10px]"></div>
+                <div class="mt-4 text-xs text-[#a8a29e]">Click a day to see that workout (if any). Color intensity = relative volume.</div>
+
+                <div class="mt-6">
+                    <div class="section-header mb-2">肌群訓練量（最近30天）</div>
+                    <div id="muscle-volume-bars" class="space-y-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 text-[10px] text-[#a8a29e] px-1 flex items-center gap-x-3">
+            <span>數據儲存在本機 + 盡可能同步到你的帳號。</span>
+            <button onclick="importDataPrompt()" class="underline hover:no-underline">匯入 JSON 備份</button>
         </div>
     </div>
 
@@ -567,10 +915,10 @@
         </div>
     </div>
 
-    <!-- Add Log Modal -->
+    <!-- Add Log Modal (kept for legacy compatibility) -->
     <div id="addLogModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
-            <h3 class="font-bold mb-3 sm:mb-4">新增 Workout Log</h3>
+            <h3 class="font-bold mb-3 sm:mb-4">新增訓練記錄（舊版）</h3>
             <div class="space-y-3">
                 <input type="date" id="logDate"
                     class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
@@ -590,6 +938,109 @@
                     class="flex-1 py-2 sm:py-2.5 rounded-2xl border border-[#57534e] text-sm">取消</button>
                 <button onclick="addNewLog()"
                     class="flex-1 py-2 sm:py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold text-sm">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finish Workout Summary Modal -->
+    <div id="finishModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-lg p-5 sm:p-7 mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="font-bold text-xl">訓練完成 🎉</h3>
+                    <div id="finish-date" class="text-sm text-[#a8a29e]"></div>
+                </div>
+                <button onclick="hideFinishModal()" class="text-[#a8a29e] hover:text-white text-xl leading-none">×</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 mb-5">
+                <div class="bg-[#292524] rounded-2xl p-3 text-center">
+                    <div class="text-xs text-[#a8a29e]">總訓練量</div>
+                    <div id="finish-volume" class="text-2xl font-bold text-emerald-400 tabular-nums"></div>
+                    <div id="finish-tonnes" class="text-xs text-amber-400"></div>
+                </div>
+                <div class="bg-[#292524] rounded-2xl p-3 text-center">
+                    <div class="text-xs text-[#a8a29e]">組數 / 動作</div>
+                    <div id="finish-sets" class="text-2xl font-bold"></div>
+                </div>
+                <div class="bg-[#292524] rounded-2xl p-3 text-center">
+                    <div class="text-xs text-[#a8a29e]">平均 RPE</div>
+                    <div id="finish-rpe" class="text-2xl font-bold"></div>
+                </div>
+            </div>
+
+            <div id="finish-prs" class="mb-4"></div>
+
+            <div class="mb-4">
+                <label class="text-xs text-[#a8a29e]">訓練備註（選填）</label>
+                <textarea id="finish-notes" class="w-full log-input rounded-2xl p-3 text-sm h-16" placeholder="感覺如何？有什麼觀察..."></textarea>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="hideFinishModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">繼續編輯</button>
+                <button onclick="confirmFinishWorkout()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">儲存並完成訓練</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Routines Modal -->
+    <div id="routinesModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4 max-h-[85vh] overflow-auto">
+            <div class="flex justify-between mb-4">
+                <h3 class="font-bold text-lg">訓練模板</h3>
+                <button onclick="hideRoutinesModal()" class="text-[#a8a29e]">關閉</button>
+            </div>
+
+            <div class="mb-4">
+                <div class="text-xs text-[#a8a29e] mb-1">將目前訓練結構儲存為模板</div>
+                <div class="flex gap-2">
+                    <input id="new-routine-name" placeholder="模板名稱 例如 上半身A" class="log-input flex-1 px-3 py-2 rounded-2xl text-sm">
+                    <button onclick="saveCurrentAsRoutine()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm">儲存</button>
+                </div>
+            </div>
+
+            <div id="routines-list" class="space-y-2 text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Exercise Library Modal -->
+    <div id="libraryModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-2xl p-5 sm:p-6 mx-4 max-h-[88vh] overflow-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">動作庫</h3>
+                <button onclick="hideLibraryModal()" class="text-[#a8a29e]">關閉</button>
+            </div>
+
+            <!-- Search + Add custom -->
+            <div class="flex gap-2 mb-3">
+                <input id="library-search" oninput="filterLibrary()" placeholder="搜尋動作..." class="log-input flex-1 px-4 py-2 rounded-2xl text-sm">
+                <button onclick="showAddCustomExercise()" class="px-4 py-2 bg-[#292524] hover:bg-[#3f3a36] border border-[#57534e] rounded-2xl text-sm whitespace-nowrap">+ 自訂動作</button>
+            </div>
+
+            <!-- Category filters -->
+            <div id="library-categories" class="flex flex-wrap gap-1.5 mb-4"></div>
+
+            <div id="library-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm max-h-[420px] overflow-auto pr-1"></div>
+        </div>
+    </div>
+
+    <!-- Add Custom Exercise Modal -->
+    <div id="customExerciseModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[65]">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-sm p-5 mx-4">
+            <h3 class="font-bold mb-3">新增自訂動作</h3>
+            <div class="space-y-3 text-sm">
+                <input id="custom-name" placeholder="動作名稱（例如 保加利亞分腿蹲）" class="w-full log-input px-4 py-2 rounded-2xl">
+                <div>
+                    <div class="text-xs text-[#a8a29e] mb-1">主要類別</div>
+                    <select id="custom-category" class="w-full log-input px-4 py-2 rounded-2xl">
+                        <option>Chest</option><option>Back</option><option>Legs</option><option>Shoulders</option>
+                        <option>Arms</option><option>Core</option><option>Full Body</option><option>Cardio</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="hideCustomExerciseModal()" class="flex-1 py-2 rounded-2xl border border-[#57534e]">取消</button>
+                <button onclick="saveCustomExercise()" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">加入動作庫</button>
             </div>
         </div>
     </div>
@@ -626,6 +1077,12 @@
             document.getElementById('loginBtn').classList.add('hidden');
             document.getElementById('logoutBtn').classList.remove('hidden');
             document.getElementById('logUserName').textContent = `(${currentUser})`;
+            // Refresh rich log for the newly logged in user
+            if (typeof loadWorkoutData === 'function') {
+                loadWorkoutData();
+                if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                if (typeof renderOverallStats === 'function') renderOverallStats();
+            }
         }
 
         function showLoginModal() {
@@ -664,40 +1121,40 @@
             document.getElementById('logoutBtn').classList.add('hidden');
             document.getElementById('logUserName').textContent = "";
             renderLogTable();
+
+            // Clear rich workout state on logout (will reload guest on next action)
+            currentWorkout = null;
+            workoutHistory = [];
+            lastPerformed = {};
+            if (document.getElementById('live-log-panel')) document.getElementById('live-log-panel').classList.add('hidden');
+            if (document.getElementById('log-empty-state')) document.getElementById('log-empty-state').classList.remove('hidden');
+            if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+            if (typeof renderOverallStats === 'function') renderOverallStats();
         }
 
         async function loadUserLogs() {
             if (!currentUser) return;
             workoutLogs = await callAppsScript("getLogs");
             renderLogTable();
+            // Reload rich per-user workout data when switching users
+            if (typeof loadWorkoutData === 'function') {
+                loadWorkoutData();
+                if (typeof seedSampleDataIfNeeded === 'function') seedSampleDataIfNeeded();
+                if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
+                if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                if (typeof renderOverallStats === 'function') renderOverallStats();
+                if (typeof renderCalendar === 'function') renderCalendar();
+                if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
+            }
         }
 
         function renderLogTable() {
-            const tbody = document.getElementById('logTableBody');
-            tbody.innerHTML = '';
-            if (!currentUser) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-[#a8a29e]">請先登入</td></tr>`;
-                return;
+            // Legacy flat table no longer rendered in new professional UI.
+            // Instead refresh the rich history view (if the new system is loaded).
+            if (typeof renderWorkoutHistory === 'function') {
+                renderWorkoutHistory();
             }
-            const myLogs = workoutLogs.filter(log => log.user === currentUser);
-            if (myLogs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-[#a8a29e]">暫無記錄</td></tr>`;
-                return;
-            }
-            myLogs.sort((a, b) => b.date.localeCompare(a.date)).forEach(log => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="py-2.5 px-3 text-xs whitespace-nowrap">${log.date}</td>
-                    <td class="py-2.5 px-3">${log.exercise}</td>
-                    <td class="py-2.5 px-2 text-center">${log.sets}</td>
-                    <td class="py-2.5 px-2 text-center">${log.reps}</td>
-                    <td class="py-2.5 px-2 text-center whitespace-nowrap">${log.weight}</td>
-                    <td class="py-2.5 px-1 text-right">
-                        <button onclick="deleteLog(${log.id})" class="text-red-400 p-1"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
+            // Also keep the old workoutLogs array in sync if needed for other code
         }
 
         function showAddLogModal() {
@@ -734,6 +1191,1423 @@
             await callAppsScript("deleteLog", { user: currentUser, logId: logId });
             await loadUserLogs();
         }
+
+        /* ============================================================
+           PROFESSIONAL WORKOUT LOG ENGINE (Rich client-side + localStorage)
+           + Legacy flat log compatibility via GAS
+           ============================================================ */
+
+        // --- Core State ---
+        let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, rpe, notes, volume}]}] }
+        let workoutHistory = [];             // Array of finished workouts
+        let exerciseLibrary = [];            // {name, category}
+        let routines = [];                   // {id, name, exercises: string[] }
+        let lastPerformed = {};              // { exerciseName: {weight, reps, rpe, date} }
+        let personalRecords = {};            // Computed on the fly or cached
+        let restTimerInterval = null;
+        let restTimeLeft = 90;
+        let restTimerRunning = false;
+        let currentLogSub = 'history';
+        let analysisChart1RM = null;
+        let analysisChartVolume = null;
+        let bodyPartChart = null;
+        let weeklyVolumeChart = null;
+
+        const DEFAULT_REST = 90;
+        const EXERCISE_CATEGORIES = ['胸部', '背部', '腿部', '肩膀', '手臂', '核心', '全身', '有氧'];
+
+        // Bilingual Exercise Database - 45+ common gym exercises
+        // Format for UI: "中文 (English)"
+        // Images: Use local repo paths. User must add jpgs to /images/ folder.
+        // Fallback to placeholder if image missing.
+        const EXERCISES = [
+            { id: "incline_dumbbell_press", name_zh: "上斜啞鈴推胸", name_en: "Incline Dumbbell Press", muscle_group: "胸部", image: "images/incline_dumbbell_press.jpg" },
+            { id: "flat_dumbbell_press", name_zh: "平板啞鈴推胸", name_en: "Flat Dumbbell Press", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
+            { id: "lower_chest_cable_fly", name_zh: "下胸繩索飛鳥", name_en: "Lower Chest Cable Fly", muscle_group: "胸部", image: "images/lower_chest_cable_fly.jpg" },
+            { id: "barbell_bench_press", name_zh: "槓鈴臥推", name_en: "Barbell Bench Press", muscle_group: "胸部", image: "images/barbell_bench_press.jpg" },
+            { id: "cable_crossover", name_zh: "繩索夾胸", name_en: "Cable Crossover", muscle_group: "胸部", image: "images/cable_crossover.jpg" },
+            { id: "chest_dips", name_zh: "雙槓胸推", name_en: "Chest Dips", muscle_group: "胸部", image: "images/chest_dips.jpg" },
+            { id: "pull_ups", name_zh: "引體向上", name_en: "Pull-ups", muscle_group: "背部", image: "images/pull_ups.jpg" },
+            { id: "seated_cable_row", name_zh: "坐姿繩索划船", name_en: "Seated Cable Row", muscle_group: "背部", image: "images/seated_cable_row.jpg" },
+            { id: "deadlift", name_zh: "硬拉", name_en: "Deadlift", muscle_group: "背部", image: "images/deadlift.jpg" },
+            { id: "barbell_row", name_zh: "槓鈴划船", name_en: "Barbell Bent Over Row", muscle_group: "背部", image: "images/barbell_row.jpg" },
+            { id: "lat_pulldown", name_zh: "寬握下拉", name_en: "Lat Pulldown", muscle_group: "背部", image: "images/lat_pulldown.jpg" },
+            { id: "dumbbell_row", name_zh: "單臂啞鈴划船", name_en: "Single Arm Dumbbell Row", muscle_group: "背部", image: "images/dumbbell_row.jpg" },
+            { id: "face_pulls", name_zh: "臉部拉", name_en: "Face Pulls", muscle_group: "背部", image: "images/face_pulls.jpg" },
+            { id: "zercher_squats", name_zh: "澤奇深蹲", name_en: "Zercher Squats", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+            { id: "barbell_back_squat", name_zh: "槓鈴後蹲", name_en: "Barbell Back Squat", muscle_group: "腿部", image: "images/barbell_back_squat.jpg" },
+            { id: "romanian_deadlift", name_zh: "羅馬尼亞硬拉", name_en: "Romanian Deadlift", muscle_group: "腿部", image: "images/romanian_deadlift.jpg" },
+            { id: "walking_lunges", name_zh: "行走弓步", name_en: "Walking Lunges", muscle_group: "腿部", image: "images/walking_lunges.jpg" },
+            { id: "leg_press", name_zh: "腿推機", name_en: "Leg Press", muscle_group: "腿部", image: "images/leg_press.jpg" },
+            { id: "standing_calf_raise", name_zh: "站姿小腿提踵", name_en: "Standing Calf Raise", muscle_group: "腿部", image: "images/standing_calf_raise.jpg" },
+            { id: "bayesian_cable_curls", name_zh: "貝葉斯繩索彎舉", name_en: "Bayesian Cable Curls", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
+            { id: "preacher_curls", name_zh: "牧師椅彎舉", name_en: "Preacher Curls", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
+            { id: "barbell_curl", name_zh: "槓鈴彎舉", name_en: "Barbell Curl", muscle_group: "手臂", image: "images/barbell_curl.jpg" },
+            { id: "hammer_curls", name_zh: "錘式彎舉", name_en: "Hammer Curls", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
+            { id: "tricep_rope_pushdown", name_zh: "繩索三頭下壓", name_en: "Tricep Rope Pushdown", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
+            { id: "cable_overhead_triceps", name_zh: "繩索過頭三頭伸展", name_en: "Cable Overhead Triceps Extension", muscle_group: "手臂", image: "images/cable_overhead_triceps.jpg" },
+            { id: "skull_crushers", name_zh: "仰臥三頭伸展", name_en: "Skull Crushers", muscle_group: "手臂", image: "images/skull_crushers.jpg" },
+            { id: "lateral_raises", name_zh: "側平舉", name_en: "Lateral Raises", muscle_group: "肩膀", image: "images/lateral_raises.jpg" },
+            { id: "rear_delt_raises", name_zh: "後肩三角肌飛鳥", name_en: "Rear Delt Raises", muscle_group: "肩膀", image: "images/rear_delt_raises.jpg" },
+            { id: "overhead_press", name_zh: "肩推", name_en: "Overhead Press", muscle_group: "肩膀", image: "images/overhead_press.jpg" },
+            { id: "arnold_press", name_zh: "阿諾肩推", name_en: "Arnold Press", muscle_group: "肩膀", image: "images/arnold_press.jpg" },
+            { id: "ab_wheel_rollout", name_zh: "腹輪推出", name_en: "Ab Wheel Rollout", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg" },
+            { id: "dragon_flag", name_zh: "龍旗", name_en: "Dragon Flag", muscle_group: "核心", image: "images/dragon_flag.jpg" },
+            { id: "hanging_leg_raise", name_zh: "懸垂舉腿", name_en: "Hanging Leg Raise", muscle_group: "核心", image: "images/hanging_leg_raise.jpg" },
+            { id: "plank", name_zh: "平板支撐", name_en: "Plank", muscle_group: "核心", image: "images/plank.jpg" },
+            { id: "cable_wood_chopper", name_zh: "繩索伐木", name_en: "Cable Wood Chopper", muscle_group: "核心", image: "images/wood_chopper.jpg" },
+            { id: "reverse_forearm_curl", name_zh: "反向腕彎舉", name_en: "Reverse Forearm Curl", muscle_group: "手臂", image: "images/reverse_forearm_curl.jpg" },
+            { id: "finger_curls", name_zh: "指力彎舉", name_en: "Finger Curls", muscle_group: "手臂", image: "images/finger_curls.jpg" },
+            { id: "barbell_shrugs", name_zh: "槓鈴聳肩", name_en: "Barbell Shrugs", muscle_group: "肩膀", image: "images/barbell_shrugs.jpg" },
+            { id: "romanian_lunge", name_zh: "羅馬尼亞弓步", name_en: "Romanian Lunge", muscle_group: "腿部", image: "images/romanian_lunge.jpg" },
+            { id: "goblet_squat", name_zh: "高腳杯深蹲", name_en: "Goblet Squat", muscle_group: "腿部", image: "images/goblet_squat.jpg" },
+            { id: "incline_bench_row", name_zh: "上斜啞鈴划船", name_en: "Incline Dumbbell Row", muscle_group: "背部", image: "images/incline_bench_row.jpg" },
+            { id: "seated_dumbbell_press", name_zh: "坐姿啞鈴肩推", name_en: "Seated Dumbbell Shoulder Press", muscle_group: "肩膀", image: "images/seated_dumbbell_press.jpg" },
+            { id: "cable_lateral_raise", name_zh: "繩索側平舉", name_en: "Cable Lateral Raise", muscle_group: "肩膀", image: "images/cable_lateral_raise.jpg" },
+            { id: "machine_chest_press", name_zh: "機器胸推", name_en: "Machine Chest Press", muscle_group: "胸部", image: "images/machine_chest_press.jpg" },
+            { id: "t_bar_row", name_zh: "T槓划船", name_en: "T-Bar Row", muscle_group: "背部", image: "images/t_bar_row.jpg" },
+            { id: "leg_curl", name_zh: "腿彎舉", name_en: "Leg Curl", muscle_group: "腿部", image: "images/leg_curl.jpg" },
+            { id: "leg_extension", name_zh: "腿伸展", name_en: "Leg Extension", muscle_group: "腿部", image: "images/leg_extension.jpg" },
+        ];
+
+        // Helper to get display name (bilingual for UI)
+        function getExerciseDisplay(ex) {
+            if (typeof ex === 'string') {
+                // Fallback for legacy names
+                const found = EXERCISES.find(e => e.name_en === ex || e.name_zh === ex);
+                return found ? `${found.name_zh} (${found.name_en})` : ex;
+            }
+            return `${ex.name_zh} (${ex.name_en})`;
+        }
+
+        function getExerciseByName(name) {
+            return EXERCISES.find(e => e.name_zh === name || e.name_en === name || `${e.name_zh} (${e.name_en})` === name) || null;
+        }
+
+        function getExerciseImage(name) {
+            const ex = getExerciseByName(name);
+            return ex ? ex.image : 'images/placeholder.jpg';
+        }
+
+        function getMuscleGroup(name) {
+            const ex = getExerciseByName(name);
+            return ex ? ex.muscle_group : '其他';
+        }
+
+        function getUserStorageKey() {
+            return `charityWorkoutData_${currentUser || 'guest'}`;
+        }
+
+        function saveWorkoutData() {
+            try {
+                const data = {
+                    history: workoutHistory,
+                    library: exerciseLibrary,
+                    routines: routines,
+                    lastPerformed: lastPerformed
+                };
+                localStorage.setItem(getUserStorageKey(), JSON.stringify(data));
+            } catch (e) { console.warn('Local storage save failed', e); }
+        }
+
+        function loadWorkoutData() {
+            try {
+                const raw = localStorage.getItem(getUserStorageKey());
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    workoutHistory = data.history || [];
+                    exerciseLibrary = data.library && data.library.length ? data.library : [...DEFAULT_LIBRARY];
+                    routines = data.routines || [];
+                    lastPerformed = data.lastPerformed || {};
+                } else {
+                    exerciseLibrary = [...DEFAULT_LIBRARY];
+                    workoutHistory = [];
+                    routines = [];
+                    lastPerformed = {};
+                }
+            } catch (e) {
+                exerciseLibrary = [...DEFAULT_LIBRARY];
+                workoutHistory = [];
+            }
+        }
+
+        function seedSampleDataIfNeeded() {
+            if (workoutHistory.length > 0) return;
+            const today = new Date();
+            const samples = [];
+
+            // Sample workout 1 (5 days ago) - Day 1 style
+            const d1 = new Date(today); d1.setDate(d1.getDate() - 5);
+            samples.push({
+                id: Date.now() - 500000,
+                date: d1.toISOString().split('T')[0],
+                exercises: [
+                    {name: "Incline Dumbbell Press", sets: [{weight: 28, reps: 8, rpe: 7, notes: ""}, {weight: 30, reps: 7, rpe: 8, notes: ""}]},
+                    {name: "Flat Dumbbell Press", sets: [{weight: 24, reps: 9, rpe: 7, notes: ""}]},
+                    {name: "Tricep Rope Pushdown", sets: [{weight: 15, reps: 12, rpe: 7, notes: ""}, {weight: 15, reps: 11, rpe: 8, notes: ""}]}
+                ],
+                notes: "Felt strong on chest today."
+            });
+
+            // Sample 2 (3 days ago) - Day 2
+            const d2 = new Date(today); d2.setDate(d2.getDate() - 3);
+            samples.push({
+                id: Date.now() - 300000,
+                date: d2.toISOString().split('T')[0],
+                exercises: [
+                    {name: "Pull-ups", sets: [{weight: 0, reps: 7, rpe: 8, notes: "Bodyweight"}, {weight: 0, reps: 6, rpe: 9, notes: ""}]},
+                    {name: "Deadlift", sets: [{weight: 80, reps: 5, rpe: 8, notes: ""}, {weight: 85, reps: 4, rpe: 9, notes: ""}]},
+                    {name: "Ab Wheel Rollout", sets: [{weight: 0, reps: 12, rpe: 7, notes: ""}]}
+                ],
+                notes: ""
+            });
+
+            // Sample 3 (yesterday) - Day 3
+            const d3 = new Date(today); d3.setDate(d3.getDate() - 1);
+            samples.push({
+                id: Date.now() - 100000,
+                date: d3.toISOString().split('T')[0],
+                exercises: [
+                    {name: "Zercher Squats", sets: [{weight: 42, reps: 8, rpe: 7, notes: ""}, {weight: 45, reps: 6, rpe: 8, notes: ""}]},
+                    {name: "Lateral Raises", sets: [{weight: 8, reps: 15, rpe: 6, notes: ""}, {weight: 8, reps: 14, rpe: 7, notes: ""}]},
+                    {name: "Dragon Flag", sets: [{weight: 0, reps: 6, rpe: 8, notes: "Controlled"}]}
+                ],
+                notes: "Good leg pump."
+            });
+
+            // Add a couple more varied ones
+            const d4 = new Date(today); d4.setDate(d4.getDate() - 8);
+            samples.push({
+                id: Date.now() - 800000,
+                date: d4.toISOString().split('T')[0],
+                exercises: [
+                    {name: "Deadlift", sets: [{weight: 75, reps: 6, rpe: 7, notes: ""}]},
+                    {name: "Seated Cable Row", sets: [{weight: 55, reps: 10, rpe: 7, notes: ""}, {weight: 60, reps: 8, rpe: 8, notes: ""}]}
+                ],
+                notes: ""
+            });
+
+            samples.forEach(s => {
+                s.totalVolume = calculateWorkoutVolume(s);
+                workoutHistory.push(s);
+            });
+
+            // Update last performed from seed
+            lastPerformed = {};
+            workoutHistory.forEach(w => {
+                w.exercises.forEach(ex => {
+                    const lastSet = ex.sets[ex.sets.length - 1];
+                    if (lastSet) {
+                        lastPerformed[ex.name] = {weight: lastSet.weight, reps: lastSet.reps, rpe: lastSet.rpe, date: w.date};
+                    }
+                });
+            });
+
+            saveWorkoutData();
+        }
+
+        function calculateSetVolume(set) {
+            const w = parseFloat(set.weight) || 0;
+            const r = parseInt(set.reps) || 0;
+            return w * r;
+        }
+
+        function calculateWorkoutVolume(workout) {
+            let total = 0;
+            (workout.exercises || []).forEach(ex => {
+                (ex.sets || []).forEach(set => {
+                    total += calculateSetVolume(set);
+                });
+            });
+            return Math.round(total);
+        }
+
+        function estimate1RM(weight, reps) {
+            const w = parseFloat(weight) || 0;
+            const r = parseInt(reps) || 0;
+            if (w <= 0 || r <= 0) return 0;
+            return Math.round(w * (1 + 0.0333 * r) * 10) / 10;
+        }
+
+        function getAllExercisesFromHistory() {
+            const set = new Set();
+            workoutHistory.forEach(w => w.exercises.forEach(ex => set.add(ex.name)));
+            exerciseLibrary.forEach(e => set.add(e.name));
+            return Array.from(set).sort();
+        }
+
+        function rebuildLastPerformed() {
+            lastPerformed = {};
+            [...workoutHistory].sort((a,b) => b.date.localeCompare(a.date)).forEach(w => {
+                w.exercises.forEach(ex => {
+                    if (!lastPerformed[ex.name] && ex.sets && ex.sets.length) {
+                        const last = ex.sets[ex.sets.length-1];
+                        lastPerformed[ex.name] = {weight: last.weight, reps: last.reps, rpe: last.rpe, date: w.date};
+                    }
+                });
+            });
+        }
+
+        // --- Current Workout Management (the fast logging core) ---
+        function startNewWorkout(dateStr = null) {
+            const date = dateStr || new Date().toISOString().split('T')[0];
+            currentWorkout = { id: Date.now(), date, exercises: [], notes: '' };
+            document.getElementById('live-log-panel').classList.remove('hidden');
+            document.getElementById('log-empty-state').classList.add('hidden');
+            document.getElementById('current-workout-date').value = currentWorkout.date;
+            renderCurrentWorkout();
+            updateSessionVolume();
+            // Prefill first quick exercise hint
+            updateLastPerformedHint();
+        }
+
+        function updateCurrentWorkoutDate() {
+            if (!currentWorkout) return;
+            currentWorkout.date = document.getElementById('current-workout-date').value;
+        }
+
+        function cancelCurrentWorkout() {
+            if (!currentWorkout) return;
+            if (!confirm('Discard current workout?')) return;
+            currentWorkout = null;
+            document.getElementById('live-log-panel').classList.add('hidden');
+            document.getElementById('log-empty-state').classList.remove('hidden');
+            resetRestTimer();
+        }
+
+        function addExerciseToCurrentWorkout(nameFromInput = null) {
+            if (!currentWorkout) startNewWorkout();
+            let name = nameFromInput || document.getElementById('add-exercise-input').value.trim();
+            if (!name) return;
+
+            const ex = getExerciseByName(name);
+            const displayName = ex ? getExerciseDisplay(ex) : name;
+
+            const existing = currentWorkout.exercises.find(e => e.name.toLowerCase() === displayName.toLowerCase());
+            if (existing) {
+                alert('此動作已在本訓練中。');
+                return;
+            }
+
+            currentWorkout.exercises.push({ name: displayName, sets: [] });
+            document.getElementById('add-exercise-input').value = '';
+            renderCurrentWorkout();
+            saveWorkoutData();
+            updateLastPerformedHint(displayName);
+        }
+
+        function removeExerciseFromCurrent(idx) {
+            if (!currentWorkout) return;
+            currentWorkout.exercises.splice(idx, 1);
+            renderCurrentWorkout();
+            updateSessionVolume();
+        }
+
+        function addSetToExercise(exIdx) {
+            if (!currentWorkout) return;
+            const ex = currentWorkout.exercises[exIdx];
+            const weightInput = document.getElementById(`set-weight-${exIdx}`);
+            const repsInput = document.getElementById(`set-reps-${exIdx}`);
+            const rpeInput = document.getElementById(`set-rpe-${exIdx}`);
+
+            const weight = parseFloat(weightInput?.value) || 0;
+            const reps = parseInt(repsInput?.value) || 0;
+            const rpe = parseInt(rpeInput?.value) || 7;
+
+            if (reps <= 0) {
+                alert('請輸入次數');
+                return;
+            }
+
+            const vol = weight * reps;
+            const newSet = { weight, reps, rpe, notes: '', volume: vol };
+
+            ex.sets.push(newSet);
+
+            // Update last performed
+            lastPerformed[ex.name] = { weight, reps, rpe, date: currentWorkout.date };
+
+            // Clear inputs for next set (keep weight/reps for speed, clear only if user wants)
+            if (weightInput) weightInput.value = weight || '';
+            if (repsInput) repsInput.value = reps || '';
+            if (rpeInput) rpeInput.value = rpe || 7;
+
+            renderCurrentWorkout();
+            updateSessionVolume();
+            saveWorkoutData();
+
+            // Auto start rest timer if not running
+            if (!restTimerRunning && restTimeLeft <= 5) {
+                resetRestTimer(DEFAULT_REST);
+                startRestTimer();
+            }
+        }
+
+        function deleteSet(exIdx, setIdx) {
+            if (!currentWorkout) return;
+            currentWorkout.exercises[exIdx].sets.splice(setIdx, 1);
+            renderCurrentWorkout();
+            updateSessionVolume();
+            saveWorkoutData();
+        }
+
+        function updateSetField(exIdx, setIdx, field, value) {
+            if (!currentWorkout) return;
+            const set = currentWorkout.exercises[exIdx].sets[setIdx];
+            set[field] = (field === 'weight' || field === 'rpe') ? parseFloat(value) || 0 : (field === 'reps' ? parseInt(value) || 0 : value);
+            if (field === 'weight' || field === 'reps') {
+                set.volume = calculateSetVolume(set);
+            }
+            updateSessionVolume();
+            // No full re-render for speed on every keystroke; user can blur or we can debounce
+        }
+
+        function renderCurrentWorkout() {
+            const container = document.getElementById('current-workout-exercises');
+            const countEl = document.getElementById('current-workout-exercise-count');
+            if (!currentWorkout || !container) return;
+
+            countEl.textContent = `${currentWorkout.exercises.length} exercises`;
+
+            if (currentWorkout.exercises.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-sm text-[#a8a29e]">尚未加入動作。請使用下方輸入或瀏覽動作庫。</div>`;
+                return;
+            }
+
+            let html = '';
+            currentWorkout.exercises.forEach((ex, exIdx) => {
+                const last = lastPerformed[ex.name];
+                let lastHtml = '';
+                if (last) {
+                    lastHtml = `<span class="text-[10px] text-emerald-300/70">Last: ${last.weight}kg × ${last.reps} @ RPE${last.rpe}</span>`;
+                }
+
+                let setsHtml = '';
+                ex.sets.forEach((set, sIdx) => {
+                    const vol = set.volume || calculateSetVolume(set);
+                    setsHtml += `
+                        <div class="set-row grid grid-cols-12 gap-1 items-center px-2 py-1.5 text-xs border-b border-[#3f3a36] last:border-0">
+                            <div class="col-span-1 text-[#a8a29e]">#${sIdx+1}</div>
+                            <div class="col-span-2"><input type="number" step="0.5" value="${set.weight}" 
+                                onchange="updateSetField(${exIdx},${sIdx},'weight',this.value)" class="log-input w-full px-1.5 py-0.5 rounded text-center text-xs"></div>
+                            <div class="col-span-2"><input type="number" value="${set.reps}" 
+                                onchange="updateSetField(${exIdx},${sIdx},'reps',this.value)" class="log-input w-full px-1.5 py-0.5 rounded text-center text-xs"></div>
+                            <div class="col-span-1.5"><input type="number" min="1" max="10" value="${set.rpe || 7}" 
+                                onchange="updateSetField(${exIdx},${sIdx},'rpe',this.value)" class="log-input w-full px-1 py-0.5 rounded text-center text-xs"></div>
+                            <div class="col-span-2 text-right tabular-nums text-emerald-300">${vol}kg</div>
+                            <div class="col-span-2"><input type="text" value="${set.notes || ''}" placeholder="note"
+                                onchange="updateSetField(${exIdx},${sIdx},'notes',this.value)" class="log-input w-full px-1.5 py-0.5 rounded text-[10px]"></div>
+                            <div class="col-span-1 text-right">
+                                <button onclick="deleteSet(${exIdx},${sIdx})" class="text-red-400 hover:text-red-300 px-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </div>`;
+                });
+
+                html += `
+                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-3">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="font-semibold flex items-center gap-x-2">${ex.name}
+                                    <span class="muscle-chip">${getExerciseCategory(ex.name)}</span>
+                                </div>
+                                ${lastHtml}
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="copyLastToExercise(${exIdx})" class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 rounded">使用上次</button>
+                                <button onclick="removeExerciseFromCurrent(${exIdx})" class="text-red-400 hover:text-red-300 px-1.5"><i class="fa-solid fa-times"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Quick add row -->
+                        <div class="grid grid-cols-12 gap-1 items-center mb-2">
+                            <div class="col-span-3">
+                                <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg" class="log-input w-full px-2 py-1 rounded-xl text-sm text-center">
+                            </div>
+                            <div class="col-span-2">
+                                <input id="set-reps-${exIdx}" type="number" placeholder="reps" class="log-input w-full px-2 py-1 rounded-xl text-sm text-center">
+                            </div>
+                            <div class="col-span-2">
+                                <input id="set-rpe-${exIdx}" type="number" min="1" max="10" value="7" class="log-input w-full px-2 py-1 rounded-xl text-sm text-center">
+                            </div>
+                            <div class="col-span-5">
+                                <button onclick="addSetToExercise(${exIdx})" 
+                                    class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1">
+                                    <i class="fa-solid fa-plus"></i> <span>Add Set</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${setsHtml ? `<div class="mt-1 text-[10px] text-[#a8a29e] px-1">Sets</div><div class="text-xs">${setsHtml}</div>` : 
+                        '<div class="text-xs text-[#a8a29e] px-1 italic">尚未有組數 — 在上方加入第一組</div>'}
+                    </div>`;
+            });
+            container.innerHTML = html;
+
+            // Pre-fill quick inputs from last performed where possible
+            currentWorkout.exercises.forEach((ex, idx) => {
+                const last = lastPerformed[ex.name];
+                const wEl = document.getElementById(`set-weight-${idx}`);
+                const rEl = document.getElementById(`set-reps-${idx}`);
+                const rpEl = document.getElementById(`set-rpe-${idx}`);
+                if (last && wEl && !wEl.value) wEl.value = last.weight || '';
+                if (last && rEl && !rEl.value) rEl.value = last.reps || '';
+                if (last && rpEl) rpEl.value = last.rpe || 7;
+            });
+        }
+
+        function copyLastToExercise(exIdx) {
+            if (!currentWorkout) return;
+            const ex = currentWorkout.exercises[exIdx];
+            const last = lastPerformed[ex.name];
+            if (!last) return alert('沒有 ' + ex.name + ' 的上次數據');
+            const wEl = document.getElementById(`set-weight-${exIdx}`);
+            const rEl = document.getElementById(`set-reps-${exIdx}`);
+            const rpEl = document.getElementById(`set-rpe-${exIdx}`);
+            if (wEl) wEl.value = last.weight;
+            if (rEl) rEl.value = last.reps;
+            if (rpEl) rpEl.value = last.rpe;
+        }
+
+        function updateSessionVolume() {
+            if (!currentWorkout) return;
+            const volEl = document.getElementById('session-volume');
+            const setsEl = document.getElementById('session-sets-count');
+            const tonnesEl = document.getElementById('session-tonnes');
+
+            let totalVol = 0;
+            let totalSets = 0;
+            currentWorkout.exercises.forEach(ex => {
+                totalSets += ex.sets.length;
+                ex.sets.forEach(s => totalVol += (s.volume || calculateSetVolume(s)));
+            });
+
+            volEl.textContent = totalVol.toLocaleString();
+            setsEl.textContent = `${totalSets} sets`;
+            tonnesEl.textContent = (totalVol / 1000).toFixed(2) + ' t';
+        }
+
+        function updateLastPerformedHint(specificExercise = null) {
+            const hint = document.getElementById('last-performed-hint');
+            if (!hint) return;
+            if (specificExercise && lastPerformed[specificExercise]) {
+                const l = lastPerformed[specificExercise];
+                hint.innerHTML = `<strong>${specificExercise}</strong> 上次：${l.weight}kg × ${l.reps}（RPE ${l.rpe}）於 ${l.date}`;
+            } else {
+                hint.innerHTML = '';
+            }
+        }
+
+        // --- Rest Timer ---
+        function setRestPreset(seconds) {
+            resetRestTimer(seconds);
+            // Auto start for convenience
+            startRestTimer();
+        }
+
+        function resetRestTimer(seconds = DEFAULT_REST) {
+            pauseRestTimer();
+            restTimeLeft = seconds;
+            updateTimerDisplay();
+            document.getElementById('timer-status').textContent = '準備就緒';
+        }
+
+        function updateTimerDisplay() {
+            const el = document.getElementById('timer-display');
+            if (!el) return;
+            const min = Math.floor(restTimeLeft / 60);
+            const sec = restTimeLeft % 60;
+            el.textContent = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
+            if (restTimeLeft <= 10 && restTimeLeft > 0) {
+                el.classList.add('text-red-400');
+            } else {
+                el.classList.remove('text-red-400');
+            }
+        }
+
+        function startRestTimer() {
+            if (restTimerRunning) return;
+            const btn = document.getElementById('timer-start-btn');
+            if (btn) btn.textContent = 'RUNNING...';
+            restTimerRunning = true;
+            document.getElementById('timer-status').textContent = '休息中...';
+
+            if (restTimerInterval) clearInterval(restTimerInterval);
+            restTimerInterval = setInterval(() => {
+                restTimeLeft--;
+                updateTimerDisplay();
+                if (restTimeLeft <= 0) {
+                    clearInterval(restTimerInterval);
+                    restTimerRunning = false;
+                    document.getElementById('timer-status').innerHTML = `<span class="text-emerald-400 font-semibold">時間到 — 下一組！</span>`;
+                    if (btn) btn.textContent = 'START';
+                    playBeep();
+                    // Optional: vibrate on supported devices
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                }
+            }, 1000);
+        }
+
+        function pauseRestTimer() {
+            if (restTimerInterval) clearInterval(restTimerInterval);
+            restTimerRunning = false;
+            const btn = document.getElementById('timer-start-btn');
+            if (btn) btn.textContent = 'RESUME';
+            document.getElementById('timer-status').textContent = '已暫停';
+        }
+
+        function addTimeToTimer(extra) {
+            restTimeLeft += extra;
+            updateTimerDisplay();
+        }
+
+        function playBeep() {
+            try {
+                const audio = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audio.createOscillator();
+                const gain = audio.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 880;
+                gain.gain.value = 0.3;
+                osc.connect(gain);
+                gain.connect(audio.destination);
+                osc.start();
+                setTimeout(() => {
+                    gain.gain.linearRampToValueAtTime(0.0001, audio.currentTime + 0.8);
+                    setTimeout(() => osc.stop(), 900);
+                }, 180);
+            } catch (e) {}
+        }
+
+        // --- Finish Workout + PR Detection + Charity ---
+        function finishCurrentWorkout() {
+            if (!currentWorkout || currentWorkout.exercises.length === 0) {
+                alert('完成前請至少加入一個動作並記錄組數。');
+                return;
+            }
+            const vol = calculateWorkoutVolume(currentWorkout);
+            const totalSets = currentWorkout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+            let avgRPE = 0;
+            let rpeCount = 0;
+            currentWorkout.exercises.forEach(ex => ex.sets.forEach(s => { if (s.rpe) { avgRPE += s.rpe; rpeCount++; } }));
+            avgRPE = rpeCount ? (avgRPE / rpeCount).toFixed(1) : '—';
+
+            // Detect new PRs
+            const prs = detectNewPRs(currentWorkout);
+
+            // Populate modal
+            document.getElementById('finish-date').textContent = currentWorkout.date;
+            document.getElementById('finish-volume').textContent = vol.toLocaleString() + ' kg';
+            document.getElementById('finish-tonnes').textContent = (vol / 1000).toFixed(2) + ' tonnes moved';
+            document.getElementById('finish-sets').textContent = `${totalSets} sets • ${currentWorkout.exercises.length} exercises`;
+            document.getElementById('finish-rpe').textContent = avgRPE;
+
+            const prContainer = document.getElementById('finish-prs');
+            if (prs.length > 0) {
+                prContainer.innerHTML = `<div class="mb-1 text-amber-400 text-sm font-semibold">新個人紀錄！🔥</div>` +
+                    prs.map(p => `<div class="pr-badge inline-block mr-1 mb-1">${p}</div>`).join('');
+            } else {
+                prContainer.innerHTML = `<div class="text-xs text-[#a8a29e]">本次訓練穩健。沒有新 PR — 繼續進步！</div>`;
+            }
+
+            document.getElementById('finish-notes').value = currentWorkout.notes || '';
+            document.getElementById('finishModal').classList.remove('hidden');
+            document.getElementById('finishModal').classList.add('flex');
+        }
+
+        function detectNewPRs(workout) {
+            const newPRs = [];
+            const allHistoryForComparison = [...workoutHistory]; // before adding current
+
+            workout.exercises.forEach(ex => {
+                ex.sets.forEach(set => {
+                    const prevBest = getBestForExercise(ex.name, allHistoryForComparison);
+                    const currentE1RM = estimate1RM(set.weight, set.reps);
+
+                    // 1. Best weight for any reps on this exercise
+                    if (!prevBest.bestWeight || set.weight > prevBest.bestWeight) {
+                        newPRs.push(`${ex.name}：新最大重量 ${set.weight}kg`);
+                        prevBest.bestWeight = set.weight;
+                    }
+
+                    // 2. Best e1RM overall for exercise
+                    if (currentE1RM > (prevBest.bestE1RM || 0)) {
+                        newPRs.push(`${ex.name}：新預估1RM ${currentE1RM}kg（${set.reps} 次）`);
+                    }
+                });
+            });
+            return [...new Set(newPRs)]; // dedupe
+        }
+
+        function getBestForExercise(exerciseName, historyArray = workoutHistory) {
+            let bestWeight = 0;
+            let bestE1RM = 0;
+            historyArray.forEach(w => {
+                w.exercises.forEach(ex => {
+                    if (ex.name === exerciseName) {
+                        ex.sets.forEach(s => {
+                            if (s.weight > bestWeight) bestWeight = s.weight;
+                            const e = estimate1RM(s.weight, s.reps);
+                            if (e > bestE1RM) bestE1RM = e;
+                        });
+                    }
+                });
+            });
+            return { bestWeight, bestE1RM };
+        }
+
+        function hideFinishModal() {
+            document.getElementById('finishModal').classList.add('hidden');
+            document.getElementById('finishModal').classList.remove('flex');
+        }
+
+        function confirmFinishWorkout() {
+            if (!currentWorkout) return;
+
+            const notes = document.getElementById('finish-notes').value.trim();
+            currentWorkout.notes = notes;
+
+            // Compute final volume
+            currentWorkout.totalVolume = calculateWorkoutVolume(currentWorkout);
+
+            // Add to history (newest first)
+            workoutHistory.unshift(currentWorkout);
+
+            // Rebuild last performed + save
+            rebuildLastPerformed();
+            saveWorkoutData();
+
+            // Optional: Push flat sets to legacy GAS backend for compatibility
+            pushCurrentWorkoutToLegacyGAS(currentWorkout).catch(console.warn);
+
+            // Reset UI
+            hideFinishModal();
+            const finishedDate = currentWorkout.date;
+            currentWorkout = null;
+            document.getElementById('live-log-panel').classList.add('hidden');
+            document.getElementById('log-empty-state').classList.remove('hidden');
+            resetRestTimer();
+
+            // Refresh all views
+            renderWorkoutHistory();
+            renderOverallStats();
+            renderCalendar();
+            updateExerciseSelectForAnalysis();
+
+            // Show celebratory message
+            const tonnes = (currentWorkout ? currentWorkout.totalVolume || 0 : 0) / 1000;
+            alert(`訓練已儲存！你今日移動了 ${tonnes.toFixed(2)} 噸。為慈善挑戰加油！`);
+        }
+
+        async function pushCurrentWorkoutToLegacyGAS(workout) {
+            if (!currentUser || !APPS_SCRIPT_URL) return;
+            for (const ex of workout.exercises) {
+                for (const set of ex.sets) {
+                    try {
+                        await callAppsScript("addLog", {
+                            user: currentUser,
+                            log: {
+                                id: Date.now() + Math.random(),
+                                user: currentUser,
+                                date: workout.date,
+                                exercise: ex.name,
+                                sets: set.reps ? 1 : (set.sets || 1),
+                                reps: set.reps,
+                                weight: set.weight
+                            }
+                        });
+                    } catch (e) {}
+                }
+            }
+        }
+
+        // --- Routines ---
+        function showRoutinesModal() {
+            const modal = document.getElementById('routinesModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderRoutinesList();
+        }
+
+        function hideRoutinesModal() {
+            const modal = document.getElementById('routinesModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderRoutinesList() {
+            const container = document.getElementById('routines-list');
+            container.innerHTML = '';
+            if (routines.length === 0) {
+                container.innerHTML = `<div class="text-xs text-[#a8a29e] py-2">尚未有模板。請在上方將目前訓練結構儲存。</div>`;
+                return;
+            }
+            routines.forEach((r, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center bg-[#292524] px-3 py-2 rounded-2xl text-sm';
+                div.innerHTML = `
+                    <div>
+                        <span class="font-medium">${r.name}</span>
+                        <span class="text-xs text-[#a8a29e] ml-2">${r.exercises.length} exercises</span>
+                    </div>
+                    <div class="flex gap-1">
+                        <button class="text-emerald-400 text-xs px-2" onclick="loadRoutine(${idx});hideRoutinesModal()">Load</button>
+                        <button class="text-red-400 text-xs px-2" onclick="deleteRoutine(${idx});renderRoutinesList()">Del</button>
+                    </div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function saveCurrentAsRoutine() {
+            if (!currentWorkout || currentWorkout.exercises.length === 0) {
+                alert('請先開始訓練並加入動作。');
+                return;
+            }
+            const name = document.getElementById('new-routine-name').value.trim();
+            if (!name) return alert('請為模板命名');
+            routines.push({
+                id: Date.now(),
+                name,
+                exercises: currentWorkout.exercises.map(e => e.name)
+            });
+            saveWorkoutData();
+            document.getElementById('new-routine-name').value = '';
+            renderRoutinesList();
+            alert('Routine saved!');
+        }
+
+        function loadRoutine(idx) {
+            const routine = routines[idx];
+            if (!routine) return;
+            if (!currentWorkout) startNewWorkout();
+            routine.exercises.forEach(name => {
+                if (!currentWorkout.exercises.find(e => e.name === name)) {
+                    currentWorkout.exercises.push({ name, sets: [] });
+                }
+            });
+            renderCurrentWorkout();
+            hideRoutinesModal();
+        }
+
+        function deleteRoutine(idx) {
+            if (!confirm('Delete this routine?')) return;
+            routines.splice(idx, 1);
+            saveWorkoutData();
+        }
+
+        function quickLoadFromPlan(day) {
+            // Ties beautifully to the existing training plan
+            const planExercises = {
+                1: ["Incline Dumbbell Press", "Flat Dumbbell Press", "Lower Chest Cable Fly", "Tricep Rope Pushdown", "Cable Overhead Triceps Extension", "Wood Chopper"],
+                2: ["Pull-ups", "Seated Cable Row", "Deadlift", "Bayesian Cable Curls", "Preacher Curls", "Ab Wheel Rollout"],
+                3: ["Zercher Squats", "Reverse Forearm Curl", "Lateral Raises", "Rear Delt Raises", "Dragon Flag"]
+            };
+            if (!currentWorkout) startNewWorkout();
+            (planExercises[day] || []).forEach(name => {
+                if (!currentWorkout.exercises.find(e => e.name === name)) {
+                    currentWorkout.exercises.push({name, sets: []});
+                }
+            });
+            renderCurrentWorkout();
+        }
+
+        function loadLastWorkoutAsTemplate() {
+            if (workoutHistory.length === 0) return alert('沒有之前的訓練記錄');
+            const last = workoutHistory[0];
+            startNewWorkout();
+            last.exercises.forEach(ex => {
+                currentWorkout.exercises.push({ name: ex.name, sets: [] });
+            });
+            renderCurrentWorkout();
+        }
+
+        // --- History Rendering ---
+        function renderWorkoutHistory() {
+            const container = document.getElementById('workout-history-list');
+            container.innerHTML = '';
+            if (workoutHistory.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-[#a8a29e]">尚未記錄任何訓練。請在上方開始！</div>`;
+                return;
+            }
+
+            const recent = [...workoutHistory].slice(0, 12);
+            recent.forEach((w, idx) => {
+                const vol = w.totalVolume || calculateWorkoutVolume(w);
+                const setsCount = w.exercises.reduce((a, e) => a + e.sets.length, 0);
+                const card = document.createElement('div');
+                card.className = 'workout-history-card log-card rounded-2xl p-3.5 cursor-pointer';
+                card.innerHTML = `
+                    <div class="flex justify-between">
+                        <div class="font-semibold">${w.date}</div>
+                        <div class="text-emerald-400 text-sm tabular-nums">${vol.toLocaleString()}kg</div>
+                    </div>
+                    <div class="text-xs text-[#a8a29e]">${w.exercises.length} exercises • ${setsCount} sets</div>
+                    ${w.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${w.notes}"</div>` : ''}
+                `;
+                card.onclick = () => showWorkoutDetail(w, idx);
+                container.appendChild(card);
+            });
+        }
+
+        function showWorkoutDetail(workout, historyIndex) {
+            // Simple detail view using alert + option to delete for now (can be expanded later)
+            let txt = `Date: ${workout.date}\nVolume: ${workout.totalVolume || calculateWorkoutVolume(workout)} kg\n\n`;
+            workout.exercises.forEach(ex => {
+                txt += `${ex.name}:\n`;
+                ex.sets.forEach((s, i) => txt += `  Set ${i+1}: ${s.weight}kg × ${s.reps} @ RPE${s.rpe || '-'} ${s.notes ? '('+s.notes+')' : ''}\n`);
+            });
+            if (confirm(txt + '\n\n確定刪除這次訓練？')) {
+                workoutHistory.splice(historyIndex, 1);
+                saveWorkoutData();
+                renderWorkoutHistory();
+                renderOverallStats();
+                renderCalendar();
+            }
+        }
+
+        // --- Per Exercise Analysis + Charts ---
+        function updateExerciseSelectForAnalysis() {
+            const sel = document.getElementById('analysis-exercise-select');
+            if (!sel) return;
+            const exercises = getAllExercisesFromHistory();
+            sel.innerHTML = exercises.map(e => `<option value="${e}">${e}</option>`).join('');
+            if (exercises.length) sel.value = exercises[0];
+        }
+
+        function renderExerciseAnalysis() {
+            const sel = document.getElementById('analysis-exercise-select');
+            const exercise = sel ? sel.value : null;
+            if (!exercise) return;
+
+            const summaryEl = document.getElementById('analysis-summary');
+            const tableBody = document.getElementById('analysis-sets-table');
+
+            // Collect all sets for this exercise across history
+            let allSets = [];
+            workoutHistory.forEach(w => {
+                const ex = w.exercises.find(e => e.name === exercise);
+                if (ex) {
+                    ex.sets.forEach(s => {
+                        allSets.push({
+                            date: w.date,
+                            weight: s.weight,
+                            reps: s.reps,
+                            rpe: s.rpe,
+                            volume: s.volume || calculateSetVolume(s),
+                            e1rm: estimate1RM(s.weight, s.reps),
+                            notes: s.notes || ''
+                        });
+                    });
+                }
+            });
+            allSets.sort((a,b) => b.date.localeCompare(a.date));
+
+            // Summary
+            const bestE1RM = Math.max(0, ...allSets.map(s => s.e1rm));
+            const bestWeight = Math.max(0, ...allSets.map(s => s.weight));
+            const totalVol = allSets.reduce((sum, s) => sum + s.volume, 0);
+            summaryEl.innerHTML = `
+                <div class="bg-[#292524] rounded-2xl p-3">
+                    <div class="text-xs text-[#a8a29e]">最佳預估 1RM</div>
+                    <div class="text-3xl font-bold text-amber-400">${bestE1RM} kg</div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <div class="bg-[#292524] rounded-2xl p-3"><div class="text-xs text-[#a8a29e]">最高重量</div><div class="text-xl font-semibold">${bestWeight} kg</div></div>
+                    <div class="bg-[#292524] rounded-2xl p-3"><div class="text-xs text-[#a8a29e]">總訓練量</div><div class="text-xl font-semibold tabular-nums">${totalVol.toLocaleString()} kg</div></div>
+                </div>
+                <div class="text-xs mt-2 text-[#a8a29e]">此動作已記錄 ${allSets.length} 組</div>
+            `;
+
+            // Table
+            tableBody.innerHTML = allSets.slice(0, 30).map(s => `
+                <tr class="border-b border-[#3f3a36]">
+                    <td class="py-1 px-3">${s.date}</td>
+                    <td class="py-1 px-2 text-center tabular-nums">${s.weight}</td>
+                    <td class="py-1 px-2 text-center">${s.reps}</td>
+                    <td class="py-1 px-2 text-center">${s.rpe || '-'}</td>
+                    <td class="py-1 px-2 text-center text-emerald-300 tabular-nums">${s.volume}</td>
+                    <td class="py-1 px-2 text-center text-amber-300 tabular-nums">${s.e1rm}</td>
+                    <td class="py-1 px-3 text-xs text-[#a8a29e]">${s.notes}</td>
+                </tr>
+            `).join('') || `<tr><td colspan="7" class="py-3 text-center text-[#a8a29e]">尚未記錄此動作的組數。</td></tr>`;
+
+            // Charts (destroy old)
+            if (analysisChart1RM) analysisChart1RM.destroy();
+            if (analysisChartVolume) analysisChartVolume.destroy();
+
+            const dates = allSets.map(s => s.date).reverse();
+            const e1rms = allSets.map(s => s.e1rm).reverse();
+            const vols = allSets.map(s => s.volume).reverse();
+
+            const ctx1 = document.getElementById('chart-1rm');
+            const ctx2 = document.getElementById('chart-volume');
+
+            if (dates.length > 1 && ctx1 && ctx2) {
+                analysisChart1RM = new Chart(ctx1, {
+                    type: 'line',
+                    data: { labels: dates, datasets: [{ label: 'Est 1RM', data: e1rms, borderColor: '#4ade80', tension: 0.2, fill: false }] },
+                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+                analysisChartVolume = new Chart(ctx2, {
+                    type: 'bar',
+                    data: { labels: dates, datasets: [{ label: 'Volume', data: vols, backgroundColor: '#166534' }] },
+                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            } else {
+                if (ctx1) ctx1.getContext('2d').clearRect(0,0,ctx1.width,ctx1.height);
+                if (ctx2) ctx2.getContext('2d').clearRect(0,0,ctx2.width,ctx2.height);
+            }
+        }
+
+        // --- 整體數據 + 肌群分佈 + 每週圖表 ---
+        function renderOverallStats() {
+            const totalWorkouts = workoutHistory.length;
+            let totalSets = 0;
+            let lifetimeVol = 0;
+            let prCount = 0; // simplistic: count how many times we saw a new high e1rm historically
+
+            const bodyPartVol = {};
+            EXERCISE_CATEGORIES.forEach(c => bodyPartVol[c] = 0);
+
+            workoutHistory.forEach(w => {
+                w.exercises.forEach(ex => {
+                    const cat = getExerciseCategory(ex.name);
+                    let exVol = 0;
+                    ex.sets.forEach(s => {
+                        const v = s.volume || calculateSetVolume(s);
+                        exVol += v;
+                        totalSets++;
+                    });
+                    bodyPartVol[cat] = (bodyPartVol[cat] || 0) + exVol;
+                    lifetimeVol += exVol;
+                });
+            });
+
+            // Streak calculation (simple consecutive calendar days with workouts)
+            const sortedDates = [...new Set(workoutHistory.map(w => w.date))].sort().reverse();
+            let streak = 0;
+            if (sortedDates.length > 0) {
+                let current = new Date(sortedDates[0]);
+                streak = 1;
+                for (let i = 1; i < sortedDates.length; i++) {
+                    const prev = new Date(sortedDates[i]);
+                    const diff = Math.round((current - prev) / (1000*3600*24));
+                    if (diff === 1) {
+                        streak++;
+                        current = prev;
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            document.getElementById('stat-streak').textContent = streak;
+            document.getElementById('stat-lifetime-volume').textContent = lifetimeVol.toLocaleString();
+            document.getElementById('stat-lifetime-tonnes').textContent = (lifetimeVol / 1000).toFixed(1);
+            document.getElementById('stat-total-workouts').textContent = totalWorkouts;
+            document.getElementById('stat-total-sets').textContent = totalSets;
+            document.getElementById('stat-pr-count').textContent = Math.floor(lifetimeVol / 12000) + 3; // fun proxy
+
+            // Body part pie
+            if (bodyPartChart) bodyPartChart.destroy();
+            const bpCtx = document.getElementById('chart-bodypart');
+            const labels = Object.keys(bodyPartVol).filter(k => bodyPartVol[k] > 0);
+            const dataVals = labels.map(k => bodyPartVol[k]);
+            if (bpCtx && labels.length) {
+                bodyPartChart = new Chart(bpCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{ data: dataVals, backgroundColor: ['#4ade80','#166534','#f59e0b','#a78bfa','#f472b6','#38bdf8','#fbbf24','#64748b'] }]
+                    },
+                    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } } } }
+                });
+            }
+
+            // Weekly volume (very rough last 8 weeks)
+            if (weeklyVolumeChart) weeklyVolumeChart.destroy();
+            const weeklyCtx = document.getElementById('chart-weekly-volume');
+            const weekly = computeWeeklyVolumes(8);
+            if (weeklyCtx) {
+                weeklyVolumeChart = new Chart(weeklyCtx, {
+                    type: 'bar',
+                    data: { labels: weekly.labels, datasets: [{ label: 'Weekly Volume (kg)', data: weekly.values, backgroundColor: '#4ade80' }] },
+                    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+        }
+
+        function computeWeeklyVolumes(weeks = 8) {
+            const labels = [];
+            const values = [];
+            const now = new Date();
+            for (let i = weeks - 1; i >= 0; i--) {
+                const weekStart = new Date(now);
+                weekStart.setDate(weekStart.getDate() - (i * 7));
+                const weekLabel = `${weekStart.getMonth()+1}/${weekStart.getDate()}`;
+                labels.push(weekLabel);
+
+                let weekVol = 0;
+                workoutHistory.forEach(w => {
+                    const wd = new Date(w.date);
+                    const daysDiff = Math.round((now - wd) / (1000*3600*24));
+                    if (daysDiff >= i*7 && daysDiff < (i+1)*7) {
+                        weekVol += (w.totalVolume || calculateWorkoutVolume(w));
+                    }
+                });
+                values.push(weekVol);
+            }
+            return { labels, values };
+        }
+
+        function getExerciseCategory(name) {
+            return getMuscleGroup(name);
+        }
+
+        // --- Calendar + Muscle Volume Heatmap ---
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const muscleContainer = document.getElementById('muscle-volume-bars');
+            if (!grid) return;
+
+            grid.innerHTML = '';
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Volume per day this month
+            const volByDay = {};
+            workoutHistory.forEach(w => {
+                const d = new Date(w.date);
+                if (d.getFullYear() === year && d.getMonth() === month) {
+                    const day = d.getDate();
+                    volByDay[day] = (volByDay[day] || 0) + (w.totalVolume || calculateWorkoutVolume(w));
+                }
+            });
+            const maxVol = Math.max(1, ...Object.values(volByDay));
+
+            // Empty days
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'h-8 rounded bg-[#252321] opacity-40';
+                grid.appendChild(empty);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                const v = volByDay[day] || 0;
+                const intensity = Math.min(1, v / maxVol);
+                const bg = v > 0 ? `rgba(74, 222, 128, ${0.25 + intensity * 0.65})` : '#252321';
+                cell.className = `h-8 flex items-center justify-center text-[10px] rounded cursor-pointer ${v > 0 ? 'text-white font-medium' : 'text-[#a8a29e]'}`;
+                cell.style.background = bg;
+                cell.innerHTML = `${day}`;
+                cell.onclick = () => {
+                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                    const found = workoutHistory.find(ww => ww.date === dateStr);
+                    if (found) showWorkoutDetail(found, workoutHistory.indexOf(found));
+                    else alert(`此日期 ${dateStr} 沒有訓練記錄`);
+                };
+                grid.appendChild(cell);
+            }
+
+            // Muscle volume last 30d
+            muscleContainer.innerHTML = '';
+            const muscleVol = {};
+            const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+            workoutHistory.forEach(w => {
+                if (new Date(w.date) >= cutoff) {
+                    w.exercises.forEach(ex => {
+                        const cat = getExerciseCategory(ex.name);
+                        let v = 0;
+                        ex.sets.forEach(s => v += (s.volume || calculateSetVolume(s)));
+                        muscleVol[cat] = (muscleVol[cat] || 0) + v;
+                    });
+                }
+            });
+            Object.keys(muscleVol).sort((a,b) => muscleVol[b]-muscleVol[a]).forEach(cat => {
+                const pct = Math.round((muscleVol[cat] / Math.max(1, Object.values(muscleVol).reduce((a,b)=>a+b,0))) * 100);
+                const bar = document.createElement('div');
+                bar.innerHTML = `
+                    <div class="flex justify-between text-xs mb-0.5">
+                        <span>${cat}</span>
+                        <span class="tabular-nums">${muscleVol[cat].toLocaleString()} kg (${pct}%)</span>
+                    </div>
+                    <div class="h-2 bg-[#292524] rounded"><div class="h-2 bg-emerald-400 rounded" style="width:${pct}%"></div></div>
+                `;
+                muscleContainer.appendChild(bar);
+            });
+        }
+
+        // --- Library ---
+        let currentLibraryFilter = null;
+
+        function showLibraryModal(addToCurrent = false) {
+            const modal = document.getElementById('libraryModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            window._libraryAddToCurrent = addToCurrent;
+            renderLibraryList();
+            renderCategoryFilters();
+        }
+
+        function hideLibraryModal() {
+            document.getElementById('libraryModal').classList.add('hidden');
+            document.getElementById('libraryModal').classList.remove('flex');
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('library-categories');
+            container.innerHTML = '';
+            EXERCISE_CATEGORIES.forEach(cat => {
+                const chip = document.createElement('button');
+                chip.className = `px-2.5 py-0.5 text-xs rounded-2xl border ${currentLibraryFilter === cat ? 'bg-emerald-900 border-emerald-600' : 'border-[#57534e] hover:bg-[#292524]'}`;
+                chip.textContent = cat;
+                chip.onclick = () => {
+                    currentLibraryFilter = (currentLibraryFilter === cat) ? null : cat;
+                    renderCategoryFilters();
+                    renderLibraryList();
+                };
+                container.appendChild(chip);
+            });
+            const all = document.createElement('button');
+            all.className = 'px-2.5 py-0.5 text-xs rounded-2xl border border-[#57534e]';
+            all.textContent = '全部';
+            all.onclick = () => { currentLibraryFilter = null; renderCategoryFilters(); renderLibraryList(); };
+            container.appendChild(all);
+        }
+
+        function filterLibrary() {
+            renderLibraryList();
+        }
+
+        function renderLibraryList() {
+            const container = document.getElementById('library-list');
+            const searchVal = (document.getElementById('library-search')?.value || '').toLowerCase().trim();
+            container.innerHTML = '';
+
+            let filtered = EXERCISES;
+            if (currentLibraryFilter) filtered = filtered.filter(e => e.muscle_group === currentLibraryFilter);
+            if (searchVal) {
+                filtered = filtered.filter(e => 
+                    e.name_zh.toLowerCase().includes(searchVal) || 
+                    e.name_en.toLowerCase().includes(searchVal)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-sm text-[#a8a29e] py-4">沒有符合的項目。試試在動作庫新增自訂。</div>`;
+                return;
+            }
+
+            filtered.forEach(ex => {
+                const display = getExerciseDisplay(ex);
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 bg-[#292524] px-2 py-1.5 rounded-2xl text-sm';
+                div.innerHTML = `
+                    <img src="${ex.image}" class="w-8 h-8 object-contain bg-white rounded-lg flex-shrink-0" onerror="this.style.display='none'">
+                    <div class="flex-1 min-w-0">
+                        <div class="truncate">${display}</div>
+                        <div class="text-[10px] text-[#a8a29e]">${ex.muscle_group}</div>
+                    </div>
+                    <button class="text-xs px-2.5 py-1 bg-emerald-900/70 hover:bg-emerald-800 rounded touch-target" onclick="useExerciseFromLibrary('${ex.name_zh}')">加入</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function useExerciseFromLibrary(name) {
+            const addToCurrent = window._libraryAddToCurrent;
+            hideLibraryModal();
+            const ex = getExerciseByName(name) || {name_zh: name, name_en: name};
+            const displayName = getExerciseDisplay(ex);
+            if (addToCurrent && currentWorkout) {
+                if (!currentWorkout.exercises.find(e => e.name === displayName)) {
+                    currentWorkout.exercises.push({name: displayName, sets: []});
+                    renderCurrentWorkout();
+                }
+            } else {
+                if (!currentWorkout) startNewWorkout();
+                if (!currentWorkout.exercises.find(e => e.name === displayName)) {
+                    currentWorkout.exercises.push({name: displayName, sets: []});
+                    renderCurrentWorkout();
+                }
+            }
+        }
+
+        function showAddCustomExercise() {
+            hideLibraryModal();
+            document.getElementById('customExerciseModal').classList.remove('hidden');
+            document.getElementById('customExerciseModal').classList.add('flex');
+            document.getElementById('custom-name').focus();
+        }
+
+        function hideCustomExerciseModal() {
+            document.getElementById('customExerciseModal').classList.add('hidden');
+            document.getElementById('customExerciseModal').classList.remove('flex');
+            // Reopen library if needed
+            setTimeout(() => {
+                const lib = document.getElementById('libraryModal');
+                if (!lib.classList.contains('hidden')) return;
+            }, 10);
+        }
+
+        function saveCustomExercise() {
+            const name = document.getElementById('custom-name').value.trim();
+            const category = document.getElementById('custom-category').value;
+            if (!name) return;
+            if (exerciseLibrary.find(e => e.name.toLowerCase() === name.toLowerCase())) {
+                alert('動作已存在');
+                return;
+            }
+            exerciseLibrary.push({name, category});
+            saveWorkoutData();
+            hideCustomExerciseModal();
+            // Refresh library
+            showLibraryModal(window._libraryAddToCurrent);
+        }
+
+        // --- Export / Import / Data layer ---
+        function exportAllData() {
+            const data = {
+                exportedAt: new Date().toISOString(),
+                user: currentUser,
+                history: workoutHistory,
+                library: exerciseLibrary,
+                routines: routines
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `charity-training-log-${currentUser || 'guest'}-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // Also offer flat CSV of all sets
+            let csv = 'date,exercise,weight_kg,reps,rpe,volume_kg,notes\n';
+            workoutHistory.forEach(w => {
+                w.exercises.forEach(ex => {
+                    ex.sets.forEach(s => {
+                        csv += `${w.date},${ex.name},${s.weight || 0},${s.reps || 0},${s.rpe || ''},${s.volume || 0},"${(s.notes||'').replace(/"/g,'""')}"\n`;
+                    });
+                });
+            });
+            const csvBlob = new Blob([csv], {type: 'text/csv'});
+            const csvUrl = URL.createObjectURL(csvBlob);
+            const csvA = document.createElement('a');
+            csvA.href = csvUrl;
+            csvA.download = `charity-training-sets-${currentUser || 'guest'}.csv`;
+            // Auto trigger second download after short delay
+            setTimeout(() => { csvA.click(); URL.revokeObjectURL(csvUrl); }, 650);
+        }
+
+        function importDataPrompt() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        if (imported.history) workoutHistory = imported.history;
+                        if (imported.library) exerciseLibrary = imported.library;
+                        if (imported.routines) routines = imported.routines;
+                        saveWorkoutData();
+                        // Refresh UI
+                        renderWorkoutHistory();
+                        renderOverallStats();
+                        renderCalendar();
+                        updateExerciseSelectForAnalysis();
+                        alert('數據匯入成功！');
+                    } catch (err) {
+                        alert('匯入失敗：' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function initializeWorkoutLog() {
+            loadWorkoutData();
+            seedSampleDataIfNeeded();
+            rebuildLastPerformed();
+
+            // Populate datalist for quick add (bilingual)
+            const dl = document.getElementById('exercise-datalist');
+            if (dl) {
+                dl.innerHTML = EXERCISES.map(e => `<option value="${e.name_zh}"> <option value="${e.name_en}"> <option value="${getExerciseDisplay(e)}">`).join('');
+            }
+
+            // Initial renders
+            renderWorkoutHistory();
+            updateExerciseSelectForAnalysis();
+            renderOverallStats();
+            renderCalendar();
+
+            // Default timer
+            resetRestTimer(DEFAULT_REST);
+
+            // Make sure sub sections start correctly
+            showLogSubSection('history');
+
+            // Keyboard niceties: Enter on add-exercise-input already wired in HTML
+            // Global key for timer pause/resume? (optional)
+            document.addEventListener('keydown', function(e) {
+                if (document.getElementById('content-log').classList.contains('hidden')) return;
+                if (e.key === '/' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    const input = document.getElementById('add-exercise-input');
+                    if (input) input.focus();
+                }
+            });
+
+            // If user already logged in on load, the data is per-user
+            console.log('%c[WorkoutLog] 專業訓練日誌已初始化（本機儲存 + 舊版 GAS 同步）', 'color:#4ade80');
+        }
+
+        function showLogSubSection(section) {
+            ['history', 'analysis', 'stats', 'calendar'].forEach(s => {
+                const el = document.getElementById('log-section-' + s);
+                const tab = document.getElementById('logsub-' + s);
+                if (el) el.classList.toggle('hidden', s !== section);
+                if (tab) tab.classList.toggle('active', s === section);
+                if (tab) tab.classList.toggle('bg-[#292524]', s === section);
+            });
+            currentLogSub = section;
+
+            if (section === 'analysis') {
+                setTimeout(renderExerciseAnalysis, 30);
+            }
+            if (section === 'stats') {
+                setTimeout(renderOverallStats, 30);
+            }
+            if (section === 'calendar') {
+                setTimeout(renderCalendar, 30);
+            }
+        }
+
+        // Hook into existing tab switching so we refresh on entering the log tab
+        const originalSwitchTab = window.switchTab || switchTab;
+        window.switchTab = function(tab) {
+            if (typeof originalSwitchTab === 'function') originalSwitchTab(tab);
+            if (tab === 'log') {
+                // Refresh key views
+                setTimeout(() => {
+                    renderWorkoutHistory();
+                    renderOverallStats();
+                    renderCalendar();
+                    if (currentLogSub === 'analysis') renderExerciseAnalysis();
+                }, 80);
+            }
+        };
+
+        // Expose a couple helpers for console / future
+        window.__resetWorkoutDemoData = () => { localStorage.removeItem(getUserStorageKey()); location.reload(); };
 
         function showAddUserModal() {
             document.getElementById('addUserModal').classList.remove('hidden');
@@ -869,6 +2743,10 @@
                 document.getElementById('logoutBtn').classList.remove('hidden');
                 document.getElementById('logUserName').textContent = `(${currentUser})`;
                 await loadUserLogs();
+            }
+            // Initialize the rich professional Workout Log system
+            if (typeof initializeWorkoutLog === 'function') {
+                initializeWorkoutLog();
             }
             switchTab('overview');
         }
