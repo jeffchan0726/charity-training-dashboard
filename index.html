@@ -1126,9 +1126,36 @@ Local Development Instructions:
         <!-- CALENDAR + MUSCLE VOLUME -->
         <div id="log-section-calendar" class="hidden">
             <div class="log-card rounded-3xl p-5">
-                <div class="section-header mb-3">訓練日曆（訓練量熱圖）</div>
+                <!-- Advanced Calendar Header -->
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-x-1">
+                        <button onclick="prevMonth()" 
+                                class="px-2.5 py-1 text-xl leading-none text-emerald-300 hover:text-emerald-400 active:bg-[#252321] rounded-xl transition-colors"
+                                title="上個月">←</button>
+                        <span id="calendar-title" class="section-header text-base font-semibold tabular-nums px-2">2026 年 6 月</span>
+                        <button onclick="nextMonth()" 
+                                class="px-2.5 py-1 text-xl leading-none text-emerald-300 hover:text-emerald-400 active:bg-[#252321] rounded-xl transition-colors"
+                                title="下個月">→</button>
+                    </div>
+                    <button onclick="showAllWorkoutDates()" 
+                            class="text-[11px] px-3 py-1 rounded-2xl bg-[#292524] hover:bg-[#3f3a36] text-emerald-300 border border-[#44403c] active:bg-[#3f3a36]">
+                        顯示所有有記錄嘅日期
+                    </button>
+                </div>
+
+                <!-- Weekday headers -->
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] text-[#a8a29e] font-medium mb-1">
+                    <div>日</div>
+                    <div>一</div>
+                    <div>二</div>
+                    <div>三</div>
+                    <div>四</div>
+                    <div>五</div>
+                    <div>六</div>
+                </div>
+
                 <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-[10px]"></div>
-                <div class="mt-4 text-xs text-[#a8a29e]">Click a day to see that workout (if any). Color intensity = relative volume.</div>
+                <div class="mt-3 text-xs text-[#a8a29e]">點擊有顏色日子可查看詳情（支援多場合併顯示）。顏色深淺代表相對訓練量。</div>
 
                 <div class="mt-6">
                     <div class="section-header mb-2">肌群訓練量（最近30天）</div>
@@ -1300,6 +1327,57 @@ Local Development Instructions:
                 </div>
 
                 <div class="text-center text-[10px] text-[#a8a29e] mt-3">每一次訓練都是對慈善的貢獻 💪</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Record View / Edit Modal -->
+    <!-- This is a dedicated editor for past records. It NEVER touches currentWorkout, live-log-panel, rest timer or new-training flow. -->
+    <div id="historyEditModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[110] p-4">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <!-- Header -->
+            <div class="px-5 pt-5 pb-3 border-b border-[#57534e] flex-shrink-0">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-lg">歷史記錄 — 查看 / 編輯</span>
+                        </div>
+                        <div id="history-edit-date" class="font-semibold text-emerald-400 tabular-nums mt-0.5 text-base"></div>
+                    </div>
+                    <button onclick="closeHistoryEditModal()" class="text-2xl leading-none text-[#a8a29e] hover:text-white px-1">×</button>
+                </div>
+                <div class="mt-2 flex items-center gap-2 text-sm">
+                    <span class="text-[#a8a29e]">總訓練量</span>
+                    <span id="history-edit-volume" class="font-bold text-2xl text-emerald-400 tabular-nums">0</span>
+                    <span class="text-xs text-[#a8a29e]">kg</span>
+                </div>
+                <div class="text-[10px] text-[#a8a29e] mt-1">直接修改下方每組的重量、次數、備註。修改會即時反映在總量上。</div>
+            </div>
+
+            <!-- Scrollable exercises editor -->
+            <div class="flex-1 overflow-auto px-4 py-4 space-y-3" id="history-edit-exercises">
+                <!-- Populated by renderHistoryEditContent() -->
+            </div>
+
+            <!-- Footer actions -->
+            <div class="p-4 border-t border-[#57534e] flex-shrink-0 bg-[#1c1917]">
+                <div class="flex flex-col gap-2">
+                    <button onclick="saveHistoryEdit()"
+                            class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl font-semibold text-sm">
+                        <i class="fa-solid fa-save mr-2"></i> 儲存修改
+                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="closeHistoryEditModal()"
+                                class="flex-1 py-2 border border-[#57534e] hover:bg-[#292524] rounded-2xl text-sm">
+                            取消
+                        </button>
+                        <button onclick="deleteHistoryWorkout()"
+                                class="flex-1 py-2 bg-red-900/70 hover:bg-red-900 text-red-300 rounded-2xl text-sm border border-red-900/50">
+                            <i class="fa-solid fa-trash mr-1"></i> 刪除這次訓練
+                        </button>
+                    </div>
+                </div>
+                <div class="text-center text-[10px] text-[#a8a29e] mt-2">修改後會同步更新歷史列表、日曆同本地儲存</div>
             </div>
         </div>
     </div>
@@ -1782,6 +1860,15 @@ Local Development Instructions:
         // --- Core State ---
         let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, notes, volume}]}] }
         let workoutHistory = [];             // Array of finished workouts
+
+        // History view/edit mode state (completely separate from active new-training currentWorkout)
+        let currentViewingHistory = null;      // cloned workout being viewed/edited
+        let currentViewingHistoryIndex = -1;   // index in workoutHistory at time of opening
+
+        // Calendar navigation state (for advanced month switching)
+        let currentCalendarYear = null;
+        let currentCalendarMonth = null;       // 0 = January ... 11 = December
+
         let exerciseLibrary = [];            // {name, category}
         let routines = [];                   // {id, name, exercises: string[] }
         let lastPerformed = {};              // { exerciseName: {weight, reps, date} }
@@ -3859,33 +3946,19 @@ Local Development Instructions:
                 return;
             }
 
-            // Group by date, aggregate stats, sort newest first
-            const grouped = {};
-            workoutHistory.forEach(w => {
-                const d = (w.date || '').split('T')[0];
-                if (!grouped[d]) {
-                    grouped[d] = {
-                        date: d,
-                        exercises: [],
-                        totalSets: 0,
-                        totalVolume: 0,
-                        notes: w.notes || ''
-                    };
-                }
-                grouped[d].exercises.push(...w.exercises);
-                grouped[d].totalSets += w.exercises.reduce((a, e) => a + e.sets.length, 0);
-                grouped[d].totalVolume += (w.totalVolume || calculateWorkoutVolume(w));
-                if (w.notes && !grouped[d].notes) grouped[d].notes = w.notes;
-            });
+            // 使用共用 grouping 函數，確保與 renderCalendar() 邏輯完全一致
+            const grouped = groupWorkoutsByDate();
+            // 由新到舊排序
+            const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
-            const dates = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
-
-            dates.forEach((d, idx) => {
+            dates.forEach((d) => {
                 const g = grouped[d];
                 const vol = g.totalVolume;
-                const exCount = [...new Set(g.exercises.map(e => e.name))].length;
+                // 總動作數量：使用不重複的動作名稱（跨多場訓練）
+                const exCount = [...new Set((g.exercises || []).map(e => e && e.name).filter(Boolean))].length;
                 const setsCount = g.totalSets;
                 const cleanDate = d;
+
                 const card = document.createElement('div');
                 card.className = 'workout-history-card log-card rounded-2xl p-3.5 cursor-pointer';
                 card.innerHTML = `
@@ -3896,29 +3969,329 @@ Local Development Instructions:
                     <div class="text-xs text-[#a8a29e]">${exCount} 動作 • ${setsCount} 組 • ${vol.toLocaleString()}kg</div>
                     ${g.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${g.notes}"</div>` : ''}
                 `;
-                // For detail, pick one representative workout for delete (simplified; could enhance to delete all for date)
-                const repW = workoutHistory.find(ww => (ww.date || '').split('T')[0] === d) || {date: d, exercises: g.exercises, totalVolume: vol};
-                const repIdx = workoutHistory.indexOf(repW);
-                card.onclick = () => showWorkoutDetail(repW, repIdx >=0 ? repIdx : 0);
+
+                // 統一使用 showWorkoutDetailForDate，與日曆點擊行為一致
+                card.onclick = () => showWorkoutDetailForDate(d);
+
                 container.appendChild(card);
             });
         }
 
         function showWorkoutDetail(workout, historyIndex) {
-            // Simple detail view using alert + option to delete for now (can be expanded later)
-            const cleanDate = (workout.date || '').split('T')[0];
-            let txt = `日期: ${cleanDate}\n總量: ${workout.totalVolume || calculateWorkoutVolume(workout)} kg\n\n`;
-            workout.exercises.forEach(ex => {
-                txt += `${ex.name}:\n`;
-                ex.sets.forEach((s, i) => txt += `  set ${i+1} : ${s.weight}kg × ${s.reps}${s.notes ? ' ('+s.notes+')' : ''}\n`);
+            // 改為打開專屬的歷史記錄查看/編輯 Modal
+            // 完全獨立於新訓練流程 (currentWorkout / live-log-panel / rest timer)
+            openHistoryEditModal(workout, historyIndex);
+        }
+
+        /**
+         * 共用日期 grouping 函數
+         * 將 workoutHistory 按 YYYY-MM-DD 分組，同一日多場訓練會合併。
+         * renderWorkoutHistory() 及 renderCalendar() 都應使用此函數，確保邏輯一致。
+         */
+        function groupWorkoutsByDate(workouts = workoutHistory) {
+            const grouped = {};
+            (workouts || []).forEach(w => {
+                const d = (w.date || '').split('T')[0];
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+                if (!grouped[d]) {
+                    grouped[d] = {
+                        date: d,
+                        workouts: [],
+                        exercises: [],
+                        totalSets: 0,
+                        totalVolume: 0,
+                        notes: ''
+                    };
+                }
+                const g = grouped[d];
+                g.workouts.push(w);
+                g.exercises.push(...(w.exercises || []));
+                g.totalSets += (w.exercises || []).reduce((a, e) => a + (e.sets ? e.sets.length : 0), 0);
+                g.totalVolume += (w.totalVolume || calculateWorkoutVolume(w));
+                if (w.notes && !g.notes) g.notes = w.notes; // 第一條非空 notes
             });
-            if (confirm(txt + '\n\n確定刪除這次訓練？')) {
-                workoutHistory.splice(historyIndex, 1);
-                saveWorkoutData();
-                renderWorkoutHistory();
-                renderOverallStats();
-                renderCalendar();
+            return grouped;
+        }
+
+        /**
+         * 統一的日期詳情入口
+         * 訓練歷史卡片 + 訓練日曆點擊 都應呼叫此函數。
+         * 內部使用 groupWorkoutsByDate 取得該日數據，組成 merged 虛擬物件（支援 _isDayGroup），
+         * 然後交給 showWorkoutDetail / openHistoryEditModal 處理顯示 + 編輯 + 儲存/刪除。
+         */
+        function showWorkoutDetailForDate(dateStr) {
+            const grouped = groupWorkoutsByDate();
+            const g = grouped[dateStr];
+            if (!g || !g.workouts || g.workouts.length === 0) {
+                alert(`此日期 ${dateStr} 沒有訓練記錄`);
+                return;
             }
+
+            // 組成與 renderWorkoutHistory 點擊時相同的 merged 物件
+            const merged = {
+                date: g.date,
+                exercises: g.exercises ? [...g.exercises] : [],
+                totalVolume: g.totalVolume,
+                notes: g.notes || '',
+                _isDayGroup: true,
+                _originalCount: g.workouts.length
+            };
+
+            showWorkoutDetail(merged, -1);
+        }
+
+        // ============ 歷史記錄專用編輯 Modal 相關函數 ============
+        // 這些函數只操作 currentViewingHistory clone，絕不影響 currentWorkout 及開始新訓練流程
+
+        function openHistoryEditModal(original, historyIndex) {
+            if (!original) return;
+
+            // 深層 clone，避免直接修改原物件直到「儲存」
+            currentViewingHistory = JSON.parse(JSON.stringify(original));
+            currentViewingHistoryIndex = (typeof historyIndex === 'number') ? historyIndex : -1;
+
+            const modal = document.getElementById('historyEditModal');
+            if (!modal) {
+                console.error('#historyEditModal not found — falling back to legacy behaviour');
+                // 極少數 fallback（保留舊行為以防萬一）
+                const cleanDate = (original.date || '').split('T')[0];
+                if (confirm(`日期: ${cleanDate}\n\n確定刪除這次訓練？`)) {
+                    workoutHistory.splice(currentViewingHistoryIndex, 1);
+                    saveWorkoutData();
+                    renderWorkoutHistory();
+                    renderOverallStats();
+                    renderCalendar();
+                }
+                return;
+            }
+
+            // 設定標題日期
+            const dateEl = document.getElementById('history-edit-date');
+            if (dateEl) dateEl.textContent = (currentViewingHistory.date || '').split('T')[0] || '未知日期';
+
+            // 顯示 modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Backdrop click to close (不影響內部點擊)
+            modal.onclick = (e) => {
+                if (e.target === modal) closeHistoryEditModal();
+            };
+
+            // 渲染可編輯內容
+            renderHistoryEditContent();
+        }
+
+        function closeHistoryEditModal() {
+            const modal = document.getElementById('historyEditModal');
+            if (modal) {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }
+            currentViewingHistory = null;
+            currentViewingHistoryIndex = -1;
+        }
+
+        function renderHistoryEditContent() {
+            const container = document.getElementById('history-edit-exercises');
+            const volEl = document.getElementById('history-edit-volume');
+            if (!container || !currentViewingHistory) return;
+
+            // 計算並顯示即時總量
+            const vol = calculateWorkoutVolume(currentViewingHistory);
+            currentViewingHistory.totalVolume = vol;
+            if (volEl) volEl.textContent = vol.toLocaleString();
+
+            if (!currentViewingHistory.exercises || currentViewingHistory.exercises.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-sm text-[#a8a29e]">此記錄沒有動作資料。</div>`;
+                return;
+            }
+
+            let html = '';
+            currentViewingHistory.exercises.forEach((ex, exIdx) => {
+                let setsHtml = '';
+                (ex.sets || []).forEach((set, sIdx) => {
+                    const w = set.weight != null ? set.weight : 0;
+                    const r = set.reps != null ? set.reps : 0;
+                    const n = set.notes || '';
+                    setsHtml += `
+                        <div class="flex items-center gap-2 bg-[#1f1c1a] rounded-xl px-2 py-1.5 mb-1 text-sm">
+                            <div class="flex-1 grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[9px] text-[#a8a29e] mb-0.5">重量 (kg)</label>
+                                    <input type="number" step="0.5" value="${w}"
+                                           class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                           onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'weight', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-[#a8a29e] mb-0.5">次數</label>
+                                    <input type="number" value="${r}"
+                                           class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                           onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'reps', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-[#a8a29e] mb-0.5">備註</label>
+                                    <input type="text" value="${n}"
+                                           class="log-input w-full px-2 py-1 text-sm rounded-xl"
+                                           onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'notes', this.value)">
+                                </div>
+                            </div>
+                            <button onclick="deleteHistorySet(${exIdx}, ${sIdx})"
+                                    class="text-red-400 hover:text-red-300 px-2 py-1 text-xs rounded active:bg-red-900/30" title="刪除此組">✕</button>
+                        </div>
+                    `;
+                });
+
+                if (!setsHtml) {
+                    setsHtml = `<div class="text-xs text-[#a8a29e] px-1 py-1">尚未有組數</div>`;
+                }
+
+                html += `
+                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-3 border border-[#57534e]">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <div class="font-semibold text-sm">${ex.name}</div>
+                                <div class="text-[10px] text-[#a8a29e]">${getMuscleGroup ? getMuscleGroup(ex.name) : ''}</div>
+                            </div>
+                            <button onclick="addSetToHistoryExercise(${exIdx})"
+                                    class="px-2.5 py-1 text-xs bg-emerald-900/60 hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl flex items-center gap-1">
+                                <i class="fa-solid fa-plus text-[10px]"></i> <span>加組</span>
+                            </button>
+                        </div>
+                        <div class="space-y-0.5">
+                            ${setsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function updateHistorySetField(exIdx, setIdx, field, value) {
+            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
+            const ex = currentViewingHistory.exercises[exIdx];
+            if (!ex || !ex.sets || !ex.sets[setIdx]) return;
+
+            const set = ex.sets[setIdx];
+            if (field === 'weight' || field === 'reps') {
+                const num = (field === 'weight') ? parseFloat(value) : parseInt(value);
+                set[field] = isNaN(num) ? 0 : num;
+                set.volume = calculateSetVolume(set);
+            } else {
+                set[field] = (value || '').trim();
+            }
+
+            // 即時更新 header 總量（不需要全量 re-render 整個列表，體驗更好）
+            const volEl = document.getElementById('history-edit-volume');
+            const newVol = calculateWorkoutVolume(currentViewingHistory);
+            currentViewingHistory.totalVolume = newVol;
+            if (volEl) volEl.textContent = newVol.toLocaleString();
+        }
+
+        function addSetToHistoryExercise(exIdx) {
+            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
+            const ex = currentViewingHistory.exercises[exIdx];
+            if (!ex) return;
+
+            // 新增一組（預設 0）
+            ex.sets = ex.sets || [];
+            ex.sets.push({ weight: 0, reps: 0, notes: '', volume: 0 });
+
+            // 重新渲染（簡單直接）
+            renderHistoryEditContent();
+        }
+
+        function deleteHistorySet(exIdx, setIdx) {
+            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
+            const ex = currentViewingHistory.exercises[exIdx];
+            if (!ex || !ex.sets || setIdx < 0 || setIdx >= ex.sets.length) return;
+
+            ex.sets.splice(setIdx, 1);
+            renderHistoryEditContent();
+        }
+
+        function saveHistoryEdit() {
+            if (!currentViewingHistory) {
+                closeHistoryEditModal();
+                return;
+            }
+
+            const isDayGroup = !!currentViewingHistory._isDayGroup;
+            const d = (currentViewingHistory.date || '').split('T')[0];
+
+            if (isDayGroup) {
+                // 日期群組虛擬物件：刪除該日所有舊記錄，然後用編輯後的合併版本替換（合併為單一記錄）
+                workoutHistory = workoutHistory.filter(w => (w.date || '').split('T')[0] !== d);
+
+                // 清理特殊標記
+                delete currentViewingHistory._isDayGroup;
+                delete currentViewingHistory._originalCount;
+
+                // 重新計算 volume 確保正確
+                currentViewingHistory.totalVolume = calculateWorkoutVolume(currentViewingHistory);
+
+                // 插入合併後的單一記錄（置頂）
+                workoutHistory.unshift(currentViewingHistory);
+            } else {
+                // 單一記錄正常處理
+                let targetIdx = currentViewingHistoryIndex;
+                if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
+                    (workoutHistory[targetIdx] && (workoutHistory[targetIdx].date || '').split('T')[0] !== d)) {
+                    targetIdx = workoutHistory.findIndex(w => (w.date || '').split('T')[0] === d);
+                }
+
+                if (targetIdx >= 0) {
+                    workoutHistory[targetIdx] = currentViewingHistory;
+                } else {
+                    workoutHistory.unshift(currentViewingHistory);
+                }
+
+                const finalVol = calculateWorkoutVolume(currentViewingHistory);
+                const slot = (targetIdx >= 0 ? targetIdx : 0);
+                if (workoutHistory[slot]) {
+                    workoutHistory[slot].totalVolume = finalVol;
+                }
+            }
+
+            // 持久化 + 刷新所有相關 UI（包括日曆，避免同一日顯示不一致）
+            saveWorkoutData();
+            try { renderWorkoutHistory(); } catch (e) {}
+            try { renderOverallStats(); } catch (e) {}
+            try { renderCalendar(); } catch (e) {}
+
+            closeHistoryEditModal();
+        }
+
+        function deleteHistoryWorkout() {
+            if (!currentViewingHistory) return;
+            if (!confirm('確定要刪除這次訓練記錄嗎？\n刪除後無法恢復。')) return;
+
+            const isDayGroup = !!currentViewingHistory._isDayGroup;
+            const d = (currentViewingHistory.date || '').split('T')[0];
+
+            if (isDayGroup) {
+                // 刪除該日期的所有訓練記錄（多場合併情況）
+                workoutHistory = workoutHistory.filter(w => (w.date || '').split('T')[0] !== d);
+            } else {
+                // 單一記錄刪除
+                let targetIdx = currentViewingHistoryIndex;
+                if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
+                    (workoutHistory[targetIdx] && (workoutHistory[targetIdx].date || '').split('T')[0] !== d)) {
+                    targetIdx = workoutHistory.findIndex(w => (w.date || '').split('T')[0] === d);
+                }
+
+                if (targetIdx >= 0) {
+                    workoutHistory.splice(targetIdx, 1);
+                }
+            }
+
+            saveWorkoutData();
+            try { renderWorkoutHistory(); } catch (e) {}
+            try { renderOverallStats(); } catch (e) {}
+            try { renderCalendar(); } catch (e) {}
+
+            closeHistoryEditModal();
         }
 
         // --- Per Exercise Analysis (Redesigned) ---
@@ -4330,59 +4703,100 @@ Local Development Instructions:
         }
 
         // --- Calendar + Muscle Volume Heatmap ---
-        function renderCalendar() {
+        function renderCalendar(year, month) {
             const grid = document.getElementById('calendar-grid');
+            const titleEl = document.getElementById('calendar-title');
             const muscleContainer = document.getElementById('muscle-volume-bars');
             if (!grid) return;
 
+            // 處理年月狀態：若未提供參數，則使用目前狀態；若無狀態則預設為今天
+            if (year == null || month == null) {
+                if (currentCalendarYear == null || currentCalendarMonth == null) {
+                    const nowInit = new Date();
+                    currentCalendarYear = nowInit.getFullYear();
+                    currentCalendarMonth = nowInit.getMonth();
+                }
+                year = currentCalendarYear;
+                month = currentCalendarMonth;
+            } else {
+                // 更新狀態（切換月份時會寫入）
+                currentCalendarYear = year;
+                currentCalendarMonth = month;
+            }
+
             grid.innerHTML = '';
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const firstDay = new Date(year, month, 1).getDay();
+
+            // 更新年月標題
+            if (titleEl) {
+                titleEl.textContent = `${year} 年 ${month + 1} 月`;
+            }
+
+            const firstDay = new Date(year, month, 1).getDay();           // 0=日 ... 6=六
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // Volume per day this month
+            // 使用共用 grouping 計算該月每一天的訓練量（與訓練歷史完全一致）
+            const grouped = groupWorkoutsByDate();
             const volByDay = {};
-            workoutHistory.forEach(w => {
-                const d = new Date(w.date);
-                if (d.getFullYear() === year && d.getMonth() === month) {
-                    const day = d.getDate();
-                    volByDay[day] = (volByDay[day] || 0) + (w.totalVolume || calculateWorkoutVolume(w));
+            Object.keys(grouped).forEach(key => {
+                const g = grouped[key];
+                const [y, m, d] = key.split('-').map(Number);
+                if (y === year && (m - 1) === month) {
+                    volByDay[d] = g.totalVolume || 0;
                 }
             });
-            const maxVol = Math.max(1, ...Object.values(volByDay));
 
-            // Empty days
+            const volValues = Object.values(volByDay);
+            const maxVol = volValues.length > 0 ? Math.max(1, ...volValues) : 1;
+
+            const today = new Date();
+            const isViewingCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+
+            // 前面空白日子（對齊星期）
             for (let i = 0; i < firstDay; i++) {
                 const empty = document.createElement('div');
-                empty.className = 'h-8 rounded bg-[#252321] opacity-40';
+                empty.className = 'h-9 rounded bg-[#252321] opacity-30';
                 grid.appendChild(empty);
             }
 
+            // 渲染每一天
             for (let day = 1; day <= daysInMonth; day++) {
                 const cell = document.createElement('div');
                 const v = volByDay[day] || 0;
-                const intensity = Math.min(1, v / maxVol);
-                const bg = v > 0 ? `rgba(74, 222, 128, ${0.25 + intensity * 0.65})` : '#252321';
-                cell.className = `h-8 flex items-center justify-center text-[10px] rounded cursor-pointer ${v > 0 ? 'text-white font-medium' : 'text-[#a8a29e]'}`;
+                const intensity = (maxVol > 0) ? Math.min(1, v / maxVol) : 0;
+                const bg = (v > 0)
+                    ? `rgba(74, 222, 128, ${0.25 + intensity * 0.65})`
+                    : '#252321';
+
+                let cellClass = `h-9 flex items-center justify-center text-[10px] rounded cursor-pointer transition-all ${v > 0 ? 'text-white font-medium hover:brightness-110' : 'text-[#a8a29e]'}`;
+
+                // 今日 highlight（只在查看當月時）
+                if (isViewingCurrentMonth && day === today.getDate()) {
+                    cellClass += ' ring-2 ring-emerald-400 ring-offset-2 ring-offset-[#1c1917] font-semibold';
+                }
+
+                cell.className = cellClass;
                 cell.style.background = bg;
                 cell.innerHTML = `${day}`;
-                cell.onclick = () => {
-                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                    const found = workoutHistory.find(ww => ww.date === dateStr);
-                    if (found) showWorkoutDetail(found, workoutHistory.indexOf(found));
-                    else alert(`此日期 ${dateStr} 沒有訓練記錄`);
-                };
+
+                if (v > 0) {
+                    // 有記錄才可點擊，顯示該日所有訓練（與歷史卡片一致，支援 grouping）
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    cell.onclick = () => showWorkoutDetailForDate(dateStr);
+                } else {
+                    cell.style.cursor = 'default';
+                }
+
                 grid.appendChild(cell);
             }
 
-            // Muscle volume last 30d
+            // Muscle volume last 30d （保持不變，獨立於目前顯示的月份）
             muscleContainer.innerHTML = '';
             const muscleVol = {};
             const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
             workoutHistory.forEach(w => {
-                if (new Date(w.date) >= cutoff) {
+                const key = (w.date || '').split('T')[0];
+                const wd = key ? new Date(key) : new Date(w.date);
+                if (wd >= cutoff) {
                     w.exercises.forEach(ex => {
                         const cat = getExerciseCategory(ex.name);
                         let v = 0;
@@ -4402,6 +4816,136 @@ Local Development Instructions:
                     <div class="h-2 bg-[#292524] rounded"><div class="h-2 bg-emerald-400 rounded" style="width:${pct}%"></div></div>
                 `;
                 muscleContainer.appendChild(bar);
+            });
+        }
+
+        // 月份切換函數
+        function prevMonth() {
+            let y = currentCalendarYear;
+            let m = currentCalendarMonth;
+            if (y == null || m == null) {
+                const n = new Date();
+                y = n.getFullYear();
+                m = n.getMonth();
+            }
+            m--;
+            if (m < 0) {
+                m = 11;
+                y--;
+            }
+            renderCalendar(y, m);
+        }
+
+        function nextMonth() {
+            let y = currentCalendarYear;
+            let m = currentCalendarMonth;
+            if (y == null || m == null) {
+                const n = new Date();
+                y = n.getFullYear();
+                m = n.getMonth();
+            }
+            m++;
+            if (m > 11) {
+                m = 0;
+                y++;
+            }
+            renderCalendar(y, m);
+        }
+
+        // --- Debug helper: show all recorded dates (for verifying calendar vs workoutHistory consistency) ---
+        function showAllWorkoutDates() {
+            if (!workoutHistory || workoutHistory.length === 0) {
+                alert('目前 workoutHistory 沒有任何記錄。');
+                return;
+            }
+
+            // Aggregate by normalized date (YYYY-MM-DD) — same logic as the fixed renderCalendar
+            const groups = {};
+            workoutHistory.forEach((w, idx) => {
+                const d = (w.date || '').split('T')[0];
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+
+                if (!groups[d]) {
+                    groups[d] = {
+                        date: d,
+                        volume: 0,
+                        exerciseNames: new Set(),
+                        setCount: 0,
+                        repWorkout: w,
+                        repIndex: idx
+                    };
+                }
+                const g = groups[d];
+                g.volume += (w.totalVolume != null ? w.totalVolume : calculateWorkoutVolume(w));
+
+                (w.exercises || []).forEach(ex => {
+                    if (ex && ex.name) g.exerciseNames.add(ex.name);
+                    if (ex && ex.sets) g.setCount += ex.sets.length;
+                });
+            });
+
+            // Sort newest first
+            const dates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+            // Build a simple self-contained modal (consistent with app styling)
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4';
+            const listHtml = dates.length === 0 
+                ? '<div class="p-4 text-[#a8a29e] text-sm">沒有有效日期記錄。</div>' 
+                : dates.map(d => {
+                    const g = groups[d];
+                    const exCount = g.exerciseNames.size;
+                    const volStr = Math.round(g.volume).toLocaleString();
+                    return `
+                        <div class="workout-date-row px-4 py-3 mb-1.5 rounded-2xl bg-[#252321] hover:bg-[#2f2c2a] active:bg-[#3f3a36] cursor-pointer border border-transparent flex items-center justify-between gap-3"
+                             data-date="${d}">
+                            <div class="min-w-0">
+                                <div class="font-semibold tabular-nums text-sm">${d}</div>
+                                <div class="text-[11px] text-[#a8a29e] mt-0.5">${exCount} 動作 • ${g.setCount} 組</div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="font-semibold text-emerald-400 tabular-nums">${volStr} kg</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            modal.innerHTML = `
+                <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl max-w-md w-full max-h-[82vh] flex flex-col overflow-hidden shadow-2xl">
+                    <div class="px-5 py-3.5 border-b border-[#44403c] flex items-center justify-between">
+                        <div>
+                            <div class="font-semibold">所有有訓練記錄嘅日期</div>
+                            <div class="text-xs text-[#a8a29e]">共 ${dates.length} 日（由新到舊）</div>
+                        </div>
+                        <button class="text-xl leading-none px-2 py-1 text-[#a8a29e] hover:text-white" onclick="this.closest('.fixed').remove()">✕</button>
+                    </div>
+                    <div class="overflow-auto p-3" style="max-height: 58vh;">
+                        ${listHtml}
+                    </div>
+                    <div class="px-4 py-3 border-t border-[#44403c] text-[11px] text-[#a8a29e]">
+                        點擊任何日期可直接開啟詳情（可刪除該筆記錄）
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Wire up clicks for each date row → call showWorkoutDetail
+            modal.querySelectorAll('.workout-date-row[data-date]').forEach(row => {
+                row.addEventListener('click', () => {
+                    const d = row.getAttribute('data-date');
+                    const g = groups[d];
+                    modal.remove();
+                    if (g && g.repWorkout) {
+                        // Use the representative workout + its original index (same pattern as renderWorkoutHistory)
+                        const realIdx = workoutHistory.indexOf(g.repWorkout);
+                        showWorkoutDetail(g.repWorkout, realIdx >= 0 ? realIdx : g.repIndex);
+                    }
+                });
+            });
+
+            // Click backdrop to close
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
             });
         }
 
