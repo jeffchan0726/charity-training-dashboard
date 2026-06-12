@@ -912,6 +912,11 @@
                 <button onclick="addNewUser()"
                     class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">建立用戶</button>
             </div>
+            <!-- Already have account link -->
+            <div class="mt-4 text-center text-xs">
+                <span class="text-[#a8a29e]">已有帳號？</span>
+                <a href="#" onclick="hideAddUserModal(); showLoginModal(); return false;" class="text-emerald-400 hover:underline">登入</a>
+            </div>
         </div>
     </div>
 
@@ -1108,7 +1113,17 @@
                 updateUIAfterLogin();
                 await loadUserLogs();
             } else {
-                alert("登入失敗，請檢查用戶名稱或 PIN");
+                const msg = (result.message || "登入失敗");
+                const lower = msg.toLowerCase();
+                if (lower.includes('not exist') || lower.includes('不存在') || lower.includes('no user')) {
+                    alert("用戶不存在，請先註冊");
+                    hideLoginModal();
+                    showAddUserModal();
+                } else if (lower.includes('wrong') || lower.includes('pin') || lower.includes('密碼') || lower.includes('incorrect')) {
+                    alert("PIN 碼錯誤，請重新輸入");
+                } else {
+                    alert("登入失敗：" + msg);
+                }
             }
         }
 
@@ -1136,16 +1151,54 @@
             if (!currentUser) return;
             workoutLogs = await callAppsScript("getLogs");
             renderLogTable();
-            // Reload rich per-user workout data when switching users
-            if (typeof loadWorkoutData === 'function') {
-                loadWorkoutData();
-                if (typeof seedSampleDataIfNeeded === 'function') seedSampleDataIfNeeded();
-                if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
-                if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
-                if (typeof renderOverallStats === 'function') renderOverallStats();
-                if (typeof renderCalendar === 'function') renderCalendar();
-                if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
+
+            // === CRITICAL: Load rich per-user data from GAS and rebuild history ===
+            try {
+                const rawSets = await callAppsScript("getLogs");  // already has user in URL for some calls
+                // Rebuild workoutHistory by grouping on session_id (or date+exercise as fallback)
+                const grouped = {};
+                (rawSets || []).forEach(row => {
+                    const sid = row.session_id || row.sessionId || (row.date + '|' + row.exercise);
+                    if (!grouped[sid]) {
+                        grouped[sid] = {
+                            id: sid,
+                            date: row.date,
+                            exercises: {},
+                            notes: ''
+                        };
+                    }
+                    const exName = row.exercise;
+                    if (!grouped[sid].exercises[exName]) {
+                        grouped[sid].exercises[exName] = { name: exName, sets: [] };
+                    }
+                    grouped[sid].exercises[exName].sets.push({
+                        weight: parseFloat(row.weight) || 0,
+                        reps: parseInt(row.reps) || 0,
+                        rpe: parseInt(row.rpe) || 7,
+                        notes: row.notes || '',
+                        volume: parseFloat(row.volume) || ((parseFloat(row.weight)||0) * (parseInt(row.reps)||0))
+                    });
+                });
+
+                workoutHistory = Object.values(grouped).map(w => {
+                    w.exercises = Object.values(w.exercises);
+                    w.totalVolume = w.exercises.reduce((sum, ex) => {
+                        return sum + ex.sets.reduce((s, st) => s + (st.volume || 0), 0);
+                    }, 0);
+                    return w;
+                }).sort((a,b) => b.date.localeCompare(a.date));
+
+                rebuildLastPerformed();
+                saveWorkoutData(); // also cache locally
+            } catch (e) {
+                console.warn('Rich GAS load failed, using local cache', e);
             }
+
+            // Refresh rich UI views
+            if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+            if (typeof renderOverallStats === 'function') renderOverallStats();
+            if (typeof renderCalendar === 'function') renderCalendar();
+            if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
         }
 
         function renderLogTable() {
@@ -1216,10 +1269,9 @@
         const DEFAULT_REST = 90;
         const EXERCISE_CATEGORIES = ['胸部', '背部', '腿部', '肩膀', '手臂', '核心', '全身', '有氧'];
 
-        // Bilingual Exercise Database - 45+ common gym exercises
-        // Format for UI: "中文 (English)"
-        // Images: Use local repo paths. User must add jpgs to /images/ folder.
-        // Fallback to placeholder if image missing.
+        // Bilingual Exercise Database - 55+ common gym exercises
+        // name_zh, name_en, muscle_group, image (local or picsum fallback)
+        // Fallback: reliable picsum.photos (no via.placeholder.com)
         const EXERCISES = [
             { id: "incline_dumbbell_press", name_zh: "上斜啞鈴推胸", name_en: "Incline Dumbbell Press", muscle_group: "胸部", image: "images/incline_dumbbell_press.jpg" },
             { id: "flat_dumbbell_press", name_zh: "平板啞鈴推胸", name_en: "Flat Dumbbell Press", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
@@ -1268,6 +1320,12 @@
             { id: "t_bar_row", name_zh: "T槓划船", name_en: "T-Bar Row", muscle_group: "背部", image: "images/t_bar_row.jpg" },
             { id: "leg_curl", name_zh: "腿彎舉", name_en: "Leg Curl", muscle_group: "腿部", image: "images/leg_curl.jpg" },
             { id: "leg_extension", name_zh: "腿伸展", name_en: "Leg Extension", muscle_group: "腿部", image: "images/leg_extension.jpg" },
+            { id: "hip_thrust", name_zh: "臀推", name_en: "Hip Thrust", muscle_group: "腿部", image: "images/hip_thrust.jpg" },
+            { id: "cable_crunch", name_zh: "繩索捲腹", name_en: "Cable Crunch", muscle_group: "核心", image: "images/cable_crunch.jpg" },
+            { id: "farmer_carry", name_zh: "農夫行走", name_en: "Farmer's Carry", muscle_group: "全身", image: "images/farmer_carry.jpg" },
+            { id: "battle_ropes", name_zh: "戰繩", name_en: "Battle Ropes", muscle_group: "全身", image: "images/battle_ropes.jpg" },
+            { id: "burpees", name_zh: "波比跳", name_en: "Burpees", muscle_group: "全身", image: "images/burpees.jpg" },
+            { id: "rowing_machine", name_zh: "划船機", name_en: "Rowing Machine", muscle_group: "有氧", image: "images/rowing_machine.jpg" },
         ];
 
         // Helper to get display name (bilingual for UI)
@@ -1286,7 +1344,7 @@
 
         function getExerciseImage(name) {
             const ex = getExerciseByName(name);
-            return ex ? ex.image : 'images/placeholder.jpg';
+            return ex ? ex.image : 'https://picsum.photos/id/1011/56/56';
         }
 
         function getMuscleGroup(name) {
@@ -1316,17 +1374,20 @@
                 if (raw) {
                     const data = JSON.parse(raw);
                     workoutHistory = data.history || [];
-                    exerciseLibrary = data.library && data.library.length ? data.library : [...DEFAULT_LIBRARY];
+                    // Use EXERCISES as the source of truth for library (bilingual)
+                    // Keep any custom if stored, but default to EXERCISES
+                    exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: `${e.name_zh} (${e.name_en})`, category: e.muscle_group}));
                     routines = data.routines || [];
                     lastPerformed = data.lastPerformed || {};
                 } else {
-                    exerciseLibrary = [...DEFAULT_LIBRARY];
+                    // Initialize with bilingual display names from EXERCISES
+                    exerciseLibrary = EXERCISES.map(e => ({name: `${e.name_zh} (${e.name_en})`, category: e.muscle_group}));
                     workoutHistory = [];
                     routines = [];
                     lastPerformed = {};
                 }
             } catch (e) {
-                exerciseLibrary = [...DEFAULT_LIBRARY];
+                exerciseLibrary = EXERCISES.map(e => ({name: `${e.name_zh} (${e.name_en})`, category: e.muscle_group}));
                 workoutHistory = [];
             }
         }
@@ -1336,15 +1397,15 @@
             const today = new Date();
             const samples = [];
 
-            // Sample workout 1 (5 days ago) - Day 1 style
+            // Sample workout 1 (5 days ago) - Day 1 style (use full bilingual display names)
             const d1 = new Date(today); d1.setDate(d1.getDate() - 5);
             samples.push({
                 id: Date.now() - 500000,
                 date: d1.toISOString().split('T')[0],
                 exercises: [
-                    {name: "Incline Dumbbell Press", sets: [{weight: 28, reps: 8, rpe: 7, notes: ""}, {weight: 30, reps: 7, rpe: 8, notes: ""}]},
-                    {name: "Flat Dumbbell Press", sets: [{weight: 24, reps: 9, rpe: 7, notes: ""}]},
-                    {name: "Tricep Rope Pushdown", sets: [{weight: 15, reps: 12, rpe: 7, notes: ""}, {weight: 15, reps: 11, rpe: 8, notes: ""}]}
+                    {name: "上斜啞鈴推胸 (Incline Dumbbell Press)", sets: [{weight: 28, reps: 8, rpe: 7, notes: ""}, {weight: 30, reps: 7, rpe: 8, notes: ""}]},
+                    {name: "平板啞鈴推胸 (Flat Dumbbell Press)", sets: [{weight: 24, reps: 9, rpe: 7, notes: ""}]},
+                    {name: "繩索三頭下壓 (Tricep Rope Pushdown)", sets: [{weight: 15, reps: 12, rpe: 7, notes: ""}, {weight: 15, reps: 11, rpe: 8, notes: ""}]}
                 ],
                 notes: "Felt strong on chest today."
             });
@@ -1355,9 +1416,9 @@
                 id: Date.now() - 300000,
                 date: d2.toISOString().split('T')[0],
                 exercises: [
-                    {name: "Pull-ups", sets: [{weight: 0, reps: 7, rpe: 8, notes: "Bodyweight"}, {weight: 0, reps: 6, rpe: 9, notes: ""}]},
-                    {name: "Deadlift", sets: [{weight: 80, reps: 5, rpe: 8, notes: ""}, {weight: 85, reps: 4, rpe: 9, notes: ""}]},
-                    {name: "Ab Wheel Rollout", sets: [{weight: 0, reps: 12, rpe: 7, notes: ""}]}
+                    {name: "引體向上 (Pull-ups)", sets: [{weight: 0, reps: 7, rpe: 8, notes: "Bodyweight"}, {weight: 0, reps: 6, rpe: 9, notes: ""}]},
+                    {name: "硬拉 (Deadlift)", sets: [{weight: 80, reps: 5, rpe: 8, notes: ""}, {weight: 85, reps: 4, rpe: 9, notes: ""}]},
+                    {name: "腹輪推出 (Ab Wheel Rollout)", sets: [{weight: 0, reps: 12, rpe: 7, notes: ""}]}
                 ],
                 notes: ""
             });
@@ -1368,9 +1429,9 @@
                 id: Date.now() - 100000,
                 date: d3.toISOString().split('T')[0],
                 exercises: [
-                    {name: "Zercher Squats", sets: [{weight: 42, reps: 8, rpe: 7, notes: ""}, {weight: 45, reps: 6, rpe: 8, notes: ""}]},
-                    {name: "Lateral Raises", sets: [{weight: 8, reps: 15, rpe: 6, notes: ""}, {weight: 8, reps: 14, rpe: 7, notes: ""}]},
-                    {name: "Dragon Flag", sets: [{weight: 0, reps: 6, rpe: 8, notes: "Controlled"}]}
+                    {name: "澤奇深蹲 (Zercher Squats)", sets: [{weight: 42, reps: 8, rpe: 7, notes: ""}, {weight: 45, reps: 6, rpe: 8, notes: ""}]},
+                    {name: "側平舉 (Lateral Raises)", sets: [{weight: 8, reps: 15, rpe: 6, notes: ""}, {weight: 8, reps: 14, rpe: 7, notes: ""}]},
+                    {name: "龍旗 (Dragon Flag)", sets: [{weight: 0, reps: 6, rpe: 8, notes: "Controlled"}]}
                 ],
                 notes: "Good leg pump."
             });
@@ -1381,8 +1442,8 @@
                 id: Date.now() - 800000,
                 date: d4.toISOString().split('T')[0],
                 exercises: [
-                    {name: "Deadlift", sets: [{weight: 75, reps: 6, rpe: 7, notes: ""}]},
-                    {name: "Seated Cable Row", sets: [{weight: 55, reps: 10, rpe: 7, notes: ""}, {weight: 60, reps: 8, rpe: 8, notes: ""}]}
+                    {name: "硬拉 (Deadlift)", sets: [{weight: 75, reps: 6, rpe: 7, notes: ""}]},
+                    {name: "坐姿繩索划船 (Seated Cable Row)", sets: [{weight: 55, reps: 10, rpe: 7, notes: ""}, {weight: 60, reps: 8, rpe: 8, notes: ""}]}
                 ],
                 notes: ""
             });
@@ -1392,13 +1453,15 @@
                 workoutHistory.push(s);
             });
 
-            // Update last performed from seed
+            // Update last performed from seed (store full sets for multi-set Last display support, no RPE in display)
             lastPerformed = {};
             workoutHistory.forEach(w => {
                 w.exercises.forEach(ex => {
-                    const lastSet = ex.sets[ex.sets.length - 1];
-                    if (lastSet) {
-                        lastPerformed[ex.name] = {weight: lastSet.weight, reps: lastSet.reps, rpe: lastSet.rpe, date: w.date};
+                    if (ex.sets && ex.sets.length) {
+                        lastPerformed[ex.name] = {
+                            sets: ex.sets.map(s => ({weight: s.weight, reps: s.reps})),
+                            date: w.date
+                        };
                     }
                 });
             });
@@ -1441,8 +1504,12 @@
             [...workoutHistory].sort((a,b) => b.date.localeCompare(a.date)).forEach(w => {
                 w.exercises.forEach(ex => {
                     if (!lastPerformed[ex.name] && ex.sets && ex.sets.length) {
-                        const last = ex.sets[ex.sets.length-1];
-                        lastPerformed[ex.name] = {weight: last.weight, reps: last.reps, rpe: last.rpe, date: w.date};
+                        // Store FULL sets from the last historical workout for this exercise (for "Last" display with multi-set support)
+                        // No RPE in the Last display per requirements
+                        lastPerformed[ex.name] = {
+                            sets: ex.sets.map(s => ({weight: s.weight, reps: s.reps})),
+                            date: w.date
+                        };
                     }
                 });
             });
@@ -1508,35 +1575,36 @@
             const ex = currentWorkout.exercises[exIdx];
             const weightInput = document.getElementById(`set-weight-${exIdx}`);
             const repsInput = document.getElementById(`set-reps-${exIdx}`);
-            const rpeInput = document.getElementById(`set-rpe-${exIdx}`);
 
             const weight = parseFloat(weightInput?.value) || 0;
             const reps = parseInt(repsInput?.value) || 0;
-            const rpe = parseInt(rpeInput?.value) || 7;
 
             if (reps <= 0) {
                 alert('請輸入次數');
                 return;
             }
 
+            // RPE: prefer last performed, else default 7 (no input in quick add row)
+            const last = lastPerformed[ex.name];
+            const rpe = (last && last.rpe) ? last.rpe : 7;
+
             const vol = weight * reps;
             const newSet = { weight, reps, rpe, notes: '', volume: vol };
 
             ex.sets.push(newSet);
 
-            // Update last performed
-            lastPerformed[ex.name] = { weight, reps, rpe, date: currentWorkout.date };
+            // Do NOT overwrite lastPerformed here - it holds historical previous session full record for "Last" display.
+            // Prefill for next set in current session comes from the just-added ex.sets in renderCurrentWorkout prefill logic.
 
-            // Clear inputs for next set (keep weight/reps for speed, clear only if user wants)
+            // Keep values in quick add for fast consecutive sets (common in FitNotes)
             if (weightInput) weightInput.value = weight || '';
             if (repsInput) repsInput.value = reps || '';
-            if (rpeInput) rpeInput.value = rpe || 7;
 
             renderCurrentWorkout();
             updateSessionVolume();
             saveWorkoutData();
 
-            // Auto start rest timer if not running
+            // Auto-start rest timer (very useful between sets)
             if (!restTimerRunning && restTimeLeft <= 5) {
                 resetRestTimer(DEFAULT_REST);
                 startRestTimer();
@@ -1567,105 +1635,135 @@
             const countEl = document.getElementById('current-workout-exercise-count');
             if (!currentWorkout || !container) return;
 
-            countEl.textContent = `${currentWorkout.exercises.length} exercises`;
+            countEl.textContent = `${currentWorkout.exercises.length} 個動作`;
 
             if (currentWorkout.exercises.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-[#a8a29e]">尚未加入動作。請使用下方輸入或瀏覽動作庫。</div>`;
+                container.innerHTML = `<div class="text-center py-4 text-xs text-[#a8a29e]">尚未加入動作。使用下方輸入或從動作庫選擇。</div>`;
                 return;
             }
 
             let html = '';
             currentWorkout.exercises.forEach((ex, exIdx) => {
-                const last = lastPerformed[ex.name];
+                const lastPerf = lastPerformed[ex.name];
                 let lastHtml = '';
-                if (last) {
-                    lastHtml = `<span class="text-[10px] text-emerald-300/70">Last: ${last.weight}kg × ${last.reps} @ RPE${last.rpe}</span>`;
+                if (lastPerf && lastPerf.sets && lastPerf.sets.length) {
+                    // Completely remove @ RPE from Last lines per spec
+                    // Support multiple sets from last session: "Last: 10kg × 8, 10kg × 7"
+                    if (lastPerf.sets.length > 1) {
+                        const setsStr = lastPerf.sets.map(s => `${s.weight}kg × ${s.reps}`).join(', ');
+                        lastHtml = `Last: ${setsStr}`;
+                    } else {
+                        const s = lastPerf.sets[0];
+                        lastHtml = `Last: ${s.weight}kg × ${s.reps}`;
+                    }
                 }
 
+                let imgSrc = getExerciseImage(ex.name);
+                const muscle = getMuscleGroup(ex.name);
+
+                // Reliable fallback to picsum (no via.placeholder)
+                const fallbackImg = 'https://picsum.photos/id/1011/56/56';
+
+                // Build added sets list (display only, with delete) - keep @ RPE here for current session sets (as per prior design)
                 let setsHtml = '';
                 ex.sets.forEach((set, sIdx) => {
-                    const vol = set.volume || calculateSetVolume(set);
+                    const rpe = set.rpe || 7;
                     setsHtml += `
-                        <div class="set-row grid grid-cols-12 gap-1 items-center px-2 py-1.5 text-xs border-b border-[#3f3a36] last:border-0">
-                            <div class="col-span-1 text-[#a8a29e]">#${sIdx+1}</div>
-                            <div class="col-span-2"><input type="number" step="0.5" value="${set.weight}" 
-                                onchange="updateSetField(${exIdx},${sIdx},'weight',this.value)" class="log-input w-full px-1.5 py-0.5 rounded text-center text-xs"></div>
-                            <div class="col-span-2"><input type="number" value="${set.reps}" 
-                                onchange="updateSetField(${exIdx},${sIdx},'reps',this.value)" class="log-input w-full px-1.5 py-0.5 rounded text-center text-xs"></div>
-                            <div class="col-span-1.5"><input type="number" min="1" max="10" value="${set.rpe || 7}" 
-                                onchange="updateSetField(${exIdx},${sIdx},'rpe',this.value)" class="log-input w-full px-1 py-0.5 rounded text-center text-xs"></div>
-                            <div class="col-span-2 text-right tabular-nums text-emerald-300">${vol}kg</div>
-                            <div class="col-span-2"><input type="text" value="${set.notes || ''}" placeholder="note"
-                                onchange="updateSetField(${exIdx},${sIdx},'notes',this.value)" class="log-input w-full px-1.5 py-0.5 rounded text-[10px]"></div>
-                            <div class="col-span-1 text-right">
-                                <button onclick="deleteSet(${exIdx},${sIdx})" class="text-red-400 hover:text-red-300 px-1"><i class="fa-solid fa-trash text-xs"></i></button>
-                            </div>
+                        <div class="flex items-center justify-between px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
+                            <span class="font-medium">${set.weight}kg × ${set.reps} @ RPE ${rpe}</span>
+                            <button onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded"><i class="fa-solid fa-times"></i></button>
                         </div>`;
                 });
 
                 html += `
-                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-3">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <div class="font-semibold flex items-center gap-x-2">${ex.name}
-                                    <span class="muscle-chip">${getExerciseCategory(ex.name)}</span>
+                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-2 border border-[#57534e]">
+                        <div class="flex gap-2 items-start">
+                            <!-- Left: Image 56x56 rounded -->
+                            <img src="${imgSrc}" 
+                                 class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36]"
+                                 onerror="this.onerror=null;this.src='${fallbackImg}'">
+                            
+                            <div class="flex-1 min-w-0">
+                                <!-- Bilingual name -->
+                                <div class="font-semibold text-sm leading-tight">${ex.name}</div>
+                                <!-- Muscle chip -->
+                                <div class="flex items-center gap-1 mt-0.5">
+                                    <span class="muscle-chip text-[9px] px-1.5">${muscle}</span>
                                 </div>
-                                ${lastHtml}
-                            </div>
-                            <div class="flex gap-1">
-                                <button onclick="copyLastToExercise(${exIdx})" class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 rounded">使用上次</button>
-                                <button onclick="removeExerciseFromCurrent(${exIdx})" class="text-red-400 hover:text-red-300 px-1.5"><i class="fa-solid fa-times"></i></button>
+                                <!-- Last line (no @ RPE, full multi-set if applicable) -->
+                                ${lastHtml ? `<div class="text-[10px] text-emerald-300/80 mt-0.5">${lastHtml}</div>` : ''}
+                                <!-- 使用上次 button -->
+                                <button onclick="copyLastToExercise(${exIdx})" 
+                                        class="mt-1 text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上次</button>
                             </div>
                         </div>
 
-                        <!-- Quick add row -->
-                        <div class="grid grid-cols-12 gap-1 items-center mb-2">
-                            <div class="col-span-3">
-                                <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg" class="log-input w-full px-2 py-1 rounded-xl text-sm text-center">
-                            </div>
-                            <div class="col-span-2">
-                                <input id="set-reps-${exIdx}" type="number" placeholder="reps" class="log-input w-full px-2 py-1 rounded-xl text-sm text-center">
-                            </div>
-                            <div class="col-span-2">
-                                <input id="set-rpe-${exIdx}" type="number" min="1" max="10" value="7" class="log-input w-full px-2 py-1 rounded-xl text-sm text-center">
-                            </div>
+                        <!-- Quick Add: ONLY kg + reps (NO RPE input) -->
+                        <div class="mt-2 grid grid-cols-12 gap-1.5 items-end">
                             <div class="col-span-5">
+                                <div class="text-[9px] text-[#a8a29e] mb-0.5">重量 (kg)</div>
+                                <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg" 
+                                       class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
+                            </div>
+                            <div class="col-span-4">
+                                <div class="text-[9px] text-[#a8a29e] mb-0.5">次數</div>
+                                <input id="set-reps-${exIdx}" type="number" placeholder="reps" 
+                                       class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
+                            </div>
+                            <div class="col-span-3">
                                 <button onclick="addSetToExercise(${exIdx})" 
-                                    class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1">
-                                    <i class="fa-solid fa-plus"></i> <span>Add Set</span>
+                                        class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
+                                    <i class="fa-solid fa-plus"></i> <span>加組</span>
                                 </button>
                             </div>
                         </div>
 
-                        ${setsHtml ? `<div class="mt-1 text-[10px] text-[#a8a29e] px-1">Sets</div><div class="text-xs">${setsHtml}</div>` : 
-                        '<div class="text-xs text-[#a8a29e] px-1 italic">尚未有組數 — 在上方加入第一組</div>'}
+                        <!-- Below: list of added sets "weight × reps @ RPE" (current session) -->
+                        ${setsHtml ? `<div class="mt-2 space-y-0.5">${setsHtml}</div>` : ''}
                     </div>`;
             });
             container.innerHTML = html;
 
-            // Pre-fill quick inputs from last performed where possible
+            // Pre-fill quick kg/reps:
+            // Priority: last set logged in *this current workout* for the ex (for fast multi-set logging)
+            // Fallback: last set from historical previous session (lastPerformed now stores full sets)
             currentWorkout.exercises.forEach((ex, idx) => {
-                const last = lastPerformed[ex.name];
                 const wEl = document.getElementById(`set-weight-${idx}`);
                 const rEl = document.getElementById(`set-reps-${idx}`);
-                const rpEl = document.getElementById(`set-rpe-${idx}`);
-                if (last && wEl && !wEl.value) wEl.value = last.weight || '';
-                if (last && rEl && !rEl.value) rEl.value = last.reps || '';
-                if (last && rpEl) rpEl.value = last.rpe || 7;
+                if (!wEl || !rEl || (wEl.value && rEl.value)) return;
+
+                let source = null;
+                if (ex.sets && ex.sets.length > 0) {
+                    // live from current session
+                    source = ex.sets[ex.sets.length - 1];
+                } else {
+                    // historical
+                    const perf = lastPerformed[ex.name];
+                    if (perf && perf.sets && perf.sets.length > 0) {
+                        source = perf.sets[perf.sets.length - 1];
+                    }
+                }
+                if (source) {
+                    if (!wEl.value) wEl.value = source.weight || '';
+                    if (!rEl.value) rEl.value = source.reps || '';
+                }
             });
         }
 
         function copyLastToExercise(exIdx) {
             if (!currentWorkout) return;
             const ex = currentWorkout.exercises[exIdx];
-            const last = lastPerformed[ex.name];
-            if (!last) return alert('沒有 ' + ex.name + ' 的上次數據');
+            const lastPerf = lastPerformed[ex.name];
+            if (!lastPerf || !lastPerf.sets || lastPerf.sets.length === 0) {
+                return alert('沒有 ' + ex.name + ' 的上次數據');
+            }
+            // Copy the last set from the previous performance (for quick add prefill)
+            const lastSet = lastPerf.sets[lastPerf.sets.length - 1];
             const wEl = document.getElementById(`set-weight-${exIdx}`);
             const rEl = document.getElementById(`set-reps-${exIdx}`);
-            const rpEl = document.getElementById(`set-rpe-${exIdx}`);
-            if (wEl) wEl.value = last.weight;
-            if (rEl) rEl.value = last.reps;
-            if (rpEl) rpEl.value = last.rpe;
+            if (wEl) wEl.value = lastSet.weight || '';
+            if (rEl) rEl.value = lastSet.reps || '';
+            // No rpe input in quick add
         }
 
         function updateSessionVolume() {
@@ -1691,7 +1789,10 @@
             if (!hint) return;
             if (specificExercise && lastPerformed[specificExercise]) {
                 const l = lastPerformed[specificExercise];
-                hint.innerHTML = `<strong>${specificExercise}</strong> 上次：${l.weight}kg × ${l.reps}（RPE ${l.rpe}）於 ${l.date}`;
+                if (l.sets && l.sets.length > 0) {
+                    const lastS = l.sets[l.sets.length - 1];
+                    hint.innerHTML = `<strong>${specificExercise}</strong> 上次：${lastS.weight}kg × ${lastS.reps} 於 ${l.date}`;
+                }
             } else {
                 hint.innerHTML = '';
             }
@@ -1900,6 +2001,7 @@
 
         async function pushCurrentWorkoutToLegacyGAS(workout) {
             if (!currentUser || !APPS_SCRIPT_URL) return;
+            const sessionId = workout.id || Date.now();
             for (const ex of workout.exercises) {
                 for (const set of ex.sets) {
                     try {
@@ -1907,15 +2009,17 @@
                             user: currentUser,
                             log: {
                                 id: Date.now() + Math.random(),
-                                user: currentUser,
+                                session_id: sessionId,
                                 date: workout.date,
-                                exercise: ex.name,
-                                sets: set.reps ? 1 : (set.sets || 1),
-                                reps: set.reps,
-                                weight: set.weight
+                                exercise: ex.name,           // bilingual name
+                                weight: set.weight || 0,
+                                reps: set.reps || 0,
+                                rpe: set.rpe || 7,
+                                notes: set.notes || '',
+                                volume: (set.weight || 0) * (set.reps || 0)
                             }
                         });
-                    } catch (e) {}
+                    } catch (e) { console.warn('GAS save set failed', e); }
                 }
             }
         }
@@ -2033,14 +2137,17 @@
             recent.forEach((w, idx) => {
                 const vol = w.totalVolume || calculateWorkoutVolume(w);
                 const setsCount = w.exercises.reduce((a, e) => a + e.sets.length, 0);
+                const exCount = w.exercises.length;
+                // Fix date to clean YYYY-MM-DD (remove any ISO time part)
+                const cleanDate = (w.date || '').split('T')[0];
                 const card = document.createElement('div');
                 card.className = 'workout-history-card log-card rounded-2xl p-3.5 cursor-pointer';
                 card.innerHTML = `
                     <div class="flex justify-between">
-                        <div class="font-semibold">${w.date}</div>
+                        <div class="font-semibold">${cleanDate}</div>
                         <div class="text-emerald-400 text-sm tabular-nums">${vol.toLocaleString()}kg</div>
                     </div>
-                    <div class="text-xs text-[#a8a29e]">${w.exercises.length} exercises • ${setsCount} sets</div>
+                    <div class="text-xs text-[#a8a29e]">${exCount} 動作 • ${setsCount} 組 • ${vol.toLocaleString()}kg</div>
                     ${w.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${w.notes}"</div>` : ''}
                 `;
                 card.onclick = () => showWorkoutDetail(w, idx);
@@ -2050,10 +2157,11 @@
 
         function showWorkoutDetail(workout, historyIndex) {
             // Simple detail view using alert + option to delete for now (can be expanded later)
-            let txt = `Date: ${workout.date}\nVolume: ${workout.totalVolume || calculateWorkoutVolume(workout)} kg\n\n`;
+            const cleanDate = (workout.date || '').split('T')[0];
+            let txt = `日期: ${cleanDate}\n總量: ${workout.totalVolume || calculateWorkoutVolume(workout)} kg\n\n`;
             workout.exercises.forEach(ex => {
                 txt += `${ex.name}:\n`;
-                ex.sets.forEach((s, i) => txt += `  Set ${i+1}: ${s.weight}kg × ${s.reps} @ RPE${s.rpe || '-'} ${s.notes ? '('+s.notes+')' : ''}\n`);
+                ex.sets.forEach((s, i) => txt += `  Set ${i+1}: ${s.weight}kg × ${s.reps}${s.notes ? ' ('+s.notes+')' : ''}\n`);
             });
             if (confirm(txt + '\n\n確定刪除這次訓練？')) {
                 workoutHistory.splice(historyIndex, 1);
@@ -2405,7 +2513,7 @@
                 const div = document.createElement('div');
                 div.className = 'flex items-center gap-2 bg-[#292524] px-2 py-1.5 rounded-2xl text-sm';
                 div.innerHTML = `
-                    <img src="${ex.image}" class="w-8 h-8 object-contain bg-white rounded-lg flex-shrink-0" onerror="this.style.display='none'">
+                    <img src="${ex.image}" class="w-8 h-8 object-contain bg-white rounded-lg flex-shrink-0" onerror="this.onerror=null;this.src='https://picsum.photos/id/1011/32/32'">
                     <div class="flex-1 min-w-0">
                         <div class="truncate">${display}</div>
                         <div class="text-[10px] text-[#a8a29e]">${ex.muscle_group}</div>
@@ -2534,7 +2642,11 @@
 
         function initializeWorkoutLog() {
             loadWorkoutData();
-            seedSampleDataIfNeeded();
+            // Only seed demo data for guest / initial anon use. 
+            // Logged-in users load real data via loadUserLogs() from per-user GAS sheet (prevents test/dup data in history)
+            if (!currentUser) {
+                seedSampleDataIfNeeded();
+            }
             rebuildLastPerformed();
 
             // Populate datalist for quick add (bilingual)
@@ -2628,12 +2740,22 @@
             if (result.status === "success") {
                 alert(`用戶 ${username} 已建立！`);
                 hideAddUserModal();
+                // Auto login the user after successful registration (mainstream UX)
                 currentUser = username;
                 localStorage.setItem('currentUser', currentUser);
                 updateUIAfterLogin();
                 await loadUserLogs();
             } else {
-                alert("建立用戶失敗（用戶名稱可能已存在）");
+                const msg = result.message || "";
+                if (msg.includes('已被使用') || msg.includes('已存在') || msg.toLowerCase().includes('exist')) {
+                    alert("此用戶名已被使用，請直接登入");
+                    hideAddUserModal();
+                    document.getElementById('loginUsername').value = username;
+                    document.getElementById('loginPin').value = pin;
+                    showLoginModal();
+                } else {
+                    alert("建立用戶失敗：" + (msg || "請稍後再試"));
+                }
             }
         }
 
