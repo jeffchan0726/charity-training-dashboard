@@ -157,8 +157,9 @@ Local Development Instructions:
         }
 
         /* === Full-Screen / Immersive Training Mode (Start New Training) === */
-        .fullscreen-training .nav-tab,
-        .fullscreen-training .charity-header,
+        /* Simplified: only hide log-specific sub elements that are not part of the immersive training UI.
+           Global nav/header hiding is now handled explicitly in JS (enterImmersiveMode/exitImmersiveMode)
+           to avoid broad display:none causing blank page or layout collapse affecting the fixed panel. */
         .fullscreen-training #content-log > .flex:first-child, /* log top header with buttons */
         .fullscreen-training .flex.gap-1\.5.mb-3.text-sm.border-b, /* sub-tabs */
         .fullscreen-training #log-empty-state {
@@ -255,6 +256,29 @@ Local Development Instructions:
             -webkit-overflow-scrolling: touch;
         }
 
+        /* Modal scrollable content with subtle top/bottom shadows when overflowing */
+        .finish-modal-scroll {
+            position: relative;
+        }
+        .finish-modal-scroll::before,
+        .finish-modal-scroll::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 12px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .finish-modal-scroll::before {
+            top: 0;
+            background: linear-gradient(to bottom, rgba(28,25,23,0.9), transparent);
+        }
+        .finish-modal-scroll::after {
+            bottom: 0;
+            background: linear-gradient(to top, rgba(28,25,23,0.9), transparent);
+        }
+
         .muscle-chip {
             font-size: 0.65rem;
             padding: 1px 8px;
@@ -272,6 +296,39 @@ Local Development Instructions:
         .log-input:focus {
             border-color: #4ade80;
             outline: none;
+        }
+
+        /* Analysis redesign styles */
+        .time-range-btn {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.65rem;
+            transition: all 0.1s ease;
+        }
+        .time-range-btn.active {
+            background-color: #166534;
+            border-color: #4ade80;
+            color: #fff;
+        }
+        .perf-card {
+            background: #292524;
+            border: 1px solid #44403c;
+            transition: transform 0.1s ease, border-color 0.1s ease;
+        }
+        .perf-card:hover {
+            transform: translateY(-1px);
+            border-color: #57534e;
+        }
+        .progress-up { color: #4ade80; }
+        .progress-flat { color: #f59e0b; }
+        .progress-down { color: #f87171; }
+
+        /* Mobile analysis enhancements */
+        #log-section-analysis canvas {
+            max-height: 280px;
+        }
+        #analysis-coach-insight {
+            font-size: 0.875rem;
+            line-height: 1.5;
         }
 
         .quick-add-btn {
@@ -354,7 +411,54 @@ Local Development Instructions:
             </div>
         </div>
     </div>
+<div id="loginModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
+        <h3 class="font-bold text-xl mb-4">用戶登入</h3>
+        <div class="space-y-4">
+            <input type="text" id="loginUsername" placeholder="用戶名稱 (只限小寫英文字母 + 數字)"
+                class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
+            <input type="password" id="loginPin" placeholder="PIN 碼 (只限數字)"
+                class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                inputmode="numeric" pattern="[0-9]*"
+                oninput="this.value = this.value.replace(/\D/g, '')">
+        </div>
+        <div class="flex gap-x-3 mt-6">
+            <button onclick="hideLoginModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
+            <button onclick="loginUser()"
+                class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">登入</button>
+        </div>
+    </div>
+</div>
 
+    <!-- Add User Modal -->
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
+            <h3 class="font-bold text-xl mb-4">新增用戶</h3>
+            <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs px-3 py-2 rounded-2xl mb-4">
+                <i class="fa-solid fa-exclamation-triangle mr-1"></i> 安全提示：請勿使用平時用開嘅密碼作為 PIN
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="newUsername" placeholder="用戶名稱 (只限小寫英文字母 + 數字)"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                    oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
+                <input type="password" id="newPin" placeholder="設定 PIN 碼 (只限數字)"
+                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
+                    inputmode="numeric" pattern="[0-9]*"
+                    oninput="this.value = this.value.replace(/\D/g, '')">
+            </div>
+            <div class="flex gap-x-3 mt-6">
+                <button onclick="hideAddUserModal()"
+                    class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
+                <button onclick="addNewUser()"
+                    class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">建立用戶</button>
+            </div>
+            <div class="mt-4 text-center text-xs">
+                <span class="text-[#a8a29e]">已有帳號？</span>
+                <a href="#" onclick="hideAddUserModal(); showLoginModal(); return false;" class="text-emerald-400 hover:underline">登入</a>
+            </div>
+        </div>
+    </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-8 sm:pb-12">
 
         <!-- Navigation -->
@@ -369,10 +473,6 @@ Local Development Instructions:
                 class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">訓練計劃</button>
             <button onclick="switchTab('log')" id="tab-log"
                 class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">Workout Log</button>
-            <button onclick="switchTab('sponsor')" id="tab-sponsor"
-                class="nav-tab px-3 sm:px-5 py-2 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-x-2 hover:bg-[#292524]">
-                <i class="fa-solid fa-trophy"></i> <span>金主排行榜</span>
-            </button>
         </div>
 
         <!-- 概覽 -->
@@ -473,9 +573,19 @@ Local Development Instructions:
                     </thead>
                     <tbody class="divide-y divide-[#44403c]">
                         <tr>
-                            <td class="py-2 pr-3">Protein + Collagen + Creatine</td>
+                            <td class="py-2 pr-3">Protein</td>
                             <td class="py-2 px-2 whitespace-nowrap">04:30</td>
-                            <td class="py-2 px-2 whitespace-nowrap">3+2 scoops + 5g</td>
+                            <td class="py-2 px-2 whitespace-nowrap">3 scoops</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 pr-3">Collagen</td>
+                            <td class="py-2 px-2 whitespace-nowrap">04:30</td>
+                            <td class="py-2 px-2 whitespace-nowrap">2 scoops</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 pr-3">Creatine</td>
+                            <td class="py-2 px-2 whitespace-nowrap">04:30</td>
+                            <td class="py-2 px-2 whitespace-nowrap">5g</td>
                         </tr>
                         <tr>
                             <td class="py-2 pr-3">Vitamin D3</td>
@@ -518,7 +628,11 @@ Local Development Instructions:
         </div>
     </div>
 
-    <!-- 訓練計劃 -->
+    <!-- 訓練計劃 (Restored full static structure) -->
+    <!-- 原本嘅訓練日卡片結構（訓練日 1 / 訓練日 2 / 訓練日 3）。
+         每個訓練日可以展開/收合，顯示對應動作 + 圖片。
+         靜態展示內容（非功能按鈕，expand/collapse 只是 viewing helper）。
+         ID 正確 content-training，nav button 觸發 switchTab('training')。 -->
     <div id="content-training" class="tab-content hidden">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6 gap-3">
             <h2 class="text-xl sm:text-2xl font-bold">每週 3 日訓練計劃 <span class="text-base font-normal text-[#a8a29e]">（單擊展開）</span></h2>
@@ -691,21 +805,6 @@ Local Development Instructions:
                 <h3 class="font-bold text-lg sm:text-xl">訓練日誌 <span id="logUserName" class="text-[#4ade80]"></span></h3>
                 <p class="text-[10px] sm:text-xs text-[#a8a29e]">快速記錄 • 每組間休息計時 • 慈善噸數追蹤</p>
             </div>
-            <div class="flex flex-wrap gap-1.5">
-                <button onclick="startNewWorkout()" 
-                    class="min-h-[42px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl text-sm font-semibold flex items-center gap-x-1.5 shadow">
-                    <i class="fa-solid fa-play"></i> <span>開始新訓練</span>
-                </button>
-                <button onclick="showRoutinesModal()" 
-                    class="min-h-[42px] px-3 py-2 bg-[#292524] hover:bg-[#3f3a36] border border-[#57534e] rounded-2xl text-xs sm:text-sm flex items-center gap-x-1">
-                    <i class="fa-solid fa-list-check"></i> <span>模板</span>
-                </button>
-                <button onclick="showLibraryModal()" 
-                    class="min-h-[42px] px-3 py-2 bg-[#292524] hover:bg-[#3f3a36] border border-[#57534e] rounded-2xl text-xs sm:text-sm flex items-center gap-x-1">
-                    <i class="fa-solid fa-dumbbell"></i> <span>動作庫</span>
-                </button>
-            </div>
-        </div>
 
         <!-- LIVE LOGGING PANEL - Immersive / Near Full-Screen Mode -->
         <div id="live-log-panel" class="hidden mb-6">
@@ -824,10 +923,12 @@ Local Development Instructions:
             <div class="log-card rounded-3xl p-6 text-center">
                 <i class="fa-solid fa-dumbbell text-4xl text-emerald-400/70 mb-3"></i>
                 <div class="font-semibold mb-1">準備好訓練了嗎？</div>
-                <p class="text-sm text-[#a8a29e] max-w-md mx-auto mb-4">點擊上方開始新訓練。使用上次數據可快速記錄，計時器幫助你在組間適當休息。</p>
+                <p class="text-sm text-[#a8a29e] max-w-md mx-auto mb-4">點擊開始新訓練，計時器幫助你在組間適當休息。</p>
                 <div class="flex flex-wrap justify-center gap-2">
                     <button onclick="startNewWorkout()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始新訓練</button>
-                    <button onclick="loadLastWorkoutAsTemplate()" class="px-4 py-2 border border-[#57534e] rounded-2xl text-sm hover:bg-[#292524]">載入上次訓練作為模板</button>
+                </div>
+                <div class="mt-2 text-[10px]">
+                    <a href="#" onclick="localStorage.setItem('disableAutoResumePrompt', 'true'); this.textContent='已停用（重整生效）'; return false;" class="text-[#a8a29e] hover:underline">停用自動恢復提示（power user）</a>
                 </div>
             </div>
         </div>
@@ -857,53 +958,102 @@ Local Development Instructions:
             </div>
         </div>
 
-        <!-- ANALYSIS -->
+        <!-- ANALYSIS: 單一動作分析 (Mobile-First Redesigned) -->
         <div id="log-section-analysis" class="hidden">
-            <div class="log-card rounded-3xl p-5">
-                <div class="flex flex-wrap items-center gap-3 mb-4">
-                    <div class="font-semibold">動作進度</div>
-                    <select id="analysis-exercise-select" onchange="renderExerciseAnalysis()" class="log-input px-3 py-1.5 rounded-2xl text-sm flex-1 max-w-[260px]">
-                        <!-- options populated dynamically -->
-                    </select>
-                    <button onclick="renderExerciseAnalysis()" class="text-xs px-3 py-1 bg-emerald-900/60 hover:bg-emerald-800 rounded">刷新圖表</button>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                    <!-- Stats summary -->
-                    <div class="lg:col-span-2 space-y-3 text-sm" id="analysis-summary">
-                        <!-- JS injected -->
+            <div class="log-card rounded-3xl p-4 sm:p-5">
+                <!-- Header: Exercise selector + Time Range (Mobile friendly) -->
+                <div class="flex flex-col gap-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="font-semibold text-sm whitespace-nowrap">單一動作分析</div>
+                        <select id="analysis-exercise-select" onchange="renderExerciseAnalysis()" 
+                                class="log-input px-3 py-1.5 rounded-2xl text-sm flex-1 min-w-[120px]">
+                            <!-- populated dynamically -->
+                        </select>
                     </div>
 
-                    <!-- Charts -->
-                    <div class="lg:col-span-3 space-y-4">
-                        <div>
-                            <div class="text-xs text-[#a8a29e] mb-1">預估 1RM 趨勢（Epley 公式）</div>
-                            <canvas id="chart-1rm" height="90"></canvas>
-                        </div>
-                        <div>
-                            <div class="text-xs text-[#a8a29e] mb-1">此動作每次訓練量</div>
-                            <canvas id="chart-volume" height="90"></canvas>
-                        </div>
+                    <!-- Time range - horizontal scroll friendly on mobile -->
+                    <div class="flex gap-1 overflow-x-auto pb-1 text-xs">
+                        <button data-range="30d" onclick="setAnalysisTimeRange('30d')" 
+                                class="time-range-btn px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">30 天</button>
+                        <button data-range="12w" onclick="setAnalysisTimeRange('12w')" 
+                                class="time-range-btn px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">12 週</button>
+                        <button data-range="all" onclick="setAnalysisTimeRange('all')" 
+                                class="time-range-btn active px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">All Time</button>
+                        <button onclick="resetAnalysisToAllTime()" 
+                                class="px-3 py-1 text-[#a8a29e] hover:text-white text-xs flex-shrink-0">重置</button>
                     </div>
                 </div>
 
-                <div class="mt-5">
-                    <div class="text-xs text-[#a8a29e] mb-2">所有組數歷史（最新優先）</div>
-                    <div class="overflow-x-auto max-h-[220px] border border-[#57534e] rounded-2xl">
-                        <table class="w-full text-xs min-w-[620px]">
-                            <thead class="bg-[#292524]">
+                <!-- 4 Key Stat Cards - 2x2 on mobile, responsive -->
+                <div class="grid grid-cols-2 gap-3 mb-5" id="analysis-key-cards">
+                    <!-- JS populated: Best e1RM, Total Volume, Best Weight, Sessions -->
+                </div>
+
+                <!-- Charts - Full width, stacked vertically, mobile optimized -->
+                <div class="space-y-4 mb-4">
+                    <!-- Volume Trend Chart -->
+                    <div>
+                        <div class="flex items-baseline justify-between mb-1.5 px-1">
+                            <div class="text-sm font-semibold">訓練量趨勢 (Volume)</div>
+                            <div class="text-[10px] text-[#a8a29e]">Bar + Line</div>
+                        </div>
+                        <div class="bg-[#1f1c1a] rounded-2xl p-2 border border-[#44403c]">
+                            <canvas id="chart-volume-trend" style="height: 260px; width: 100%;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- e1RM Progression Chart -->
+                    <div>
+                        <div class="flex items-baseline justify-between mb-1.5 px-1">
+                            <div class="text-sm font-semibold">e1RM 進展曲線</div>
+                            <div class="text-[10px] text-[#a8a29e]">Line + 趨勢線</div>
+                        </div>
+                        <div class="bg-[#1f1c1a] rounded-2xl p-2 border border-[#44403c]">
+                            <canvas id="chart-e1rm-progress" style="height: 260px; width: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 教練分析卡片 (Professional Insight) -->
+                <div class="mb-4 p-4 rounded-2xl bg-gradient-to-br from-[#166534]/20 to-transparent border border-[#166534]/40">
+                    <div class="flex items-center gap-x-2 mb-2">
+                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i>
+                        <span class="text-sm font-semibold">教練洞見</span>
+                    </div>
+                    <div id="analysis-coach-insight" class="text-sm leading-relaxed text-[#d1d5db]">
+                        選擇一個動作後，這裡會顯示基於你的訓練歷史的簡單分析建議。
+                    </div>
+                </div>
+
+                <!-- History Table - Scrollable with date/weight filter -->
+                <div class="mt-2">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <div class="text-xs font-medium text-[#a8a29e]">
+                            歷史組數 <span id="analysis-record-count" class="tabular-nums"></span>
+                        </div>
+                        <div class="flex gap-x-2 text-xs items-center">
+                            <input id="analysis-filter-weight" type="number" step="2.5" placeholder="最低重量" 
+                                   class="log-input w-16 px-2 py-0.5 text-xs rounded-xl" oninput="filterAnalysisTable()">
+                            <button onclick="filterAnalysisTable()" class="px-2 py-0.5 border border-[#57534e] rounded-xl">套用</button>
+                        </div>
+                    </div>
+
+                    <div id="analysis-table-wrapper" class="overflow-x-auto border border-[#57534e] rounded-2xl max-h-[240px]">
+                        <table class="w-full text-xs min-w-[580px]">
+                            <thead class="bg-[#292524] sticky top-0 z-10">
                                 <tr>
-                                    <th class="py-2 px-3 text-left">Date</th>
-                                    <th class="py-2 px-2 text-center">Weight</th>
-                                    <th class="py-2 px-2 text-center">Reps</th>
-                                    <th class="py-2 px-2 text-center">Vol (kg)</th>
+                                    <th class="py-2 px-3 text-left">日期</th>
+                                    <th class="py-2 px-2 text-center">重量</th>
+                                    <th class="py-2 px-2 text-center">次數</th>
+                                    <th class="py-2 px-2 text-center">Volume</th>
                                     <th class="py-2 px-2 text-center">e1RM</th>
-                                    <th class="py-2 px-3">Notes</th>
+                                    <th class="py-2 px-3 text-left">備註</th>
                                 </tr>
                             </thead>
                             <tbody id="analysis-sets-table" class="divide-y divide-[#44403c]"></tbody>
                         </table>
                     </div>
+                    <div class="text-[10px] mt-1 text-[#a8a29e] px-1">向上捲動查看更多 • 受上方時間範圍限制</div>
                 </div>
             </div>
         </div>
@@ -965,127 +1115,60 @@ Local Development Instructions:
         </div>
     </div>
 
-    <!-- 金主排行榜 Tab -->
-    <div id="content-sponsor" class="tab-content hidden">
-        <div class="section-card rounded-3xl p-5 sm:p-8 border border-[#44403c] relative">
-            <h2 class="text-2xl sm:text-4xl font-bold mb-5 sm:mb-8 text-center flex items-center justify-center gap-x-2 sm:gap-x-3">
-                <i class="fa-solid fa-trophy text-[#fbbf24]"></i>
-                <span>金主排行榜</span>
-                <i class="fa-solid fa-trophy text-[#fbbf24]"></i>
-            </h2>
-
-            <div class="max-w-2xl mx-auto space-y-3 sm:space-y-4">
-                <!-- Top Donors -->
-                <div
-                    class="flex justify-between items-center bg-gradient-to-r from-yellow-500/20 to-transparent px-4 sm:px-8 py-3 sm:py-5 rounded-3xl border border-yellow-500/30">
-                    <div class="flex items-center gap-x-3 sm:gap-x-4">
-                        <span class="text-3xl sm:text-4xl">🥇</span>
-                        <span class="font-bold text-xl sm:text-2xl">Aly</span>
-                    </div>
-                    <span class="text-2xl sm:text-3xl font-bold text-yellow-400">HK$888</span>
-                </div>
-
-                <div
-                    class="flex justify-between items-center bg-gradient-to-r from-gray-400/20 to-transparent px-4 sm:px-8 py-3 sm:py-5 rounded-3xl border border-gray-400/30">
-                    <div class="flex items-center gap-x-3 sm:gap-x-4">
-                        <span class="text-3xl sm:text-4xl">🥈</span>
-                        <span class="font-bold text-xl sm:text-2xl">Bon</span>
-                    </div>
-                    <span class="text-2xl sm:text-3xl font-bold text-gray-300">HK$666</span>
-                </div>
-
-                <div
-                    class="flex justify-between items-center bg-gradient-to-r from-orange-500/20 to-transparent px-4 sm:px-8 py-3 sm:py-5 rounded-3xl border border-orange-500/30">
-                    <div class="flex items-center gap-x-3 sm:gap-x-4">
-                        <span class="text-3xl sm:text-4xl">🥉</span>
-                        <span class="font-bold text-xl sm:text-2xl">Fan</span>
-                    </div>
-                    <span class="text-2xl sm:text-3xl font-bold text-orange-400">HK$520</span>
-                </div>
-
-                <div class="flex justify-between items-center bg-[#292524] px-4 sm:px-8 py-3 sm:py-4 rounded-3xl">
-                    <div class="flex items-center gap-x-3 sm:gap-x-4">
-                        <span class="text-xl sm:text-2xl">4</span>
-                        <span class="font-bold text-lg sm:text-xl">William</span>
-                    </div>
-                    <span class="text-xl sm:text-2xl font-bold text-emerald-400">HK$388</span>
-                </div>
-
-                <div class="flex justify-between items-center bg-[#292524] px-4 sm:px-8 py-3 sm:py-4 rounded-3xl">
-                    <div class="flex items-center gap-x-3 sm:gap-x-4">
-                        <span class="text-xl sm:text-2xl">5</span>
-                        <span class="font-bold text-lg sm:text-xl">奇異果</span>
-                    </div>
-                    <span class="text-xl sm:text-2xl font-bold text-emerald-400">HK$168</span>
-                </div>
-
-                <div class="flex justify-between items-center bg-[#292524] px-4 sm:px-8 py-3 sm:py-4 rounded-3xl">
-                    <div class="flex items-center gap-x-3 sm:gap-x-4">
-                        <span class="text-xl sm:text-2xl">6</span>
-                        <span class="font-bold text-lg sm:text-xl">+× wrong</span>
-                    </div>
-                    <span class="text-xl sm:text-2xl font-bold text-emerald-400">HK$66.6</span>
-                </div>
-            </div>
-
-            <!-- PayCode -->
-            <div class="mt-6 sm:mt-10 flex justify-center">
-                <div class="bg-[#292524] rounded-3xl p-5 sm:p-8 text-center max-w-xs w-full">
-                    <p class="text-base sm:text-xl mb-3 sm:mb-4 font-medium">支持 Jeff，一起為善而戰</p>
-                    <div class="w-40 h-40 sm:w-56 sm:h-56 mx-auto bg-white rounded-2xl p-3 sm:p-4">
-                        <img src="paycode.png" alt="Jeff PayCode" class="w-full h-full object-contain" onerror="this.style.display='none';this.parentNode.innerHTML='<div class=\'text-[#a8a29e] text-sm py-10\'>PayCode 圖片<br>請上傳 paycode.png</div>';">
-                    </div>
-                    <p class="text-xs sm:text-sm text-[#a8a29e] mt-3 sm:mt-4">一掃 PayCode，立即過數</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
-
     <!-- Modals -->
-    <!-- Login Modal -->
-    <div id="loginModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
-            <h3 class="font-bold text-xl mb-4">用戶登入</h3>
+    <!-- === LOGIN & ADD USER MODALS (已修復) === -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl max-w-sm w-full p-6 sm:p-8">
+            <h3 class="text-xl font-bold mb-4">登入</h3>
             <div class="space-y-4">
-                <input type="text" id="loginUsername" placeholder="用戶名稱 (只限小寫英文字母 + 數字)"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
-                    oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
-                <input type="password" id="loginPin" placeholder="PIN 碼 (只限數字)"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
-                    inputmode="numeric" pattern="[0-9]*"
-                    oninput="this.value = this.value.replace(/\D/g, '')">
-            </div>
-            <div class="flex gap-x-3 mt-6">
-                <button onclick="hideLoginModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
-                <button onclick="loginUser()"
-                    class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">登入</button>
+                <div>
+                    <label class="text-xs text-[#a8a29e] block mb-1">用戶名 (a-z0-9)</label>
+                    <input id="loginUsername" type="text" 
+                           class="log-input w-full px-4 py-3 rounded-2xl" placeholder="e.g. jeffchan">
+                </div>
+                <div>
+                    <label class="text-xs text-[#a8a29e] block mb-1">PIN 碼 (數字)</label>
+                    <input id="loginPin" type="password" maxlength="6"
+                           class="log-input w-full px-4 py-3 rounded-2xl" placeholder="123456">
+                </div>
+                <button onclick="loginUser()" 
+                        class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">
+                    登入
+                </button>
+                <button onclick="hideLoginModal()" 
+                        class="w-full py-3 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">
+                    取消
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Add User Modal -->
-    <div id="addUserModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
-            <h3 class="font-bold text-xl mb-4">新增用戶</h3>
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl max-w-sm w-full p-6 sm:p-8">
+            <h3 class="text-xl font-bold mb-4">新增用戶</h3>
             <div
                 class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs px-3 py-2 rounded-2xl mb-4">
                 <i class="fa-solid fa-exclamation-triangle mr-1"></i> 安全提示：請勿使用平時用開嘅密碼作為 PIN
             </div>
             <div class="space-y-4">
-                <input type="text" id="newUsername" placeholder="用戶名稱 (只限小寫英文字母 + 數字)"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
-                    oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '')">
-                <input type="password" id="newPin" placeholder="設定 PIN 碼 (只限數字)"
-                    class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2.5"
-                    inputmode="numeric" pattern="[0-9]*"
-                    oninput="this.value = this.value.replace(/\D/g, '')">
-            </div>
-            <div class="flex gap-x-3 mt-6">
-                <button onclick="hideAddUserModal()"
-                    class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
-                <button onclick="addNewUser()"
-                    class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">建立用戶</button>
+                <div>
+                    <label class="text-xs text-[#a8a29e] block mb-1">用戶名 (只接受小寫 a-z + 0-9)</label>
+                    <input id="newUsername" type="text" 
+                           class="log-input w-full px-4 py-3 rounded-2xl" placeholder="e.g. jeffchan">
+                </div>
+                <div>
+                    <label class="text-xs text-[#a8a29e] block mb-1">設定 PIN 碼 (數字)</label>
+                    <input id="newPin" type="password" maxlength="6"
+                           class="log-input w-full px-4 py-3 rounded-2xl" placeholder="123456">
+                </div>
+                <button onclick="addNewUser()" 
+                        class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">
+                    建立用戶
+                </button>
+                <button onclick="hideAddUserModal()" 
+                        class="w-full py-3 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">
+                    取消
+                </button>
             </div>
             <!-- Already have account link -->
             <div class="mt-4 text-center text-xs">
@@ -1122,40 +1205,91 @@ Local Development Instructions:
         </div>
     </div>
 
-    <!-- Finish Workout Summary Modal -->
-    <div id="finishModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[60]">
-        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-lg p-5 sm:p-7 mx-4">
-            <div class="flex justify-between items-start mb-4">
+    <!-- Finish Workout Summary Modal - Enhanced celebratory design with proper scrolling -->
+    <div id="finishModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[90]">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-lg max-h-[85vh] sm:max-h-[90dvh] mx-4 shadow-2xl flex flex-col overflow-hidden">
+            <!-- Sticky Header (kept visible while scrolling) -->
+            <div class="flex justify-between items-start p-5 sm:p-7 pb-3 border-b border-[#57534e] flex-shrink-0 bg-[#1c1917] sticky top-0 z-10">
                 <div>
-                    <h3 class="font-bold text-xl">訓練完成 🎉</h3>
-                    <div id="finish-date" class="text-sm text-[#a8a29e]"></div>
+                    <h3 class="font-bold text-2xl text-emerald-400">訓練完成！🎉</h3>
+                    <div class="text-base text-white/80">Training Complete!</div>
+                    <div id="finish-date" class="text-xs text-[#a8a29e] mt-0.5"></div>
                 </div>
-                <button onclick="hideFinishModal()" class="text-[#a8a29e] hover:text-white text-xl leading-none">×</button>
+                <button onclick="hideFinishModal()" class="text-[#a8a29e] hover:text-white text-2xl leading-none mt-1">×</button>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 mb-5">
-                <div class="bg-[#292524] rounded-2xl p-3 text-center">
-                    <div class="text-xs text-[#a8a29e]">總訓練量</div>
-                    <div id="finish-volume" class="text-2xl font-bold text-emerald-400 tabular-nums"></div>
-                    <div id="finish-tonnes" class="text-xs text-amber-400"></div>
+            <!-- Scrollable Content Area -->
+            <div class="flex-1 overflow-y-auto p-5 sm:p-7 pt-4 space-y-4 finish-modal-scroll">
+                <!-- Key Stats Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="bg-[#292524] rounded-2xl p-4 text-center border border-emerald-900/30">
+                        <div class="text-xs text-[#a8a29e] mb-1">總訓練量</div>
+                        <div id="finish-volume" class="text-3xl font-bold text-emerald-400 tabular-nums leading-none"></div>
+                        <div id="finish-tonnes" class="text-xs text-amber-400 mt-1 font-medium"></div>
+                    </div>
+                    <div class="bg-[#292524] rounded-2xl p-4 text-center border border-emerald-900/30">
+                        <div class="text-xs text-[#a8a29e] mb-1">組數 / 動作</div>
+                        <div id="finish-sets" class="text-3xl font-bold text-emerald-400 leading-none"></div>
+                        <div class="text-xs text-[#a8a29e] mt-1">總計</div>
+                    </div>
+                    <div id="finish-duration-card" class="bg-[#292524] rounded-2xl p-4 text-center border border-emerald-900/30">
+                        <div class="text-xs text-[#a8a29e] mb-1">訓練時長</div>
+                        <div id="finish-duration" class="text-3xl font-bold text-emerald-400 leading-none">--</div>
+                        <div class="text-xs text-[#a8a29e] mt-1">分鐘</div>
+                    </div>
                 </div>
-                <div class="bg-[#292524] rounded-2xl p-3 text-center">
-                    <div class="text-xs text-[#a8a29e]">組數 / 動作</div>
-                    <div id="finish-sets" class="text-2xl font-bold"></div>
+
+                <!-- PR / Milestone Section (compact for long lists) -->
+                <div>
+                    <div class="text-xs font-semibold text-amber-400 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span>個人紀錄與里程碑</span>
+                    </div>
+                    <div id="finish-prs" class="text-sm max-h-32 overflow-auto pr-1">
+                        <!-- Populated by JS - compact wrap badges or message. 
+                             For many PRs, JS can show summary + wrapped list -->
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="text-xs text-[#a8a29e] block mb-1.5">訓練備註（選填）</label>
+                    <textarea id="finish-notes" class="w-full log-input rounded-2xl p-3 text-sm h-20 resize-y" placeholder="今天感覺如何？有什麼觀察或進步..."></textarea>
                 </div>
             </div>
 
-            <div id="finish-prs" class="mb-4"></div>
+            <!-- Sticky Bottom Actions (always visible) -->
+            <div class="p-5 sm:p-7 pt-4 border-t border-[#57534e] flex-shrink-0 bg-[#1c1917] sticky bottom-0 z-10">
+                <div class="flex gap-3">
+                    <button onclick="hideFinishModal()" 
+                            class="flex-1 py-2.5 rounded-2xl border border-[#57534e] hover:bg-[#252321] text-sm font-medium transition-colors">
+                        繼續編輯
+                    </button>
+                    <button onclick="confirmFinishWorkout()" 
+                            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl font-semibold text-sm shadow transition-colors">
+                        <i class="fa-solid fa-check mr-1.5"></i> 儲存並完成訓練
+                    </button>
+                </div>
 
-            <div class="mb-4">
-                <label class="text-xs text-[#a8a29e]">訓練備註（選填）</label>
-                <textarea id="finish-notes" class="w-full log-input rounded-2xl p-3 text-sm h-16" placeholder="感覺如何？有什麼觀察..."></textarea>
+                <div class="text-center text-[10px] text-[#a8a29e] mt-3">每一次訓練都是對慈善的貢獻 💪</div>
             </div>
+        </div>
+    </div>
 
-            <div class="flex gap-3">
-                <button onclick="hideFinishModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">繼續編輯</button>
-                <button onclick="confirmFinishWorkout()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">儲存並完成訓練</button>
+    <!-- Unfinished Workout Prompt Modal (replaces ugly confirm()) -->
+    <div id="unfinishedWorkoutModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[80]">
+        <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
+            <h3 class="font-bold text-lg mb-2">偵測到未完成的訓練</h3>
+            <p id="unfinished-workout-msg" class="text-sm text-[#a8a29e] mb-4"></p>
+            <div class="flex flex-col gap-2">
+                <button onclick="resumeUnfinishedWorkout()" 
+                        class="py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold text-sm">繼續上次訓練</button>
+                <button onclick="discardAndStartNew()" 
+                        class="py-2.5 bg-red-600 hover:bg-red-700 rounded-2xl font-semibold text-sm">放棄並開始新訓練</button>
+                <button onclick="hideUnfinishedWorkoutModal()" 
+                        class="py-2.5 border border-[#57534e] hover:bg-[#252321] rounded-2xl text-sm">取消</button>
             </div>
+            <div class="mt-3 text-[10px] text-[#a8a29e] text-center">只會提示今日內有實際記錄組數的未完成訓練</div>
         </div>
     </div>
 
@@ -1300,6 +1434,8 @@ Local Development Instructions:
           // then proceed with cleanUser / cleanPin for storage & comparison
         */
 
+        // IMPORTANT: Replace this with your own deployed Google Apps Script Web App /exec URL
+        // (From GAS: Deploy > New deployment > Web app > Copy the /exec URL)
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8C7XUmx5IvhoSQZ-6JKegxyFtDtoK_gWv_xSS7b2vyRO3Nv7Sc6Kz8p6mWsVOrh1/exec";
         let currentUser = null;
         let workoutLogs = [];
@@ -1345,13 +1481,24 @@ Local Development Instructions:
         }
 
         function updateUIAfterLogin() {
-            document.getElementById('currentUserDisplay').classList.remove('hidden');
-            document.getElementById('currentUserName').textContent = currentUser;
-            document.getElementById('loginBtn').classList.add('hidden');
-            document.getElementById('logoutBtn').classList.remove('hidden');
+            const display = document.getElementById('currentUserDisplay');
+            if (display) display.classList.remove('hidden');
+
+            const nameEl = document.getElementById('currentUserName');
+            if (nameEl) nameEl.textContent = currentUser;
+
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) loginBtn.classList.add('hidden');
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+
             const addUserBtn = document.getElementById('addUserBtn');
             if (addUserBtn) addUserBtn.classList.add('hidden');
-            document.getElementById('logUserName').textContent = `(${currentUser})`;
+
+            const logUserName = document.getElementById('logUserName');
+            if (logUserName) logUserName.textContent = `(${currentUser})`;
+
             // Refresh rich log for the newly logged in user
             if (typeof originalLogContent !== 'undefined' && originalLogContent) {
                 const logEl = document.getElementById('content-log');
@@ -1375,54 +1522,78 @@ Local Development Instructions:
         }
 
         function showLoginModal() {
-            document.getElementById('loginModal').classList.remove('hidden');
-            document.getElementById('loginModal').classList.add('flex');
+            const modal = document.getElementById('loginModal');
+            if (!modal) {
+                console.error('#loginModal not found in DOM');
+                alert('登入視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
+                return;
+            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         function hideLoginModal() {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.getElementById('loginModal').classList.remove('flex');
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
 
         async function loginUser() {
-            // Frontend normalization: force lowercase username + digits-only PIN
-            let rawUsername = document.getElementById('loginUsername').value.trim();
-            let rawPin = document.getElementById('loginPin').value.trim();
+            console.debug('[DEBUG] loginUser called');
+            try {
+                // Frontend normalization: force lowercase username + digits-only PIN
+                let rawUsername = document.getElementById('loginUsername').value.trim();
+                let rawPin = document.getElementById('loginPin').value.trim();
 
-            const username = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const pin = rawPin.replace(/\D/g, '');
+                const username = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const pin = rawPin.replace(/\D/g, '');
 
-            if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
+                if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
 
-            const result = await callAppsScript("login", { user: username, pin: pin });
-            if (result.status === "success") {
-                currentUser = username;   // always store the normalized lowercase version
-                localStorage.setItem('currentUser', currentUser);
-                hideLoginModal();
-                // Restore log UI structure if it was replaced by guard
-                if (typeof originalLogContent !== 'undefined' && originalLogContent) {
-                    const logEl = document.getElementById('content-log');
-                    if (logEl) logEl.innerHTML = originalLogContent;
-                }
-                updateUIAfterLogin();
-                await loadUserLogs();
-                try {
-                    if (typeof showLogSubSection === 'function') showLogSubSection('history');
-                } catch (err) {
-                    console.warn('showLogSubSection after login error (non-fatal):', err);
-                }
-            } else {
-                const msg = (result.message || "登入失敗");
-                const lower = msg.toLowerCase();
-                if (lower.includes('not exist') || lower.includes('不存在') || lower.includes('no user')) {
-                    alert("用戶不存在，請先註冊");
+                console.debug('[DEBUG] Calling GAS login for', username);
+                const result = await callAppsScript("login", { user: username, pin: pin });
+                console.debug('[DEBUG] login result:', result);
+
+                if (result.status === "success") {
+                    currentUser = username;   // always store the normalized lowercase version
+                    localStorage.setItem('currentUser', currentUser);
                     hideLoginModal();
-                    showAddUserModal();
-                } else if (lower.includes('wrong') || lower.includes('pin') || lower.includes('密碼') || lower.includes('incorrect')) {
-                    alert("PIN 碼錯誤，請重新輸入");
+                    // Restore log UI structure if it was replaced by guard
+                    if (typeof originalLogContent !== 'undefined' && originalLogContent) {
+                        const logEl = document.getElementById('content-log');
+                        if (logEl) logEl.innerHTML = originalLogContent;
+                    }
+                    updateUIAfterLogin();
+                    await loadUserLogs();
+                    // Ensure per-user Workout Sets (3 defaults + custom) are loaded immediately after login
+                    if (typeof loadWorkoutSets === 'function') {
+                        loadWorkoutSets().catch(e => console.warn('loadWorkoutSets after login (non-fatal):', e));
+                    }
+                    try {
+                        if (typeof showLogSubSection === 'function') showLogSubSection('history');
+                    } catch (err) {
+                        console.warn('showLogSubSection after login error (non-fatal):', err);
+                    }
                 } else {
-                    alert("登入失敗：" + msg);
+                    const msg = (result.message || "登入失敗");
+                    const lower = msg.toLowerCase();
+                    if (lower.includes('用戶不存在') || lower.includes('not exist') || lower.includes('不存在') || lower.includes('no user') || lower.includes('not found')) {
+                        // 用戶名不存在：顯示準確訊息，並引導註冊
+                        alert(msg || "用戶不存在，請確認用戶名或先註冊");
+                        hideLoginModal();
+                        showAddUserModal();
+                    } else if (lower.includes('pin 碼錯誤') || lower.includes('pin') || lower.includes('密碼') || lower.includes('incorrect') || lower.includes('wrong')) {
+                        // PIN 錯誤（用戶存在）：顯示準確訊息
+                        alert(msg || "PIN 碼錯誤，請重新輸入");
+                    } else {
+                        alert("登入失敗：" + msg);
+                    }
                 }
+            } catch (err) {
+                console.error('loginUser error:', err);
+                alert("登入過程出錯，請檢查網絡或 Apps Script URL");
             }
         }
 
@@ -1436,12 +1607,16 @@ Local Development Instructions:
             currentUser = null;
             localStorage.removeItem('currentUser');
             workoutLogs = [];
-            document.getElementById('currentUserDisplay').classList.add('hidden');
-            document.getElementById('loginBtn').classList.remove('hidden');
-            document.getElementById('logoutBtn').classList.add('hidden');
+            const display = document.getElementById('currentUserDisplay');
+            if (display) display.classList.add('hidden');
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) loginBtn.classList.remove('hidden');
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.classList.add('hidden');
             const addUserBtn = document.getElementById('addUserBtn');
             if (addUserBtn) addUserBtn.classList.remove('hidden');
-            document.getElementById('logUserName').textContent = "";
+            const logUserName = document.getElementById('logUserName');
+            if (logUserName) logUserName.textContent = "";
             renderLogTable();
 
             // Clear rich workout state on logout (will reload guest on next action)
@@ -1453,7 +1628,13 @@ Local Development Instructions:
             workoutSetsCacheTimestamp = 0;
             currentEditingSet = null;
             editingSetExercises = [];
-            if (document.getElementById('live-log-panel')) document.getElementById('live-log-panel').classList.add('hidden');
+            const liveP = document.getElementById('live-log-panel');
+            if (liveP) {
+                liveP.classList.add('hidden');
+                if (immersivePanelOriginalParent && liveP.parentNode !== immersivePanelOriginalParent) {
+                    immersivePanelOriginalParent.appendChild(liveP);
+                }
+            }
             if (document.getElementById('log-empty-state')) document.getElementById('log-empty-state').classList.remove('hidden');
             if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
             if (typeof renderOverallStats === 'function') renderOverallStats();
@@ -1489,7 +1670,6 @@ Local Development Instructions:
                     grouped[sid].exercises[exName].sets.push({
                         weight: parseFloat(row.weight) || 0,
                         reps: parseInt(row.reps) || 0,
-                        rpe: parseInt(row.rpe) || 7,
                         notes: row.notes || '',
                         volume: parseFloat(row.volume) || ((parseFloat(row.weight)||0) * (parseInt(row.reps)||0))
                     });
@@ -1519,12 +1699,8 @@ Local Development Instructions:
                 console.warn('post loadUserLogs render error (non-fatal):', err);
             }
 
-            // After full user data load, check for unfinished live workout
-            try {
-                if (typeof checkForUnfinishedWorkout === 'function') checkForUnfinishedWorkout();
-            } catch (err) {
-                console.warn('checkForUnfinishedWorkout error (non-fatal):', err);
-            }
+            // Note: checkForUnfinishedWorkout is no longer auto-called here on login/load to avoid aggressive prompts on fresh page loads.
+            // It is now only triggered explicitly inside startNewWorkout when user clicks to start training (and only for valid recent unfinished with volume).
         }
 
         function renderLogTable() {
@@ -1576,16 +1752,17 @@ Local Development Instructions:
            ============================================================ */
 
         // --- Core State ---
-        let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, rpe, notes, volume}]}] }
+        let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, notes, volume}]}] }
         let workoutHistory = [];             // Array of finished workouts
         let exerciseLibrary = [];            // {name, category}
         let routines = [];                   // {id, name, exercises: string[] }
-        let lastPerformed = {};              // { exerciseName: {weight, reps, rpe, date} }
+        let lastPerformed = {};              // { exerciseName: {weight, reps, date} }
         let personalRecords = {};            // Computed on the fly or cached
         let restTimerInterval = null;
         let restTimeLeft = 60;
         let restTimerRunning = false;
         let currentLogSub = 'history';
+        let analysisTimeRange = 'all'; // 'all' | '12w' | '30d'
         let analysisChart1RM = null;
         let analysisChartVolume = null;
         let bodyPartChart = null;
@@ -1602,6 +1779,9 @@ Local Development Instructions:
         // Full-screen training state management
         let isInFullScreenTraining = false;
         let isInitializing = false;
+        let hasExplicitlyStartedTrainingThisSession = false;  // to gate auto-resume prompt on fresh loads
+        // For robust full-screen: remember original parent of live panel so we can move it to body for fixed positioning (avoids parent hidden/clip issues causing blank page)
+        let immersivePanelOriginalParent = null;
 
         const DEFAULT_REST = 60;
         const EXERCISE_CATEGORIES = ['胸部', '背部', '腿部', '肩膀', '手臂', '核心', '全身', '有氧'];
@@ -1740,15 +1920,37 @@ Local Development Instructions:
                 if (raw) {
                     const data = JSON.parse(raw);
                     workoutHistory = data.history || [];
+                    // Strip legacy rpe from history sets (RPE feature removed)
+                    workoutHistory.forEach(w => {
+                        if (w.exercises) w.exercises.forEach(ex => {
+                            if (ex.sets) ex.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
+                        });
+                    });
                     // Use EXERCISES as the source of truth for library (bilingual)
                     // Keep any custom if stored, but default to EXERCISES
                     exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
                     routines = data.routines || [];
                     lastPerformed = data.lastPerformed || {};
-                    // Restore in-progress workout (for crash/refresh/resume support)
+                    // Smarter restore: only restore currentWorkout from storage if it's a valid recent unfinished workout with real volume.
+                    // This prevents stale/old sessions from being treated as active on fresh loads.
                     if (data.currentWorkout && data.currentWorkout.exercises) {
-                        currentWorkout = data.currentWorkout;
+                        if (isValidUnfinishedWorkout(data.currentWorkout)) {
+                            currentWorkout = data.currentWorkout;
+                            // Strip any legacy rpe from sets (RPE feature removed)
+                            currentWorkout.exercises.forEach(ex => {
+                                if (ex.sets) ex.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
+                            });
+                        } else {
+                            currentWorkout = null;
+                            // Clean the stale entry from storage immediately on load
+                            saveWorkoutData();
+                        }
                     }
+                    // Strip legacy rpe from lastPerformed sets
+                    Object.keys(lastPerformed).forEach(name => {
+                        const p = lastPerformed[name];
+                        if (p && p.sets) p.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
+                    });
                 } else {
                     // Initialize with unified bilingual display names from EXERCISES
                     exerciseLibrary = EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
@@ -1762,37 +1964,120 @@ Local Development Instructions:
             }
         }
 
+        function isValidUnfinishedWorkout(workout) {
+            if (!workout || !workout.exercises || workout.exercises.length === 0) return false;
+
+            // Must have at least one set with actual volume (weight * reps > 0)
+            let hasRealVolume = false;
+            for (const ex of workout.exercises) {
+                for (const s of (ex.sets || [])) {
+                    if ((s.weight || 0) * (s.reps || 0) > 0) {
+                        hasRealVolume = true;
+                        break;
+                    }
+                }
+                if (hasRealVolume) break;
+            }
+            if (!hasRealVolume) return false;
+
+            // Only today or within last 2 hours (use startTime if available for precision)
+            if (!workout.date) return false;
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (workout.date !== todayStr) return false;
+
+            if (workout.startTime) {
+                const ageHrs = (Date.now() - workout.startTime) / (1000 * 60 * 60);
+                if (ageHrs > 2) return false;
+            }
+
+            return true;
+        }
+
+        function formatDateForDisplay(dateStr) {
+            if (!dateStr) return '未知日期';
+            try {
+                // Handle possible malformed like "2026- -12"
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    const y = parts[0];
+                    const m = (parts[1] || '').padStart(2, '0');
+                    const d = (parts[2] || '').padStart(2, '0');
+                    return `${y}-${m}-${d}`;
+                }
+                const dt = new Date(dateStr);
+                if (isNaN(dt.getTime())) return dateStr;
+                return dt.toLocaleDateString('zh-HK', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
         function checkForUnfinishedWorkout() {
-            // Called after loadWorkoutData + initialize
-            if (!currentWorkout || !currentWorkout.exercises || currentWorkout.exercises.length === 0) return;
+            if (!hasExplicitlyStartedTrainingThisSession) return;
+            if (!isValidUnfinishedWorkout(currentWorkout)) return;
+
+            // Respect power user disable
+            if (localStorage.getItem('disableAutoResumePrompt') === 'true') return;
 
             // Use setTimeout so UI has time to render.
-            // The actual prompt and resume logic is inside to re-validate state.
             setTimeout(() => {
-                // Re-check because between scheduling and now, the workout may have been cancelled, finished,
-                // or currentWorkout nulled by force exit / tab switch / other actions (e.g. switching tabs while fullscreen).
-                if (!currentWorkout || !currentWorkout.exercises || currentWorkout.exercises.length === 0) {
+                if (!hasExplicitlyStartedTrainingThisSession || !isValidUnfinishedWorkout(currentWorkout)) {
                     return;
                 }
-                const exCount = currentWorkout.exercises.length;
-                const msg = `偵測到未完成的訓練（日期 ${currentWorkout.date}，${exCount} 個動作）。\n\n是否繼續之前的訓練？`;
-                if (confirm(msg)) {
-                    // Resume - show in normal (non-fullscreen) log view so other tabs remain clickable
-                    // User can explicitly use "開始新訓練" button to enter full-screen if desired
-                    document.getElementById('live-log-panel').classList.remove('hidden');
-                    document.getElementById('log-empty-state').classList.add('hidden');
-                    const dateInput = document.getElementById('current-workout-date');
-                    if (dateInput) dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
-                    renderCurrentWorkout();
-                    updateSessionSummary();
-                    // Do NOT auto enter full screen here to keep site interactive
-                    console.log('[DEBUG] Resumed unfinished workout in normal mode (no auto full-screen to allow tab clicks)');
-                } else {
-                    // Discard the draft
-                    currentWorkout = null;
-                    saveWorkoutData();
-                }
+                if (localStorage.getItem('disableAutoResumePrompt') === 'true') return;
+                showUnfinishedWorkoutModal();
             }, 300);
+        }
+
+        function showUnfinishedWorkoutModal() {
+            const modal = document.getElementById('unfinishedWorkoutModal');
+            const msgEl = document.getElementById('unfinished-workout-msg');
+            if (!modal) {
+                console.error('#unfinishedWorkoutModal not found in DOM');
+                alert('未完成訓練提示視窗載入失敗，請重新整理頁面。');
+                return;
+            }
+
+            const date = formatDateForDisplay(currentWorkout.date || '');
+            const exCount = currentWorkout.exercises ? currentWorkout.exercises.length : 0;
+            if (msgEl) {
+                msgEl.textContent = `偵測到未完成的訓練（日期 ${date}，${exCount} 個動作）。是否繼續之前的訓練？`;
+            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function hideUnfinishedWorkoutModal() {
+            const modal = document.getElementById('unfinishedWorkoutModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function resumeUnfinishedWorkout() {
+            hideUnfinishedWorkoutModal();
+            // Resume - show in normal (non-fullscreen) log view so other tabs remain clickable
+            const live = document.getElementById('live-log-panel');
+            if (live) live.classList.remove('hidden');
+            const empty = document.getElementById('log-empty-state');
+            if (empty) empty.classList.add('hidden');
+            const dateInput = document.getElementById('current-workout-date');
+            if (dateInput) dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
+            renderCurrentWorkout();
+            updateSessionSummary();
+            console.log('[DEBUG] Resumed unfinished workout in normal mode (no auto full-screen to allow tab clicks)');
+        }
+
+        function discardAndStartNew() {
+            hideUnfinishedWorkoutModal();
+            currentWorkout = null;
+            saveWorkoutData();
+            // Now proceed with fresh start (re-call startNewWorkout to create new one)
+            // Use setTimeout to avoid recursion stack in same call
+            setTimeout(() => {
+                if (typeof startNewWorkout === 'function') startNewWorkout();
+            }, 0);
         }
 
         function saveDraftBeforeUnload() {
@@ -1815,9 +2100,9 @@ Local Development Instructions:
                 id: Date.now() - 500000,
                 date: d1.toISOString().split('T')[0],
                 exercises: [
-                    {name: "上斜啞鈴推胸 (Incline Dumbbell Press)", sets: [{weight: 28, reps: 8, rpe: 7, notes: ""}, {weight: 30, reps: 7, rpe: 8, notes: ""}]},
-                    {name: "平板啞鈴推胸 (Flat Dumbbell Press)", sets: [{weight: 24, reps: 9, rpe: 7, notes: ""}]},
-                    {name: "繩索三頭下壓 (Tricep Rope Pushdown)", sets: [{weight: 15, reps: 12, rpe: 7, notes: ""}, {weight: 15, reps: 11, rpe: 8, notes: ""}]}
+                    {name: "上斜啞鈴推胸 (Incline Dumbbell Press)", sets: [{weight: 28, reps: 8, notes: ""}, {weight: 30, reps: 7, notes: ""}]},
+                    {name: "平板啞鈴推胸 (Flat Dumbbell Press)", sets: [{weight: 24, reps: 9, notes: ""}]},
+                    {name: "繩索三頭下壓 (Tricep Rope Pushdown)", sets: [{weight: 15, reps: 12, notes: ""}, {weight: 15, reps: 11, notes: ""}]}
                 ],
                 notes: "Felt strong on chest today."
             });
@@ -1828,9 +2113,9 @@ Local Development Instructions:
                 id: Date.now() - 300000,
                 date: d2.toISOString().split('T')[0],
                 exercises: [
-                    {name: "引體向上 (Pull-ups)", sets: [{weight: 0, reps: 7, rpe: 8, notes: "Bodyweight"}, {weight: 0, reps: 6, rpe: 9, notes: ""}]},
-                    {name: "硬拉 (Deadlift)", sets: [{weight: 80, reps: 5, rpe: 8, notes: ""}, {weight: 85, reps: 4, rpe: 9, notes: ""}]},
-                    {name: "腹輪 (Ab Wheel Rollout)", sets: [{weight: 0, reps: 12, rpe: 7, notes: ""}]}
+                    {name: "引體向上 (Pull-ups)", sets: [{weight: 0, reps: 7, notes: "Bodyweight"}, {weight: 0, reps: 6, notes: ""}]},
+                    {name: "硬拉 (Deadlift)", sets: [{weight: 80, reps: 5, notes: ""}, {weight: 85, reps: 4, notes: ""}]},
+                    {name: "腹輪 (Ab Wheel Rollout)", sets: [{weight: 0, reps: 12, notes: ""}]}
                 ],
                 notes: ""
             });
@@ -1841,9 +2126,9 @@ Local Development Instructions:
                 id: Date.now() - 100000,
                 date: d3.toISOString().split('T')[0],
                 exercises: [
-                    {name: "澤奇深蹲 (Zercher Squats)", sets: [{weight: 42, reps: 8, rpe: 7, notes: ""}, {weight: 45, reps: 6, rpe: 8, notes: ""}]},
-                    {name: "側舉 (Lateral Raises)", sets: [{weight: 8, reps: 15, rpe: 6, notes: ""}, {weight: 8, reps: 14, rpe: 7, notes: ""}]},
-                    {name: "龍旗 (Dragon Flag)", sets: [{weight: 0, reps: 6, rpe: 8, notes: "Controlled"}]}
+                    {name: "澤奇深蹲 (Zercher Squats)", sets: [{weight: 42, reps: 8, notes: ""}, {weight: 45, reps: 6, notes: ""}]},
+                    {name: "側舉 (Lateral Raises)", sets: [{weight: 8, reps: 15, notes: ""}, {weight: 8, reps: 14, notes: ""}]},
+                    {name: "龍旗 (Dragon Flag)", sets: [{weight: 0, reps: 6, notes: "Controlled"}]}
                 ],
                 notes: "Good leg pump."
             });
@@ -1854,8 +2139,8 @@ Local Development Instructions:
                 id: Date.now() - 800000,
                 date: d4.toISOString().split('T')[0],
                 exercises: [
-                    {name: "硬拉 (Deadlift)", sets: [{weight: 75, reps: 6, rpe: 7, notes: ""}]},
-                    {name: "坐姿繩索拉背 (Seated Cable Row)", sets: [{weight: 55, reps: 10, rpe: 7, notes: ""}, {weight: 60, reps: 8, rpe: 8, notes: ""}]}
+                    {name: "硬拉 (Deadlift)", sets: [{weight: 75, reps: 6, notes: ""}]},
+                    {name: "坐姿繩索拉背 (Seated Cable Row)", sets: [{weight: 55, reps: 10, notes: ""}, {weight: 60, reps: 8, notes: ""}]}
                 ],
                 notes: ""
             });
@@ -1934,23 +2219,104 @@ Local Development Instructions:
                 showLoginModal();
                 return;
             }
+            hasExplicitlyStartedTrainingThisSession = true;  // gate for auto-resume prompt
+
+            if (currentWorkout && isValidUnfinishedWorkout(currentWorkout)) {
+                showUnfinishedWorkoutModal();
+                return;  // wait for user to choose resume / discard in the modal
+            }
 
             // If there's already a currentWorkout loaded from storage, reuse it (resume case handled in check)
             if (!currentWorkout) {
                 const date = dateStr || new Date().toISOString().split('T')[0];
-                currentWorkout = { id: Date.now(), date, exercises: [], notes: '' };
+                currentWorkout = { id: Date.now(), date, exercises: [], notes: '', startTime: Date.now() };
             }
 
-            document.getElementById('live-log-panel').classList.remove('hidden');
-            document.getElementById('log-empty-state').classList.add('hidden');
+            // Robust tab activation for log: only switch if the content-log is currently hidden.
+            // This avoids unnecessary switchTab('log') calls (and the associated "Restoring originalLogContent" + wrapper spam)
+            // when we are already on the log tab (common case right after finishing a workout).
+            // Direct DOM manipulation for tab state to prevent hook side-effects.
+            const logContent = document.getElementById('content-log');
+            if (logContent && logContent.classList.contains('hidden')) {
+                try {
+                    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-[#166534]', 'text-white'));
+                    logContent.classList.remove('hidden');
+                    const logTabBtn = document.getElementById('tab-log');
+                    if (logTabBtn) logTabBtn.classList.add('active', 'bg-[#166534]', 'text-white');
+                    console.log('[DEBUG] startNewWorkout: activated log tab content directly (avoided spam)');
+                } catch (e) {
+                    console.warn('[DEBUG] direct log tab activation failed (non-fatal):', e);
+                    // fallback
+                    try {
+                        if (typeof switchTab === 'function') switchTab('log');
+                    } catch (e2) {
+                        console.warn('[DEBUG] fallback switchTab("log") failed:', e2);
+                    }
+                }
+            } else if (logContent) {
+                console.log('[DEBUG] startNewWorkout: log tab content already visible, skipping switch');
+            }
+
+            // Robust element access with null checks and recovery
+            const livePanel = document.getElementById('live-log-panel');
+            if (livePanel) {
+                livePanel.classList.remove('hidden');
+            } else {
+                console.error('[DEBUG] startNewWorkout: #live-log-panel not found in DOM! Attempting recovery...');
+                const logEl = document.getElementById('content-log');
+                if (logEl && typeof originalLogContent !== 'undefined' && originalLogContent) {
+                    // More robust recovery: always attempt restore if we have original content (especially after fullscreen exit + new start)
+                    const needsRestore = logEl.innerHTML.includes('需要登入') || !document.getElementById('live-log-panel');
+                    if (needsRestore) {
+                        logEl.innerHTML = originalLogContent;
+                        console.log('[DEBUG] Restored originalLogContent to recover live-log-panel (robust recovery after fullscreen or init)');
+                        // retry finding panel
+                        const recoveredPanel = document.getElementById('live-log-panel');
+                        if (recoveredPanel) {
+                            recoveredPanel.classList.remove('hidden');
+                            // If we are supposed to be in fullscreen after recovery, re-apply move (rare but defensive)
+                            const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
+                            if (isFs && immersivePanelOriginalParent && recoveredPanel.parentNode !== document.body) {
+                                document.body.appendChild(recoveredPanel);
+                            }
+                        }
+                    }
+                } else {
+                    console.warn('[DEBUG] startNewWorkout: recovery skipped - no originalLogContent available');
+                }
+            }
+
+            const emptyState = document.getElementById('log-empty-state');
+            if (emptyState) {
+                emptyState.classList.add('hidden');
+            } else {
+                console.warn('[DEBUG] startNewWorkout: #log-empty-state not found');
+            }
 
             const dateInput = document.getElementById('current-workout-date');
-            if (dateInput) dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
+            if (dateInput) {
+                dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
+            } else {
+                console.warn('[DEBUG] startNewWorkout: #current-workout-date not found');
+            }
 
-            renderCurrentWorkout();
-            updateSessionSummary();
-            // Prefill first quick exercise hint
-            updateLastPerformedHint();
+            // Defensive renders - these functions should also be null-safe internally, but guard the calls
+            try {
+                renderCurrentWorkout();
+            } catch (e) {
+                console.error('[DEBUG] renderCurrentWorkout failed in startNewWorkout:', e);
+            }
+            try {
+                updateSessionSummary();
+            } catch (e) {
+                console.error('[DEBUG] updateSessionSummary failed in startNewWorkout:', e);
+            }
+            try {
+                updateLastPerformedHint();
+            } catch (e) {
+                console.warn('[DEBUG] updateLastPerformedHint failed (non-fatal):', e);
+            }
 
             // Use cache for instant Workout Sets bar display (key for perceived speed after "開始新訓練")
             if (workoutSetsCache && workoutSetsCache.length > 0 && (!workoutSets || workoutSets.length === 0)) {
@@ -1959,7 +2325,13 @@ Local Development Instructions:
             }
 
             // Always re-render the dynamic Workout Sets bar (important for full-screen) - now instant if cached
-            if (typeof renderWorkoutSetsBar === 'function') renderWorkoutSetsBar();
+            if (typeof renderWorkoutSetsBar === 'function') {
+                try {
+                    renderWorkoutSetsBar();
+                } catch (e) {
+                    console.error('[DEBUG] renderWorkoutSetsBar failed:', e);
+                }
+            }
 
             // Trigger background refresh if no cache or stale (non-blocking)
             if (!workoutSetsCache && currentUser && typeof loadWorkoutSets === 'function') {
@@ -1972,7 +2344,16 @@ Local Development Instructions:
                 console.log('[DEBUG] startNewWorkout: already in full-screen — skipping enterImmersiveMode, just refreshing content');
             } else {
                 // Enter immersive full-screen training mode
-                enterImmersiveMode();
+                if (typeof enterImmersiveMode === 'function') {
+                    try {
+                        enterImmersiveMode();
+                    } catch (e) {
+                        console.error('[DEBUG] enterImmersiveMode failed:', e);
+                        // fallback: at least show the panel
+                        const p = document.getElementById('live-log-panel');
+                        if (p) p.classList.remove('hidden');
+                    }
+                }
             }
 
             // Immediate auto-save of the new/ resumed session
@@ -1990,8 +2371,15 @@ Local Development Instructions:
             if (!currentWorkout) return;
             if (!confirm('Discard current workout?')) return;
             currentWorkout = null;
-            document.getElementById('live-log-panel').classList.add('hidden');
-            document.getElementById('log-empty-state').classList.remove('hidden');
+            const liveP2 = document.getElementById('live-log-panel');
+            if (liveP2) {
+                liveP2.classList.add('hidden');
+                if (immersivePanelOriginalParent && liveP2.parentNode !== immersivePanelOriginalParent) {
+                    immersivePanelOriginalParent.appendChild(liveP2);
+                }
+            }
+            const empty = document.getElementById('log-empty-state');
+            if (empty) empty.classList.remove('hidden');
             resetRestTimer();
             exitImmersiveMode();
             saveWorkoutData(); // clear the draft
@@ -2010,6 +2398,13 @@ Local Development Instructions:
 
                 const panel = document.getElementById('live-log-panel');
                 if (panel) {
+                    // Robust move to body for fixed positioning: this prevents the panel from being trapped in a hidden ancestor (#content-log may have 'hidden' from tab state) which can cause the entire immersive view to appear blank or not render.
+                    if (!immersivePanelOriginalParent) {
+                        immersivePanelOriginalParent = panel.parentNode;
+                    }
+                    if (immersivePanelOriginalParent && panel.parentNode !== document.body) {
+                        document.body.appendChild(panel);
+                    }
                     // Ensure it pops to full viewport (CSS rules handle most, but force important styles)
                     panel.style.position = 'fixed';
                     panel.style.inset = '0';
@@ -2030,9 +2425,21 @@ Local Development Instructions:
                     container.style.border = 'none';
                 }
 
-                // Hide main navigation elements for focus (in addition to CSS)
+                // Hide main navigation elements for focus (explicit JS control instead of broad CSS to prevent blank page issues)
                 const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
                 if (mainNav) mainNav.style.display = 'none';
+
+                const header = document.querySelector('.charity-header');
+                if (header) header.style.display = 'none';
+
+                // After forcing the immersive layout styles, re-render the key Workout Log training UI elements.
+                // This ensures #current-workout-exercises, session summary, rest timer area, and sets bar are populated and visible in the new fixed/flex context.
+                // (renderCurrentWorkout and updateSessionSummary were called before, but re-calling after layout change guarantees they show correctly and avoids "blank" immersive screen.)
+                // Only the log-related training region is affected; other tabs remain intact in DOM for restore on exit.
+                if (typeof renderCurrentWorkout === 'function') renderCurrentWorkout();
+                if (typeof updateSessionSummary === 'function') updateSessionSummary();
+
+                // Re-render sets bar is handled in the logic below; this ensures the core workout list and summary show the required elements in fs.
 
                 // Debug: attach scroll listener to the scroll area to monitor during full screen
                 const scrollArea = document.querySelector('.immersive-scroll');
@@ -2063,7 +2470,8 @@ Local Development Instructions:
                 saveWorkoutData();
 
                 // Re-render Workout Sets bar AFTER the panel and container have been forced into full-screen styles.
-                // This ensures the dynamic buttons (+ and Set buttons) are correctly created inside the immersive view.
+                // Reduced to single render here (plus any prior in startNewWorkout) to avoid repeated calls.
+                // Key workout elements (exercises, summary, timer) are re-rendered above after styles.
                 if (typeof renderWorkoutSetsBar === 'function') {
                     console.log('[DEBUG] enterImmersiveMode: re-rendering #workout-sets-bar after immersive styles applied');
                     renderWorkoutSetsBar();
@@ -2100,6 +2508,19 @@ Local Development Instructions:
                     panel.style.backgroundColor = '';
                     panel.style.overflow = '';
                     panel.classList.add('hidden');
+                    // Restore to original parent if we moved it for immersive (robust for tab switching and avoiding nesting issues)
+                    if (immersivePanelOriginalParent && panel.parentNode !== immersivePanelOriginalParent) {
+                        immersivePanelOriginalParent.appendChild(panel);
+                    }
+                } else {
+                    // Explicit ensure: if panel missing after exit (e.g. partial restore), try recovery
+                    console.warn('[DEBUG] exitImmersiveMode: live-log-panel not found after exit, attempting ensure');
+                    const logEl = document.getElementById('content-log');
+                    if (logEl && typeof originalLogContent !== 'undefined' && originalLogContent) {
+                        logEl.innerHTML = originalLogContent;
+                        const recovered = document.getElementById('live-log-panel');
+                        if (recovered) recovered.classList.add('hidden');
+                    }
                 }
 
                 const container = panel ? panel.querySelector('.immersive-container') : null;
@@ -2111,9 +2532,19 @@ Local Development Instructions:
                     container.style.border = '';
                 }
 
-                // Restore main navigation
+                // Explicit post-exit ensure for timer controls / live panel elements (prevents null in pause/reset after cancel in FS)
+                // These elements live inside live-log-panel, so if panel restored, they should be present.
+                // We don't set values here (let resetRestTimer handle), but log for debug.
+                if (!document.getElementById('timer-start-btn') || !document.getElementById('timer-status')) {
+                    console.warn('[DEBUG] exitImmersiveMode: timer controls missing after panel restore');
+                }
+
+                // Restore main navigation and header (explicit, to match simplified CSS)
                 const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
                 if (mainNav) mainNav.style.display = '';
+
+                const header = document.querySelector('.charity-header');
+                if (header) header.style.display = '';
 
                 // Also restore any previously hidden elements from older logic
                 const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
@@ -2149,6 +2580,17 @@ Local Development Instructions:
                     panel.style.borderRadius = '';
                     panel.style.backgroundColor = '';
                     panel.style.overflow = '';
+                    if (immersivePanelOriginalParent && panel.parentNode !== immersivePanelOriginalParent) {
+                        immersivePanelOriginalParent.appendChild(panel);
+                    }
+                } else {
+                    // Ensure in ultra cleanup
+                    const logEl = document.getElementById('content-log');
+                    if (logEl && typeof originalLogContent !== 'undefined' && originalLogContent) {
+                        logEl.innerHTML = originalLogContent;
+                        const rec = document.getElementById('live-log-panel');
+                        if (rec) rec.classList.add('hidden');
+                    }
                 }
                 const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
                 if (mainNav) mainNav.style.display = '';
@@ -2208,10 +2650,8 @@ Local Development Instructions:
                 return;
             }
 
-            const rpe = 7;
-
             const vol = weight * reps;
-            const newSet = { weight, reps, rpe, notes: '', volume: vol };
+            const newSet = { weight, reps, notes: '', volume: vol };
 
             ex.sets.push(newSet);
 
@@ -2272,7 +2712,7 @@ Local Development Instructions:
         function updateSetField(exIdx, setIdx, field, value) {
             if (!currentWorkout) return;
             const set = currentWorkout.exercises[exIdx].sets[setIdx];
-            set[field] = (field === 'weight' || field === 'rpe') ? parseFloat(value) || 0 : (field === 'reps' ? parseInt(value) || 0 : value);
+            set[field] = (field === 'weight') ? parseFloat(value) || 0 : (field === 'reps' ? parseInt(value) || 0 : value);
             if (field === 'weight' || field === 'reps') {
                 set.volume = calculateSetVolume(set);
             }
@@ -2427,7 +2867,6 @@ Local Development Instructions:
             const rEl = document.getElementById(`set-reps-${exIdx}`);
             if (wEl) wEl.value = lastSet.weight || '';
             if (rEl) rEl.value = lastSet.reps || '';
-            // No rpe input in quick add
         }
 
         function updateSessionSummary() {
@@ -2477,6 +2916,17 @@ Local Development Instructions:
         }
 
         // --- Rest Timer ---
+        // Safe DOM helpers to prevent null crashes in fullscreen / recovery scenarios
+        function safeSetTextContent(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        function safeSetInnerHTML(id, html) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = html;
+        }
+
         function setRestPreset(seconds) {
             resetRestTimer(seconds);
             // Auto start for convenience
@@ -2487,7 +2937,7 @@ Local Development Instructions:
             pauseRestTimer();
             restTimeLeft = seconds;
             updateTimerDisplay();
-            document.getElementById('timer-status').textContent = '準備就緒';
+            safeSetTextContent('timer-status', '準備就緒');
         }
 
         function updateTimerDisplay() {
@@ -2508,7 +2958,7 @@ Local Development Instructions:
             const btn = document.getElementById('timer-start-btn');
             if (btn) btn.textContent = 'RUNNING...';
             restTimerRunning = true;
-            document.getElementById('timer-status').textContent = '休息中...';
+            safeSetTextContent('timer-status', '休息中...');
 
             if (restTimerInterval) clearInterval(restTimerInterval);
             restTimerInterval = setInterval(() => {
@@ -2517,7 +2967,7 @@ Local Development Instructions:
                 if (restTimeLeft <= 0) {
                     clearInterval(restTimerInterval);
                     restTimerRunning = false;
-                    document.getElementById('timer-status').innerHTML = `<span class="text-emerald-400 font-semibold">時間到 — 下一組！</span>`;
+                    safeSetInnerHTML('timer-status', `<span class="text-emerald-400 font-semibold">時間到 — 下一組！</span>`);
                     if (btn) btn.textContent = 'START';
                     playBeep();
                     // Optional: vibrate on supported devices
@@ -2531,7 +2981,7 @@ Local Development Instructions:
             restTimerRunning = false;
             const btn = document.getElementById('timer-start-btn');
             if (btn) btn.textContent = 'RESUME';
-            document.getElementById('timer-status').textContent = '已暫停';
+            safeSetTextContent('timer-status', '已暫停');
         }
 
         function addTimeToTimer(extra) {
@@ -2559,33 +3009,92 @@ Local Development Instructions:
 
         // --- Finish Workout + PR Detection + Charity ---
         function finishCurrentWorkout() {
-            if (!currentWorkout || currentWorkout.exercises.length === 0) {
+            console.log('[DEBUG] finishCurrentWorkout called. currentWorkout=', currentWorkout, 'isFullscreen=', document.body.classList.contains('fullscreen-training'));
+
+            if (!currentWorkout) {
+                console.warn('[DEBUG] finishCurrentWorkout: no currentWorkout');
+                alert('沒有進行中的訓練。');
+                return;
+            }
+            if (!currentWorkout.exercises || currentWorkout.exercises.length === 0) {
+                console.warn('[DEBUG] finishCurrentWorkout: no exercises logged');
                 alert('完成前請至少加入一個動作並記錄組數。');
                 return;
             }
+
             const vol = calculateWorkoutVolume(currentWorkout);
             const totalSets = currentWorkout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
 
             // Detect new PRs
             const prs = detectNewPRs(currentWorkout);
+            console.log('[DEBUG] finishCurrentWorkout: prs detected=', prs);
 
-            // Populate modal
-            document.getElementById('finish-date').textContent = currentWorkout.date;
-            document.getElementById('finish-volume').textContent = vol.toLocaleString() + ' kg';
-            document.getElementById('finish-tonnes').textContent = (vol / 1000).toFixed(2) + ' tonnes moved';
-            document.getElementById('finish-sets').textContent = `${totalSets} sets • ${currentWorkout.exercises.length} exercises`;
-
+            // Populate modal - robust getElementById + checks
+            const dateEl = document.getElementById('finish-date');
+            const volEl = document.getElementById('finish-volume');
+            const tonnesEl = document.getElementById('finish-tonnes');
+            const setsEl = document.getElementById('finish-sets');
             const prContainer = document.getElementById('finish-prs');
-            if (prs.length > 0) {
-                prContainer.innerHTML = `<div class="mb-1 text-amber-400 text-sm font-semibold">新個人紀錄！🔥</div>` +
-                    prs.map(p => `<div class="pr-badge inline-block mr-1 mb-1">${p}</div>`).join('');
-            } else {
-                prContainer.innerHTML = `<div class="text-xs text-[#a8a29e]">本次訓練穩健。沒有新 PR — 繼續進步！</div>`;
+            const notesEl = document.getElementById('finish-notes');
+            const modal = document.getElementById('finishModal');
+
+            if (!modal || !volEl || !prContainer) {
+                console.error('[DEBUG] finishCurrentWorkout: missing modal elements!');
+                alert('無法顯示完成摘要，請重試。');
+                return;
             }
 
-            document.getElementById('finish-notes').value = currentWorkout.notes || '';
-            document.getElementById('finishModal').classList.remove('hidden');
-            document.getElementById('finishModal').classList.add('flex');
+            if (dateEl) dateEl.textContent = currentWorkout.date || '';
+            volEl.textContent = vol.toLocaleString() + ' kg';
+            tonnesEl.textContent = (vol / 1000).toFixed(2) + ' tonnes moved';
+            setsEl.textContent = `${totalSets} sets • ${currentWorkout.exercises.length} exercises`;
+
+            // Duration (if startTime recorded)
+            const durEl = document.getElementById('finish-duration');
+            const durCard = document.getElementById('finish-duration-card');
+            if (durEl && currentWorkout.startTime) {
+                const mins = Math.max(1, Math.round((Date.now() - currentWorkout.startTime) / 60000));
+                durEl.textContent = mins;
+                if (durCard) durCard.style.display = '';
+            } else if (durCard) {
+                durCard.style.display = 'none';
+            }
+
+            // Enhanced PR section - compact wrap layout for long lists
+            let prHtml = '';
+            if (prs.length > 0) {
+                // Summary header
+                prHtml = `<div class="mb-1.5 text-amber-400 text-sm font-semibold flex items-center gap-2">
+                    <i class="fa-solid fa-trophy"></i>
+                    <span>新個人紀錄！</span>
+                    <span class="text-xs bg-amber-500/20 px-2 py-0.5 rounded-full">${prs.length} 項突破</span>
+                </div>`;
+                // Compact flex-wrap badges (instead of vertical list)
+                prHtml += `<div class="flex flex-wrap gap-1">` +
+                    prs.map(p => `<span class="inline-flex items-center px-2 py-0.5 text-xs bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-full">${p}</span>`).join('') +
+                    `</div>`;
+                // Optional: if very long, could add "展開全部" but for now wrap + max-h on container in HTML
+            } else {
+                prHtml = `<div class="text-xs text-[#a8a29e] bg-[#292524] inline-block px-3 py-1 rounded-2xl">本次穩健發揮。沒有新 PR — 繼續加油！</div>`;
+            }
+
+            prContainer.innerHTML = prHtml;
+
+            if (notesEl) notesEl.value = currentWorkout.notes || '';
+
+            // Show modal - force high z for fullscreen, remove hidden, add flex
+            // Robust show for both normal and fullscreen-training modes
+            // Use very high z so it overlays the immersive panel (z-60/z-70) and stickies
+            modal.style.zIndex = '90';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Auto-focus notes
+            setTimeout(() => {
+                if (notesEl) notesEl.focus();
+            }, 50);
+
+            console.log('[DEBUG] finishCurrentWorkout: modal shown successfully');
         }
 
         function detectNewPRs(workout) {
@@ -2630,8 +3139,25 @@ Local Development Instructions:
         }
 
         function hideFinishModal() {
-            document.getElementById('finishModal').classList.add('hidden');
-            document.getElementById('finishModal').classList.remove('flex');
+            const modal = document.getElementById('finishModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        // Simple premium toast for success feedback (works in normal + fullscreen)
+        function showToast(message, timeout = 3500) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#1f1c1a] border border-emerald-800 text-emerald-300 px-4 py-2.5 rounded-2xl shadow-xl text-sm max-w-[90vw] flex items-center gap-2 z-[100]`;
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.transition = 'all 0.2s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 200);
+            }, timeout);
         }
 
         function confirmFinishWorkout() {
@@ -2640,39 +3166,57 @@ Local Development Instructions:
             const notes = document.getElementById('finish-notes').value.trim();
             currentWorkout.notes = notes;
 
-            // Compute final volume
-            currentWorkout.totalVolume = calculateWorkoutVolume(currentWorkout);
+            // Compute final volume before nulling
+            const finalVol = calculateWorkoutVolume(currentWorkout);
+            currentWorkout.totalVolume = finalVol;
 
             // Add to history (newest first)
             workoutHistory.unshift(currentWorkout);
 
-            // Rebuild last performed + save
+            // Rebuild last performed
             rebuildLastPerformed();
-            saveWorkoutData();
 
             // Optional: Push to backend for sync
             if (typeof pushCurrentWorkoutToLegacyGAS === 'function') {
                 pushCurrentWorkoutToLegacyGAS(currentWorkout).catch(console.warn);
             }
 
-            // Reset UI
+            // Capture for toast
+            const finishedTonnes = (finalVol / 1000).toFixed(2);
+
+            // Reset UI - use defensive gets
             hideFinishModal();
-            const finishedDate = currentWorkout.date;
+            const finishedDate = currentWorkout ? currentWorkout.date : '';
+            const volForToast = currentWorkout ? calculateWorkoutVolume(currentWorkout) : 0;
             currentWorkout = null;
-            document.getElementById('live-log-panel').classList.add('hidden');
-            document.getElementById('log-empty-state').classList.remove('hidden');
+
+            // Save AFTER clearing currentWorkout so storage is clean and no more resume prompts on next load
+            saveWorkoutData();
+
+            const liveP2 = document.getElementById('live-log-panel');
+            if (liveP2) {
+                liveP2.classList.add('hidden');
+                if (immersivePanelOriginalParent && liveP2.parentNode !== immersivePanelOriginalParent) {
+                    immersivePanelOriginalParent.appendChild(liveP2);
+                }
+            }
+
+            const emptyState = document.getElementById('log-empty-state');
+            if (emptyState) emptyState.classList.remove('hidden');
+
             resetRestTimer();
             exitImmersiveMode();
 
             // Refresh all views
-            renderWorkoutHistory();
-            renderOverallStats();
-            renderCalendar();
-            updateExerciseSelectForAnalysis();
+            try { renderWorkoutHistory(); } catch (e) { console.warn('renderWorkoutHistory after finish failed:', e); }
+            try { renderOverallStats(); } catch (e) { console.warn('renderOverallStats after finish failed:', e); }
+            try { renderCalendar(); } catch (e) { console.warn('renderCalendar after finish failed:', e); }
+            try { updateExerciseSelectForAnalysis(); } catch (e) { console.warn('updateExerciseSelectForAnalysis after finish failed:', e); }
 
-            // Show celebratory message
-            const tonnes = (currentWorkout ? currentWorkout.totalVolume || 0 : 0) / 1000;
-            alert(`訓練已儲存！你今日移動了 ${tonnes.toFixed(2)} 噸。為慈善挑戰加油！`);
+            // Show toast (use captured tonnes, delay to after DOM updates)
+            setTimeout(() => {
+                showToast(`🎉 訓練已儲存！你今日移動了 ${finishedTonnes} 噸。感謝你的慈善貢獻！`, 4200);
+            }, 150);
         }
 
         async function pushCurrentWorkoutToLegacyGAS(workout) {
@@ -2690,7 +3234,6 @@ Local Development Instructions:
                                 exercise: ex.name,           // bilingual name
                                 weight: set.weight || 0,
                                 reps: set.reps || 0,
-                                rpe: set.rpe || 7,
                                 notes: set.notes || '',
                                 volume: (set.weight || 0) * (set.reps || 0)
                             }
@@ -2703,6 +3246,10 @@ Local Development Instructions:
         // --- Routines ---
         function showRoutinesModal() {
             const modal = document.getElementById('routinesModal');
+            if (!modal) {
+                console.error('[ERROR] #routinesModal not found in DOM');
+                return;
+            }
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             renderRoutinesList();
@@ -2710,8 +3257,10 @@ Local Development Instructions:
 
         function hideRoutinesModal() {
             const modal = document.getElementById('routinesModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
 
         function renderRoutinesList() {
@@ -2812,6 +3361,7 @@ Local Development Instructions:
             console.log('[DEBUG] loadWorkoutSets: rendered 3 frontend DEFAULT_WORKOUT_SETS immediately for instant bar');
 
             const now = Date.now();
+            let usedCache = false;
 
             // If cache valid and not force, upgrade to cached version (which may include user customs + any edited presets)
             // This gives better initial UX if cache has more than the 3 defaults.
@@ -2819,47 +3369,51 @@ Local Development Instructions:
                 console.log('[DEBUG] loadWorkoutSets: upgrading to cache for richer initial set (age=' + Math.round((now - workoutSetsCacheTimestamp)/1000) + 's)');
                 workoutSets = JSON.parse(JSON.stringify(workoutSetsCache));
                 renderWorkoutSetsBar();
+                usedCache = true;
             }
 
-            // Background fetch to sync with backend (custom Sets, any updates to the presets, etc.)
-            // This runs after the instant render.
-            console.log('[DEBUG] loadWorkoutSets: starting background backend fetch' + (forceRefresh ? ' (forced)' : ''));
-            try {
-                const res = await callAppsScript("getWorkoutSets", { user: currentUser });
-                const backendSets = (res && res.sets) ? res.sets : (Array.isArray(res) ? res : []);
-                console.log('[DEBUG] loadWorkoutSets background got', backendSets.length, 'sets');
+            // Background fetch to sync with backend ONLY if forced or no valid cache.
+            // This reduces unnecessary requests while still allowing sync on demand.
+            // The initial defaults are always shown instantly.
+            if (forceRefresh || !usedCache) {
+                console.log('[DEBUG] loadWorkoutSets: starting background backend fetch' + (forceRefresh ? ' (forced)' : ''));
+                try {
+                    const res = await callAppsScript("getWorkoutSets", { user: currentUser });
+                    const backendSets = (res && res.sets) ? res.sets : (Array.isArray(res) ? res : []);
+                    console.log('[DEBUG] loadWorkoutSets background got', backendSets.length, 'sets');
 
-                if (backendSets.length > 0) {
-                    // Merge strategy:
-                    // - For the 3 known preset names, prefer backend version (in case user edited the Set name/exercises via modal).
-                    // - Add any additional user-created custom Sets from backend.
-                    // This fulfills "合併顯示（預設 + 自訂）" and "以後端資料為準" for updates.
-                    const mergedPresets = DEFAULT_WORKOUT_SETS.map(def => {
-                        const match = backendSets.find(s => s.name === def.name);
-                        return match ? {
-                            name: match.name,
-                            exercises: [...(match.exercises || [])]
-                        } : {
-                            name: def.name,
-                            exercises: [...def.exercises]
-                        };
-                    });
-                    const customs = backendSets.filter(s => !DEFAULT_WORKOUT_SETS.some(def => def.name === s.name));
-                    workoutSets = [...mergedPresets, ...customs];
+                    if (backendSets.length > 0) {
+                        // Merge strategy:
+                        // - For the 3 known preset names, prefer backend version (in case user edited the Set name/exercises via modal).
+                        // - Add any additional user-created custom Sets from backend.
+                        // This fulfills "合併顯示（預設 + 自訂）" and "以後端資料為準" for updates.
+                        const mergedPresets = DEFAULT_WORKOUT_SETS.map(def => {
+                            const match = backendSets.find(s => s.name === def.name);
+                            return match ? {
+                                name: match.name,
+                                exercises: [...(match.exercises || [])]
+                            } : {
+                                name: def.name,
+                                exercises: [...def.exercises]
+                            };
+                        });
+                        const customs = backendSets.filter(s => !DEFAULT_WORKOUT_SETS.some(def => def.name === s.name));
+                        workoutSets = [...mergedPresets, ...customs];
 
-                    // Update cache with the merged result
-                    workoutSetsCache = JSON.parse(JSON.stringify(workoutSets));
-                    workoutSetsCacheTimestamp = now;
-                } else {
-                    // Backend returned empty (e.g. very first load before seed completed, or error).
-                    // Keep the frontend defaults we already rendered.
-                    console.log('[DEBUG] loadWorkoutSets: backend empty, keeping frontend defaults');
+                        // Update cache with the merged result
+                        workoutSetsCache = JSON.parse(JSON.stringify(workoutSets));
+                        workoutSetsCacheTimestamp = now;
+                    } else {
+                        // Backend returned empty (e.g. very first load before seed completed, or error).
+                        // Keep the frontend defaults we already rendered.
+                        console.log('[DEBUG] loadWorkoutSets: backend empty, keeping frontend defaults');
+                    }
+
+                    renderWorkoutSetsBar();
+                } catch (e) {
+                    console.warn('[DEBUG] loadWorkoutSets background fetch failed, keeping the instant frontend defaults or cache:', e);
+                    // No change to what we rendered initially; bar stays usable.
                 }
-
-                renderWorkoutSetsBar();
-            } catch (e) {
-                console.warn('[DEBUG] loadWorkoutSets background fetch failed, keeping the instant frontend defaults or cache:', e);
-                // No change to what we rendered initially; bar stays usable.
             }
         }
 
@@ -2872,7 +3426,8 @@ Local Development Instructions:
             bar.innerHTML = '';
 
             const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-            console.log(`[DEBUG] renderWorkoutSetsBar: rendering ${(workoutSets||[]).length} sets + "+" button | currentUser=${currentUser} | fullscreen=${isFs} | barVisible=${bar.offsetParent !== null}`);
+            const panel = document.getElementById('live-log-panel');
+            const panelHidden = !!(panel && panel.classList.contains('hidden'));
 
             if (!currentUser) {
                 // Show hint only when logged in context (training requires login anyway)
@@ -2880,6 +3435,7 @@ Local Development Instructions:
                 hint.className = 'text-[10px] text-[#a8a29e] px-2';
                 hint.textContent = '登入後可使用自訂 Workout Sets';
                 bar.appendChild(hint);
+                console.log(`[DEBUG] renderWorkoutSetsBar: done (no user) | fs=${isFs} | panelHidden=${panelHidden}`);
                 return;
             }
 
@@ -2914,6 +3470,32 @@ Local Development Instructions:
                 empty.textContent = '點 + 建立你的第一個 Set';
                 bar.appendChild(empty);
             }
+
+            // Log at the end so we see the final state after populating.
+            // Note: barVisible may be false if parent #live-log-panel is still hidden (pre-load or not in training yet).
+            // We ensure content is ready so when panel is shown, bar is stable.
+            // In fullscreen-training the ancestor is position:fixed, so offsetParent can legitimately be null even when the bar is visible and interactive inside the immersive panel.
+            // Force-correct the visibility flag for fs so logs accurately reflect that the bar should be shown.
+            let finalVisible = bar.offsetParent !== null;
+            if (!finalVisible && (isFs || document.body.classList.contains('fullscreen-training') || isInFullScreenTraining)) {
+                finalVisible = true;
+            }
+
+            // Robustness: explicitly ensure the bar (and its container) is visible and interactive in fullscreen.
+            // Some layout/timing in fixed positioning can make offsetParent report false or CSS glitches hide children.
+            if (isFs || document.body.classList.contains('fullscreen-training') || isInFullScreenTraining) {
+                bar.style.display = 'flex';
+                bar.style.visibility = 'visible';
+                bar.style.opacity = '1';
+                // Also ensure direct parent flex row (the justify-between container) is not accidentally collapsed
+                const parentFlex = bar.parentElement;
+                if (parentFlex && parentFlex.classList.contains('flex')) {
+                    parentFlex.style.display = 'flex';
+                    parentFlex.style.visibility = 'visible';
+                }
+            }
+
+            console.log(`[DEBUG] renderWorkoutSetsBar: done | currentUser=${currentUser} | sets=${(workoutSets||[]).length} | fs=${isFs} | panelHidden=${panelHidden} | barVisible=${finalVisible} | children=${bar.children.length}`);
         }
 
         function loadWorkoutSet(set) {
@@ -2952,7 +3534,11 @@ Local Development Instructions:
 
         function showWorkoutSetModal(set = null) {
             const modal = document.getElementById('workoutSetModal');
-            if (!modal) return;
+            if (!modal) {
+                console.error('#workoutSetModal not found in DOM');
+                alert('Workout Set 視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
+                return;
+            }
 
             const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
             console.log(`[DEBUG] showWorkoutSetModal called (fullscreen=${isFs}), editingSet=${set ? set.name : 'new'}, current sets count=${(workoutSets||[]).length}`);
@@ -3049,10 +3635,15 @@ Local Development Instructions:
         function showLibraryModalForSet() {
             // Open library. User can use search, then manually type the name in the set editor input.
             // (Advanced: could extend library to support "add to set" target, but out of scope for this change.)
+            const libModal = document.getElementById('libraryModal');
+            if (!libModal) {
+                console.error('#libraryModal not found in DOM');
+                alert('動作庫視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
+                return;
+            }
             if (typeof showLibraryModal === 'function') {
                 const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-                const libModal = document.getElementById('libraryModal');
-                if (libModal && isFs) {
+                if (isFs) {
                     libModal.style.zIndex = '90'; // ensure it sits above the immersive panel
                 }
                 showLibraryModal(false);
@@ -3228,15 +3819,6 @@ Local Development Instructions:
             renderCurrentWorkout();
         }
 
-        function loadLastWorkoutAsTemplate() {
-            if (workoutHistory.length === 0) return alert('沒有之前的訓練記錄');
-            const last = workoutHistory[0];
-            startNewWorkout();
-            last.exercises.forEach(ex => {
-                currentWorkout.exercises.push({ name: ex.name, sets: [] });
-            });
-            renderCurrentWorkout();
-        }
 
         // --- History Rendering ---
         function renderWorkoutHistory() {
@@ -3309,7 +3891,7 @@ Local Development Instructions:
             }
         }
 
-        // --- Per Exercise Analysis + Charts ---
+        // --- Per Exercise Analysis (Redesigned) ---
         function updateExerciseSelectForAnalysis() {
             const sel = document.getElementById('analysis-exercise-select');
             if (!sel) return;
@@ -3322,102 +3904,293 @@ Local Development Instructions:
             if (exercises.length) sel.value = exercises[0];
         }
 
+        function setAnalysisTimeRange(range) {
+            analysisTimeRange = range;
+            // Update button active states
+            document.querySelectorAll('#log-section-analysis .time-range-btn').forEach(btn => {
+                const r = btn.getAttribute('data-range');
+                const isActive = r === range;
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('bg-emerald-800/60', isActive);
+            });
+            renderExerciseAnalysis();
+        }
+
+        function resetAnalysisToAllTime() {
+            analysisTimeRange = 'all';
+            document.querySelectorAll('#log-section-analysis .time-range-btn').forEach(btn => {
+                const isAll = btn.getAttribute('data-range') === 'all';
+                btn.classList.toggle('active', isAll);
+                btn.classList.toggle('bg-emerald-800/60', isAll);
+            });
+            renderExerciseAnalysis();
+        }
+
+        // Simple client-side table filter (min weight)
+        function filterAnalysisTable() {
+            const minW = parseFloat(document.getElementById('analysis-filter-weight')?.value || '0') || 0;
+            const tbody = document.getElementById('analysis-sets-table');
+            if (!tbody) return;
+            Array.from(tbody.rows).forEach(row => {
+                const wCell = row.cells[1];
+                if (!wCell) return;
+                const w = parseFloat(wCell.textContent) || 0;
+                row.style.display = (w >= minW) ? '' : 'none';
+            });
+        }
+
+        function toggleAnalysisTable() {
+            const wrapper = document.getElementById('analysis-table-wrapper');
+            if (!wrapper) return;
+            if (wrapper.style.maxHeight === '80px') {
+                wrapper.style.maxHeight = '260px';
+            } else {
+                wrapper.style.maxHeight = '80px';
+            }
+        }
+
+        // Basic linear regression (for e1RM trend line)
+        function computeRegressionLine(values) {
+            const n = values.length;
+            if (n < 2) return values.slice();
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            for (let i = 0; i < n; i++) {
+                sumX += i;
+                sumY += values[i] || 0;
+                sumXY += i * (values[i] || 0);
+                sumXX += i * i;
+            }
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
+            const intercept = (sumY - slope * sumX) / n;
+            return values.map((_, i) => slope * i + intercept);
+        }
+
+        function filterSetsByRange(allSets) {
+            if (!allSets || allSets.length === 0 || analysisTimeRange === 'all') return allSets;
+            const now = new Date();
+            let cutoffDate;
+            if (analysisTimeRange === '30d') {
+                cutoffDate = new Date(now.getTime() - 30 * 86400000);
+            } else if (analysisTimeRange === '12w') {
+                cutoffDate = new Date(now.getTime() - 84 * 86400000);
+            } else {
+                return allSets;
+            }
+            const cutoffStr = cutoffDate.toISOString().split('T')[0];
+            return allSets.filter(s => s.date >= cutoffStr);
+        }
+
         function renderExerciseAnalysis() {
             const sel = document.getElementById('analysis-exercise-select');
             const exercise = sel ? sel.value : null;
-            if (!exercise) return;
 
-            const summaryEl = document.getElementById('analysis-summary');
+            // Sync time range buttons (robust after fullscreen / tab switch)
+            document.querySelectorAll('#log-section-analysis .time-range-btn').forEach(btn => {
+                const r = btn.getAttribute('data-range');
+                const isActive = r === (analysisTimeRange || 'all');
+                btn.classList.toggle('active', isActive);
+                btn.classList.toggle('bg-emerald-800/60', isActive);
+            });
+
+            if (!exercise) {
+                updateExerciseSelectForAnalysis();
+                if (sel && sel.value) renderExerciseAnalysis();
+                return;
+            }
+
+            const cardsContainer = document.getElementById('analysis-key-cards');
             const tableBody = document.getElementById('analysis-sets-table');
+            const countEl = document.getElementById('analysis-record-count');
+            const insightEl = document.getElementById('analysis-coach-insight');
 
-            // Collect per day (group by date as one entry per day for the exercise)
+            // 1. Group by date
             const dayGroups = {};
             workoutHistory.forEach(w => {
+                if (!w.exercises) return;
                 const ex = w.exercises.find(e => e.name === exercise);
-                if (ex) {
-                    const d = (w.date || '').split('T')[0];
-                    if (!dayGroups[d]) {
-                        dayGroups[d] = {
-                            date: d,
-                            sets: [],
-                            volume: 0,
-                            e1rm: 0,
-                            notes: ''
-                        };
-                    }
-                    ex.sets.forEach(s => {
-                        const vol = s.volume || calculateSetVolume(s);
-                        const e1 = estimate1RM(s.weight, s.reps);
-                        dayGroups[d].sets.push(s);
-                        dayGroups[d].volume += vol;
-                        if (e1 > dayGroups[d].e1rm) dayGroups[d].e1rm = e1;
-                        if (s.notes && !dayGroups[d].notes) dayGroups[d].notes = s.notes;
-                    });
-                }
-            });
-            let allSets = Object.values(dayGroups).map(g => ({
-                date: g.date,
-                weight: g.sets.length > 0 ? Math.max(...g.sets.map(s => s.weight)) : 0, // best weight that day
-                reps: g.sets.length > 0 ? g.sets.reduce((sum, s) => sum + s.reps, 0) : 0, // total reps
-                volume: g.volume,
-                e1rm: g.e1rm,
-                notes: g.notes
-            }));
-            allSets.sort((a,b) => b.date.localeCompare(a.date));
-
-            // Summary
-            const bestE1RM = Math.max(0, ...allSets.map(s => s.e1rm));
-            const bestWeight = Math.max(0, ...allSets.map(s => s.weight));
-            const totalVol = allSets.reduce((sum, s) => sum + s.volume, 0);
-            summaryEl.innerHTML = `
-                <div class="bg-[#292524] rounded-2xl p-3">
-                    <div class="text-xs text-[#a8a29e]">最佳預估 1RM</div>
-                    <div class="text-3xl font-bold text-amber-400">${bestE1RM} kg</div>
-                </div>
-                <div class="grid grid-cols-2 gap-2 mt-2">
-                    <div class="bg-[#292524] rounded-2xl p-3"><div class="text-xs text-[#a8a29e]">最高重量</div><div class="text-xl font-semibold">${bestWeight} kg</div></div>
-                    <div class="bg-[#292524] rounded-2xl p-3"><div class="text-xs text-[#a8a29e]">總訓練量</div><div class="text-xl font-semibold tabular-nums">${totalVol.toLocaleString()} kg</div></div>
-                </div>
-                <div class="text-xs mt-2 text-[#a8a29e]">此動作已記錄 ${allSets.length} 天</div>
-            `;
-
-            // Table
-            tableBody.innerHTML = allSets.slice(0, 30).map(s => `
-                <tr class="border-b border-[#3f3a36]">
-                    <td class="py-1 px-3">${s.date}</td>
-                    <td class="py-1 px-2 text-center tabular-nums">${s.weight}</td>
-                    <td class="py-1 px-2 text-center">${s.reps}</td>
-                    <td class="py-1 px-2 text-center text-emerald-300 tabular-nums">${s.volume}</td>
-                    <td class="py-1 px-2 text-center text-amber-300 tabular-nums">${s.e1rm}</td>
-                    <td class="py-1 px-3 text-xs text-[#a8a29e]">${s.notes}</td>
-                </tr>
-            `).join('') || `<tr><td colspan="6" class="py-3 text-center text-[#a8a29e]">尚未記錄此動作的組數。</td></tr>`;
-
-            // Charts (destroy old)
-            if (analysisChart1RM) analysisChart1RM.destroy();
-            if (analysisChartVolume) analysisChartVolume.destroy();
-
-            const dates = allSets.map(s => s.date).reverse();
-            const e1rms = allSets.map(s => s.e1rm).reverse();
-            const vols = allSets.map(s => s.volume).reverse();
-
-            const ctx1 = document.getElementById('chart-1rm');
-            const ctx2 = document.getElementById('chart-volume');
-
-            if (dates.length > 1 && ctx1 && ctx2) {
-                analysisChart1RM = new Chart(ctx1, {
-                    type: 'line',
-                    data: { labels: dates, datasets: [{ label: 'Est 1RM', data: e1rms, borderColor: '#4ade80', tension: 0.2, fill: false }] },
-                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                if (!ex || !ex.sets || ex.sets.length === 0) return;
+                const d = (w.date || '').split('T')[0];
+                if (!dayGroups[d]) dayGroups[d] = { date: d, sets: [], volume: 0, maxE1RM: 0, notes: '' };
+                ex.sets.forEach(s => {
+                    const vol = (s.volume != null) ? s.volume : (s.weight * s.reps);
+                    const e1 = (typeof estimate1RM === 'function') ? estimate1RM(s.weight, s.reps) : (s.weight * (1 + s.reps / 30));
+                    dayGroups[d].sets.push(s);
+                    dayGroups[d].volume += vol;
+                    if (e1 > dayGroups[d].maxE1RM) dayGroups[d].maxE1RM = e1;
+                    if (s.notes && !dayGroups[d].notes) dayGroups[d].notes = s.notes;
                 });
-                analysisChartVolume = new Chart(ctx2, {
+            });
+
+            let allSets = Object.values(dayGroups).map(g => {
+                const weights = g.sets.map(s => s.weight);
+                const bestW = weights.length ? Math.max(...weights) : 0;
+                const bestSet = g.sets.find(s => s.weight === bestW) || g.sets[0];
+                return {
+                    date: g.date,
+                    weight: bestW,
+                    reps: bestSet ? bestSet.reps : 0,
+                    volume: g.volume,
+                    e1rm: Math.round(g.maxE1RM * 10) / 10,
+                    notes: g.notes || ''
+                };
+            });
+            allSets.sort((a, b) => b.date.localeCompare(a.date));
+
+            const filteredSets = filterSetsByRange(allSets);
+
+            if (countEl) countEl.textContent = `(${filteredSets.length} 筆)`;
+
+            // 2. 4 Key Stat Cards (Mobile 2x2)
+            if (cardsContainer) {
+                const f = filteredSets;
+                if (f.length === 0) {
+                    cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${exercise} 記錄</div>`;
+                } else {
+                    const bestE1 = Math.max(...f.map(s => s.e1rm));
+                    const sortedAsc = [...f].sort((a,b) => a.date.localeCompare(b.date));
+                    const firstE1 = sortedAsc[0]?.e1rm || bestE1;
+                    const lastE1 = sortedAsc[sortedAsc.length-1]?.e1rm || bestE1;
+                    const e1Progress = firstE1 > 0 ? Math.round(((lastE1 - firstE1) / firstE1) * 100) : 0;
+                    const e1Color = e1Progress > 3 ? 'progress-up' : (e1Progress < -3 ? 'progress-down' : 'progress-flat');
+                    const e1Arrow = e1Progress > 0 ? '↑' : (e1Progress < 0 ? '↓' : '→');
+
+                    const totalVol = f.reduce((sum, s) => sum + s.volume, 0);
+                    const sessions = f.length;
+
+                    const bestWeightEntry = f.reduce((best, cur) => cur.weight > best.weight ? cur : best, f[0]);
+                    const bestW = `${bestWeightEntry.weight} kg × ${bestWeightEntry.reps}`;
+
+                    cardsContainer.innerHTML = `
+                        <div class="perf-card rounded-2xl p-3">
+                            <div class="text-[10px] text-[#a8a29e]">Best e1RM</div>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-2xl font-bold tabular-nums">${bestE1}</span>
+                                <span class="text-xs ${e1Color} font-semibold">${e1Arrow} ${e1Progress > 0 ? '+' : ''}${e1Progress}%</span>
+                            </div>
+                            <div class="text-[10px] text-[#a8a29e]">Epley 估算</div>
+                        </div>
+                        <div class="perf-card rounded-2xl p-3">
+                            <div class="text-[10px] text-[#a8a29e]">Total Volume</div>
+                            <div class="text-2xl font-bold tabular-nums">${totalVol.toLocaleString()}</div>
+                            <div class="text-xs text-emerald-300">此範圍內總量</div>
+                        </div>
+                        <div class="perf-card rounded-2xl p-3">
+                            <div class="text-[10px] text-[#a8a29e]">Best Weight × Reps</div>
+                            <div class="text-xl font-semibold tabular-nums">${bestW}</div>
+                            <div class="text-[10px] text-[#a8a29e]">單次最佳</div>
+                        </div>
+                        <div class="perf-card rounded-2xl p-3">
+                            <div class="text-[10px] text-[#a8a29e]">Sessions Count</div>
+                            <div class="text-2xl font-bold tabular-nums">${sessions}</div>
+                            <div class="text-xs text-[#a8a29e]">訓練日數</div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 3. Coach Insight (dynamic, simple rule-based)
+            if (insightEl) {
+                const f = filteredSets;
+                if (f.length < 2) {
+                    insightEl.innerHTML = `需要更多 ${exercise} 的訓練數據才能給出有意義的分析。繼續記錄！`;
+                } else {
+                    const sortedAsc = [...f].sort((a,b) => a.date.localeCompare(b.date));
+                    const first = sortedAsc[0];
+                    const last = sortedAsc[sortedAsc.length-1];
+                    const progress = first.e1rm > 0 ? Math.round(((last.e1rm - first.e1rm) / first.e1rm) * 100) : 0;
+                    const volTrend = last.volume > first.volume ? '上升' : (last.volume < first.volume ? '下降' : '穩定');
+                    let msg = `過去 ${analysisTimeRange === '30d' ? '30天' : (analysisTimeRange === '12w' ? '12週' : 'All Time')} ，${exercise} 的 e1RM 由 ${first.e1rm}kg 變為 ${last.e1rm}kg（${progress > 0 ? '+' : ''}${progress}%）。`;
+                    if (progress > 8) {
+                        msg += ` 進展優秀！Volume 趨勢${volTrend}。建議維持線性進展或考慮微調組數。`;
+                    } else if (progress > 0) {
+                        msg += ` 進展穩健。繼續專注形式與恢復，下週可試微增重量。`;
+                    } else {
+                        msg += ` 表現持平或輕微退步。檢查睡眠、營養與恢復，或考慮 deload 週。`;
+                    }
+                    insightEl.textContent = msg;
+                }
+            }
+
+            // 4. Table (filtered data)
+            const displaySets = filteredSets.slice();
+            tableBody.innerHTML = displaySets.map(s => `
+                <tr class="border-b border-[#3f3a36] hover:bg-[#292524]/60">
+                    <td class="py-1.5 px-3 font-medium">${s.date}</td>
+                    <td class="py-1.5 px-2 text-center tabular-nums">${s.weight}</td>
+                    <td class="py-1.5 px-2 text-center">${s.reps}</td>
+                    <td class="py-1.5 px-2 text-center text-emerald-300 tabular-nums">${s.volume}</td>
+                    <td class="py-1.5 px-2 text-center text-amber-300 tabular-nums">${s.e1rm}</td>
+                    <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${s.notes || ''}</td>
+                </tr>
+            `).join('') || `<tr><td colspan="6" class="py-3 text-center text-[#a8a29e]">此範圍內沒有記錄。</td></tr>`;
+
+            setTimeout(filterAnalysisTable, 0);
+
+            // 5. Charts - destroy old
+            if (analysisChart1RM) { analysisChart1RM.destroy(); analysisChart1RM = null; }
+            if (analysisChartVolume) { analysisChartVolume.destroy(); analysisChartVolume = null; }
+
+            const chartData = [...filteredSets].sort((a, b) => a.date.localeCompare(b.date));
+            const labels = chartData.map(s => s.date);
+            const e1rmData = chartData.map(s => s.e1rm);
+            const volData = chartData.map(s => s.volume);
+
+            const ctxVol = document.getElementById('chart-volume-trend');
+            const ctxE1 = document.getElementById('chart-e1rm-progress');
+
+            if (labels.length >= 1 && ctxVol && ctxE1) {
+                // Volume Trend - Mobile friendly, larger fonts, no legend
+                analysisChartVolume = new Chart(ctxVol, {
                     type: 'bar',
-                    data: { labels: dates, datasets: [{ label: 'Volume', data: vols, backgroundColor: '#166534' }] },
-                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { type: 'bar', label: 'Volume', data: volData, backgroundColor: '#166534', borderColor: '#4ade80', borderWidth: 1 },
+                            { type: 'line', label: 'Trend', data: volData, borderColor: '#f59e0b', borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false, callbacks: { title: (i) => i[0].label, label: (c) => `${c.dataset.label}: ${c.raw} kg` } }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } },
+                            y: { beginAtZero: true, ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } }
+                        },
+                        elements: { point: { hitRadius: 20 } } // touch friendly
+                    }
+                });
+
+                // e1RM Progression - with regression, larger fonts
+                const regression = computeRegressionLine(e1rmData);
+                analysisChart1RM = new Chart(ctxE1, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'e1RM', data: e1rmData, borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.12)', tension: 0.25, fill: true, pointRadius: 3, pointHoverRadius: 5 },
+                            { label: 'Trend', data: regression, borderColor: '#f59e0b', borderDash: [5,3], tension: 0, fill: false, pointRadius: 0 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false, callbacks: { title: (i) => i[0].label, label: (c) => `${c.dataset.label}: ${c.raw} kg` } }
+                        },
+                        scales: {
+                            x: { ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } },
+                            y: { beginAtZero: true, ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } }
+                        },
+                        elements: { point: { hitRadius: 20 } }
+                    }
                 });
             } else {
-                if (ctx1) ctx1.getContext('2d').clearRect(0,0,ctx1.width,ctx1.height);
-                if (ctx2) ctx2.getContext('2d').clearRect(0,0,ctx2.width,ctx2.height);
+                [ctxVol, ctxE1].forEach(c => { if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); });
             }
         }
 
@@ -3607,6 +4380,11 @@ Local Development Instructions:
 
         function showLibraryModal(addToCurrent = false) {
             const modal = document.getElementById('libraryModal');
+            if (!modal) {
+                console.error('#libraryModal not found in DOM');
+                alert('動作庫視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
+                return;
+            }
             const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
 
             modal.classList.remove('hidden');
@@ -3728,18 +4506,25 @@ Local Development Instructions:
 
         function showAddCustomExercise() {
             hideLibraryModal();
-            document.getElementById('customExerciseModal').classList.remove('hidden');
-            document.getElementById('customExerciseModal').classList.add('flex');
-            document.getElementById('custom-name').focus();
+            const modal = document.getElementById('customExerciseModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            const nameInput = document.getElementById('custom-name');
+            if (nameInput) nameInput.focus();
         }
 
         function hideCustomExerciseModal() {
-            document.getElementById('customExerciseModal').classList.add('hidden');
-            document.getElementById('customExerciseModal').classList.remove('flex');
+            const modal = document.getElementById('customExerciseModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
             // Reopen library if needed
             setTimeout(() => {
                 const lib = document.getElementById('libraryModal');
-                if (!lib.classList.contains('hidden')) return;
+                if (lib && !lib.classList.contains('hidden')) return;
             }, 10);
         }
 
@@ -3777,11 +4562,11 @@ Local Development Instructions:
             URL.revokeObjectURL(url);
 
             // Also offer flat CSV of all sets
-            let csv = 'date,exercise,weight_kg,reps,rpe,volume_kg,notes\n';
+            let csv = 'date,exercise,weight_kg,reps,volume_kg,notes\n';
             workoutHistory.forEach(w => {
                 w.exercises.forEach(ex => {
                     ex.sets.forEach(s => {
-                        csv += `${w.date},${ex.name},${s.weight || 0},${s.reps || 0},${s.rpe || ''},${s.volume || 0},"${(s.notes||'').replace(/"/g,'""')}"\n`;
+                        csv += `${w.date},${ex.name},${s.weight || 0},${s.reps || 0},${s.volume || 0},"${(s.notes||'').replace(/"/g,'""')}"\n`;
                     });
                 });
             });
@@ -3891,10 +4676,8 @@ Local Development Instructions:
                     }
                 });
 
-                // Resume unfinished workout (after data load)
-                if (typeof checkForUnfinishedWorkout === 'function') {
-                    checkForUnfinishedWorkout();
-                }
+                // Note: auto checkForUnfinishedWorkout removed from init to prevent popup on fresh load.
+                // Explicit check now only happens via startNewWorkout when user intentionally starts training.
 
                 // Global beforeunload protection for in-progress training
                 if (typeof saveDraftBeforeUnload === 'function') {
@@ -3934,121 +4717,142 @@ Local Development Instructions:
         window.__resetWorkoutDemoData = () => { localStorage.removeItem(getUserStorageKey()); location.reload(); };
 
         function showAddUserModal() {
-            document.getElementById('addUserModal').classList.remove('hidden');
-            document.getElementById('addUserModal').classList.add('flex');
+            const modal = document.getElementById('addUserModal');
+            if (!modal) {
+                console.error('#addUserModal not found in DOM');
+                alert('新增用戶視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
+                return;
+            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         function hideAddUserModal() {
-            document.getElementById('addUserModal').classList.add('hidden');
-            document.getElementById('addUserModal').classList.remove('flex');
+            const modal = document.getElementById('addUserModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
 
         async function addNewUser() {
-            // Read raw values first (before any normalization)
-            const rawUsername = document.getElementById('newUsername').value.trim();
-            const rawPin = document.getElementById('newPin').value.trim();
+            console.debug('[DEBUG] addNewUser called');
+            try {
+                // Read raw values first (before any normalization)
+                const rawUsername = document.getElementById('newUsername').value.trim();
+                const rawPin = document.getElementById('newPin').value.trim();
 
-            // Enforce rules: username = lowercase a-z0-9 only; PIN = digits only
-            const username = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const pin = rawPin.replace(/\D/g, '');
+                // Enforce rules: username = lowercase a-z0-9 only; PIN = digits only
+                const username = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const pin = rawPin.replace(/\D/g, '');
 
-            if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
+                if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
 
-            // Registration UX: if user typed uppercase or invalid chars, auto-convert + notify
-            const hadUpperOrInvalid = (rawUsername !== username) || (rawPin !== pin);
-            if (hadUpperOrInvalid) {
-                alert("已自動將用戶名轉為小寫，並移除無效字元（只接受 a-z 及 0-9）。");
-            }
-
-            const result = await callAppsScript("addUser", { user: username, pin: pin });
-            if (result.status === "success") {
-                alert(`用戶 ${username} 已建立！`);
-                hideAddUserModal();
-                // Auto login the user after successful registration (mainstream UX)
-                currentUser = username;   // store normalized lowercase version
-                localStorage.setItem('currentUser', currentUser);
-                // Restore log UI structure if it was replaced by guard
-                if (typeof originalLogContent !== 'undefined' && originalLogContent) {
-                    const logEl = document.getElementById('content-log');
-                    if (logEl) logEl.innerHTML = originalLogContent;
-                }
-                updateUIAfterLogin();
-                await loadUserLogs();
-                try {
-                    if (typeof showLogSubSection === 'function') showLogSubSection('history');
-                } catch (err) {
-                    console.warn('showLogSubSection after login error (non-fatal):', err);
+                // Registration UX: if user typed uppercase or invalid chars, auto-convert + notify
+                const hadUpperOrInvalid = (rawUsername !== username) || (rawPin !== pin);
+                if (hadUpperOrInvalid) {
+                    alert("已自動將用戶名轉為小寫，並移除無效字元（只接受 a-z 及 0-9）。");
                 }
 
-                // For new users: proactively load the 3 default Workout Sets that were just seeded on the backend
-                // during addNewUser registration. This populates the workout-sets-bar immediately.
-                if (typeof loadWorkoutSets === 'function') {
-                    loadWorkoutSets().catch(e => console.warn('loadWorkoutSets after new user registration (non-fatal):', e));
-                }
-            } else {
-                const msg = result.message || "";
-                if (msg.includes('已被使用') || msg.includes('已存在') || msg.toLowerCase().includes('exist')) {
-                    alert("此用戶名已被使用，請直接登入");
+                console.debug('[DEBUG] Calling GAS addUser for', username);
+                const result = await callAppsScript("addUser", { user: username, pin: pin });
+                console.debug('[DEBUG] addUser result:', result);
+
+                if (result.status === "success") {
+                    alert(`用戶 ${username} 已建立！`);
                     hideAddUserModal();
-                    document.getElementById('loginUsername').value = username;
-                    document.getElementById('loginPin').value = pin;
-                    showLoginModal();
+                    // Auto login the user after successful registration (mainstream UX)
+                    currentUser = username;   // store normalized lowercase version
+                    localStorage.setItem('currentUser', currentUser);
+                    // Restore log UI structure if it was replaced by guard
+                    if (typeof originalLogContent !== 'undefined' && originalLogContent) {
+                        const logEl = document.getElementById('content-log');
+                        if (logEl) logEl.innerHTML = originalLogContent;
+                    }
+                    updateUIAfterLogin();
+                    await loadUserLogs();
+                    // Ensure per-user Workout Sets (3 defaults + custom) are loaded immediately after login
+                    if (typeof loadWorkoutSets === 'function') {
+                        loadWorkoutSets().catch(e => console.warn('loadWorkoutSets after login (non-fatal):', e));
+                    }
+                    try {
+                        if (typeof showLogSubSection === 'function') showLogSubSection('history');
+                    } catch (err) {
+                        console.warn('showLogSubSection after login error (non-fatal):', err);
+                    }
+
+                    // For new users: proactively load the 3 default Workout Sets that were just seeded on the backend
+                    // during addNewUser registration. This populates the workout-sets-bar immediately.
+                    if (typeof loadWorkoutSets === 'function') {
+                        loadWorkoutSets().catch(e => console.warn('loadWorkoutSets after new user registration (non-fatal):', e));
+                    }
                 } else {
-                    alert("建立用戶失敗：" + (msg || "請稍後再試"));
+                    const msg = result.message || "";
+                    if (msg.includes('已被使用') || msg.includes('已存在') || msg.toLowerCase().includes('exist')) {
+                        alert("此用戶名已被使用，請直接登入");
+                        hideAddUserModal();
+                        document.getElementById('loginUsername').value = username;
+                        document.getElementById('loginPin').value = pin;
+                        showLoginModal();
+                    } else {
+                        alert("建立用戶失敗：" + (msg || "請稍後再試"));
+                    }
                 }
+            } catch (err) {
+                console.error('addNewUser error:', err);
+                alert("註冊過程出錯，請檢查網絡或 Apps Script URL");
             }
         }
 
         function switchTab(tab) {
-            console.log(`[DEBUG] switchTab called with tab="${tab}", currentUser=${currentUser}, body classes=${document.body.className}, isInFullScreenTraining=${isInFullScreenTraining}, isInitializing=${isInitializing}`);
+            console.debug(`[DEBUG] switchTab("${tab}")`);
 
-            // Improved full-screen protection:
-            // - If in full-screen training, and target is not "log":
-            //   - During initialization (isInitializing), ignore the switch to keep full-screen stable (prevents init's final switchTab('overview') from kicking us out).
-            //   - For user-initiated clicks (not initializing), force exit first, then allow the switch.
-            if (isInFullScreenTraining && tab !== 'log') {
-                if (isInitializing) {
-                    console.log(`[DEBUG] switchTab to "${tab}" during initialization while in full-screen - IGNORING to preserve full-screen training mode.`);
-                    return;  // Do not perform the tab switch or force exit
-                } else {
-                    console.log(`[DEBUG] User-initiated switchTab to non-log "${tab}" while in full-screen - exiting full-screen first.`);
-                    try {
-                        const p = document.getElementById('live-log-panel');
-                        if (p) p.classList.add('hidden');
-                        exitImmersiveMode();
-                    } catch (e) {
-                        document.body.classList.remove('fullscreen-training');
-                        document.body.style.overflow = '';
-                        isInFullScreenTraining = false;
-                    }
-                    // Fall through to perform the normal tab switch after exit
-                }
-            }
-
+            // 極簡可靠版本 - 支援所有 tab (overview / schedule / supplement / training / log)
+            // 標準流程：隱藏全部 .tab-content → 顯示目標 content → 更新對應 nav button active 狀態
+            // log-only 邏輯嚴格隔離在後面
+            // 無多餘 debug
+            // 加入 null check，穩定支援 isInitializing 及 fullscreen 模式
             try {
-                // Always attempt to activate the requested tab first (robustness) - do this early
-                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-                document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active', 'bg-[#166534]', 'text-white'));
+                // 1. 隱藏所有 tab 內容
+                document.querySelectorAll('.tab-content').forEach(el => {
+                    if (el && el.classList) el.classList.add('hidden');
+                });
 
+                // 2. 清除所有 nav button 嘅 active 樣式
+                document.querySelectorAll('.nav-tab').forEach(el => {
+                    if (el && el.classList) el.classList.remove('active', 'bg-[#166534]', 'text-white');
+                });
+
+                // 3. 顯示目標 tab 內容
                 const targetContent = document.getElementById('content-' + tab);
-                const targetTab = document.getElementById('tab-' + tab);
-                if (targetContent) targetContent.classList.remove('hidden');
-                if (targetTab) targetTab.classList.add('active', 'bg-[#166534]', 'text-white');
+                if (targetContent) {
+                    targetContent.classList.remove('hidden');
+                    targetContent.style.display = '';   // 清除之前可能留低嘅 inline style
+                }
 
-                // If switching to log and currently logged in, ensure we have the proper original content structure
-                // (in case it was previously replaced by the not-logged-in prompt)
-                if (tab === 'log' && typeof currentUser !== 'undefined' && currentUser && typeof originalLogContent !== 'undefined' && originalLogContent) {
+                // 4. 激活對應嘅 nav button
+                const targetTab = document.getElementById('tab-' + tab);
+                if (targetTab) {
+                    targetTab.classList.add('active', 'bg-[#166534]', 'text-white');
+                }
+
+                if (tab === 'log') {
+                    ensureAllModalsExist();
+                }
+
+                // ==================== 以下全部係 log tab 專用邏輯（嚴格隔離） ====================
+
+                // log tab 登入 guard 恢復原本內容（如果之前被 guard 替換咗）
+                if (tab === 'log' &&
+                    typeof currentUser !== 'undefined' && currentUser &&
+                    typeof originalLogContent !== 'undefined' && originalLogContent) {
                     const logEl = document.getElementById('content-log');
-                    if (logEl && logEl.innerHTML.includes('需要登入')) {
-                        console.log('[DEBUG] Restoring originalLogContent for log tab while logged in');
+                    if (logEl && logEl.innerHTML && logEl.innerHTML.includes('需要登入')) {
                         logEl.innerHTML = originalLogContent;
                     }
                 }
 
-                console.log(`[DEBUG] switchTab: after activation, tab=${tab}, isFullscreen=${document.body.classList.contains('fullscreen-training')}`);
-
-                // Workout Log protection: require login - block access and show clear message
-                // Only block if explicitly not logged in (typeof check prevents blocking on init/scope errors)
+                // log tab 未登入 guard（顯示登入提示）
                 if (tab === 'log' && typeof currentUser !== 'undefined' && !currentUser) {
                     const logEl = document.getElementById('content-log');
                     if (logEl) {
@@ -4066,62 +4870,55 @@ Local Development Instructions:
                     }
                     return;
                 }
+
+                // log tab 專用：切換過去之後 refresh 歷史/統計/日曆（logged-in）
+                if (tab === 'log') {
+                    setTimeout(() => {
+                        try {
+                            if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                            if (typeof renderOverallStats === 'function') renderOverallStats();
+                            if (typeof renderCalendar === 'function') renderCalendar();
+                            if (typeof currentLogSub !== 'undefined' && currentLogSub === 'analysis' && typeof renderExerciseAnalysis === 'function') renderExerciseAnalysis();
+                        } catch (e) { /* non-fatal */ }
+                    }, 80);
+                }
             } catch (err) {
-                console.error('switchTab error (non-fatal, tab activation attempted):', err);
-                console.log(`[DEBUG] switchTab ERROR for tab=${tab}, bodyClasses=${document.body.className}`);
-                // Fallback: at least try to show the target content and mark tab active
+                console.error('switchTab error (non-fatal):', err);
+                // 最後防線：仍然盡力激活目標 tab
                 try {
-                    const fallbackContent = document.getElementById('content-' + tab);
-                    if (fallbackContent) fallbackContent.classList.remove('hidden');
-                    const fallbackTab = document.getElementById('tab-' + tab);
-                    if (fallbackTab) fallbackTab.classList.add('active', 'bg-[#166534]', 'text-white');
+                    document.querySelectorAll('.tab-content').forEach(el => { if (el && el.classList) el.classList.add('hidden'); });
+                    const fb = document.getElementById('content-' + tab);
+                    if (fb) fb.classList.remove('hidden');
+                    const fbBtn = document.getElementById('tab-' + tab);
+                    if (fbBtn) fbBtn.classList.add('active', 'bg-[#166534]', 'text-white');
                 } catch (e) {}
             }
         }
 
-        // Hook into existing tab switching so we refresh on entering the log tab
-        // Installed AFTER switchTab definition for safe hoisting and execution order.
-        // This ensures switchTab is always the wrapper after this point.
-        try {
-            const originalSwitchTab = (typeof window.switchTab === 'function' ? window.switchTab : null) || (typeof switchTab === 'function' ? switchTab : null);
-            if (originalSwitchTab) {
-                window.switchTab = function(tab) {
-                    try {
-                        if (typeof originalSwitchTab === 'function') {
-                            originalSwitchTab(tab);
-                        }
-                    } catch (err) {
-                        console.error('originalSwitchTab call failed (non-fatal):', err);
-                    }
-                    if (tab === 'log') {
-                        console.log(`[DEBUG] switchTab wrapper: log tab activated while isInFullScreenTraining=${isInFullScreenTraining}`);
-                        // Refresh key views - wrapped to prevent any render error from breaking the tab
-                        setTimeout(() => {
-                            try {
-                                if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
-                                if (typeof renderOverallStats === 'function') renderOverallStats();
-                                if (typeof renderCalendar === 'function') renderCalendar();
-                                if (typeof currentLogSub !== 'undefined' && currentLogSub === 'analysis' && typeof renderExerciseAnalysis === 'function') renderExerciseAnalysis();
-                            } catch (err) {
-                                console.error('Log tab refresh renders error (non-fatal, tab should still be usable):', err);
-                            }
-                        }, 80);
-                    } else if (isInFullScreenTraining) {
-                        console.warn(`[DEBUG] WARNING: switchTab("${tab}") called while in full-screen! This may cause jump back.`);
-                    }
-                };
-            }
-            // Also ensure the original switchTab function is available on window for direct access if needed
-            if (typeof switchTab === 'function' && typeof window.switchTab !== 'function') {
-                window.switchTab = switchTab;
-            }
-        } catch (e) {
-            console.error('Failed to install switchTab hook for log refresh (non-fatal):', e);
-            // Fallback: make sure switchTab is on window
-            if (typeof switchTab === 'function') {
-                window.switchTab = switchTab;
-            }
+        // Ensure all important modals exist in DOM (defensive for large cleanups or partial loads)
+        function ensureAllModalsExist() {
+            const importantModals = [
+                'loginModal',
+                'addUserModal',
+                'finishModal',
+                'workoutSetModal',
+                'libraryModal',
+                'customExerciseModal',
+                'routinesModal',
+                'unfinishedWorkoutModal'
+            ];
+            importantModals.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) {
+                    console.warn(`[WARNING] Modal #${id} not found in DOM. Some features may not work.`);
+                }
+            });
         }
+
+        // 確保 onclick 同其他地方呼叫嘅係呢個最新版本
+        try {
+            window.switchTab = switchTab;
+        } catch (e) {}
 
         function toggleSession(buttonEl) {
             const content = buttonEl.nextElementSibling;
@@ -4223,13 +5020,18 @@ Local Development Instructions:
                 if (currentUser !== savedUser) {
                     localStorage.setItem('currentUser', currentUser);
                 }
-                document.getElementById('currentUserDisplay').classList.remove('hidden');
-                document.getElementById('currentUserName').textContent = currentUser;
-                document.getElementById('loginBtn').classList.add('hidden');
-                document.getElementById('logoutBtn').classList.remove('hidden');
+                const display = document.getElementById('currentUserDisplay');
+                if (display) display.classList.remove('hidden');
+                const nameEl = document.getElementById('currentUserName');
+                if (nameEl) nameEl.textContent = currentUser;
+                const loginBtn = document.getElementById('loginBtn');
+                if (loginBtn) loginBtn.classList.add('hidden');
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) logoutBtn.classList.remove('hidden');
                 const addUserBtn = document.getElementById('addUserBtn');
                 if (addUserBtn) addUserBtn.classList.add('hidden');
-                document.getElementById('logUserName').textContent = `(${currentUser})`;
+                const logUserName = document.getElementById('logUserName');
+                if (logUserName) logUserName.textContent = `(${currentUser})`;
                 await loadUserLogs();
             } else {
                 // Not logged in: ensure addUserBtn is visible
@@ -4249,7 +5051,12 @@ Local Development Instructions:
                     document.body.style.overflow = '';
                     isInFullScreenTraining = false;
                     const p = document.getElementById('live-log-panel');
-                    if (p) p.classList.add('hidden');
+                    if (p) {
+                        p.classList.add('hidden');
+                        if (immersivePanelOriginalParent && p.parentNode !== immersivePanelOriginalParent) {
+                            immersivePanelOriginalParent.appendChild(p);
+                        }
+                    }
                 }
             }
             // Initialize the rich professional Workout Log system
@@ -4260,14 +5067,37 @@ Local Development Instructions:
             } catch (err) {
                 console.error('initializeWorkoutLog top level call error (non-fatal):', err);
             }
-            try {
-                switchTab('overview');
-            } catch (err) {
-                console.error('initial switchTab error (non-fatal):', err);
-            }
+
+            // Clean init: completely avoid any switchTab calls during initialization (isInitializing=true).
+            // - Static HTML already sets the correct default active tab (overview) + visible content-overview.
+            // - Remove all tab switching logic here so initialize only does essential work:
+            //   user state restore, safety cleanup, initializeWorkoutLog (data load, sample, renders of *history* etc inside log, listeners, resume check).
+            // - Tab activation happens outside the init phase (via user clicks or login flows) for stability.
+            // - This eliminates unnecessary switchTab overhead, guards, wrapper side-effects and debug spam during startup.
+            console.log('[DEBUG] initialize: relying on static HTML default tab state (overview). No switchTab calls during init.');
 
             isInitializing = false;
             console.log('[DEBUG] initialize finished, isInitializing=false');
+
+            // Defensive: check modals exist
+            ensureAllModalsExist();
+
+            // After init complete, force a render of Workout Sets bar if logged in.
+            // This ensures the bar (with 3 defaults + + button) is stably populated and visible
+            // in the log tab / training panel, even if some early renders happened while hidden.
+            if (currentUser && typeof renderWorkoutSetsBar === 'function') {
+                console.log('[DEBUG] initialize complete: forcing renderWorkoutSetsBar for reliable post-init display');
+                try {
+                    renderWorkoutSetsBar();
+                } catch (e) {
+                    console.warn('[DEBUG] forced renderWorkoutSetsBar after init failed (non-fatal):', e);
+                }
+            }
+
+            // If logged in on init, ensure the per-user Workout Sets (3 defaults) are loaded immediately
+            if (currentUser && typeof loadWorkoutSets === 'function') {
+                loadWorkoutSets().catch(e => console.warn('loadWorkoutSets during init (non-fatal):', e));
+            }
         }
 
         // Global protection: Esc key to force exit full-screen training mode if stuck
@@ -4294,6 +5124,9 @@ Local Development Instructions:
                         panel.style.borderRadius = '';
                         panel.style.backgroundColor = '';
                         panel.style.overflow = '';
+                        if (immersivePanelOriginalParent && panel.parentNode !== immersivePanelOriginalParent) {
+                            immersivePanelOriginalParent.appendChild(panel);
+                        }
                     }
                     // Restore key elements
                     const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
