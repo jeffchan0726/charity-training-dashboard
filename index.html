@@ -54,6 +54,57 @@ Local Development Instructions:
             background: linear-gradient(135deg, #166534 0%, #4ade80 100%);
         }
 
+        /* Global Sync Indicator styles - mobile friendly, subtle */
+        #global-sync-indicator {
+            transition: all 0.2s ease;
+            font-size: 0.7rem;
+        }
+        #global-sync-indicator.syncing {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+        #global-sync-indicator.success {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+        #global-sync-indicator.error {
+            background: rgba(248, 113, 113, 0.2);
+            border-color: #f87171;
+            color: #f87171;
+            cursor: pointer;
+        }
+        #global-sync-indicator .fa-circle { transition: color 0.2s; }
+        #global-sync-indicator.syncing .fa-circle { color: #fbbf24; }
+        #global-sync-indicator.success .fa-circle { color: #4ade80; }
+        #global-sync-indicator.error .fa-circle { color: #f87171; }
+
+        /* === Initial Load Indicator (mobile-first, subtle but clear) === */
+        #initial-load-indicator {
+            transition: all 0.2s ease;
+            font-size: 0.7rem;
+        }
+        #initial-load-indicator.loading {
+            background: rgba(251, 191, 36, 0.18);
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+        #initial-load-indicator.success {
+            background: rgba(74, 222, 128, 0.18);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+        #initial-load-indicator.error {
+            background: rgba(248, 113, 113, 0.18);
+            border-color: #f87171;
+            color: #f87171;
+            cursor: pointer;
+        }
+        #initial-load-indicator .fa-spin { animation: fa-spin 1s linear infinite; }
+        #initial-load-indicator.success .fa-check { color: #4ade80; }
+        #initial-load-indicator.error .fa-exclamation-triangle { color: #f87171; }
+
         .section-card {
             background: #1c1917;
             border: 1px solid #44403c;
@@ -112,17 +163,7 @@ Local Development Instructions:
             background: #292524;
         }
 
-        .rest-timer {
-            font-variant-numeric: tabular-nums;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-        }
-
-        .timer-display {
-            font-size: 3.5rem;
-            line-height: 1;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-        }
+        /* .rest-timer / .timer-display 已移除 (休息計時器功能已完全刪除) */
 
         .exercise-log-card {
             border: 1px solid #57534e;
@@ -157,9 +198,6 @@ Local Development Instructions:
         }
 
         /* === Full-Screen / Immersive Training Mode (Start New Training) === */
-        /* Simplified: only hide log-specific sub elements that are not part of the immersive training UI.
-           Global nav/header hiding is now handled explicitly in JS (enterImmersiveMode/exitImmersiveMode)
-           to avoid broad display:none causing blank page or layout collapse affecting the fixed panel. */
         .fullscreen-training #content-log > .flex:first-child, /* log top header with buttons */
         .fullscreen-training .flex.gap-1\.5.mb-3.text-sm.border-b, /* sub-tabs */
         .fullscreen-training #log-empty-state {
@@ -214,6 +252,18 @@ Local Development Instructions:
             flex-shrink: 0;
             pointer-events: auto;
         }
+        /* fullscreen variant: collapsed shows only session-summary (timer 已移除) */
+        .fullscreen-training .immersive-sticky-top.collapsed .immersive-header {
+            display: none !important;
+        }
+        .fullscreen-training .immersive-sticky-top.collapsed .session-summary {
+            display: flex !important;
+            margin-top: 0 !important;
+        }
+        .fullscreen-training .immersive-sticky-top.collapsed {
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
 
         .fullscreen-training .immersive-sticky-bottom {
             position: sticky;
@@ -263,6 +313,28 @@ Local Development Instructions:
             border-bottom: 1px solid #57534e;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);
         }
+
+        /* Collapse support: when .collapsed, hide header (title+sets) + timer, ONLY keep the session-summary bar visible (minimal stats at top) */
+        .immersive-sticky-top.collapsed .immersive-header {
+            display: none !important;
+        }
+        .immersive-sticky-top.collapsed .session-summary {
+            display: flex !important;
+            margin-top: 0 !important;
+        }
+        .immersive-sticky-top.collapsed {
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
+        #immersive-collapse-btn {
+            transition: transform 0.2s ease, background-color 0.1s ease;
+        }
+        #immersive-collapse-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Rest timer 已完全移除 (requirement 2)。以下舊樣式保留作為註解以免影響其他佈局。
+           可以安全刪除整個 timer 相關 CSS 區塊。 */
 
         .immersive-sticky-bottom {
             position: sticky;
@@ -374,7 +446,6 @@ Local Development Instructions:
 
         /* Mobile-first Workout Log refinements */
         @media (max-width: 380px) {
-            .timer-display { font-size: 2.75rem !important; }
             .log-card { padding: 0.75rem !important; }
             .exercise-log-card { padding: 0.5rem !important; }
             .set-row { font-size: 0.7rem; }
@@ -432,6 +503,22 @@ Local Development Instructions:
                         class="hidden px-4 sm:px-5 py-1.5 sm:py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-sm">登出</button>
                     <button id="addUserBtn" onclick="showAddUserModal()"
                         class="px-4 sm:px-5 py-1.5 sm:py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-sm">新增用戶</button>
+
+                    <!-- Global Sync Status Indicator (right upper corner, mobile friendly) -->
+                    <div id="global-sync-indicator"
+                         class="hidden items-center gap-1.5 px-2 py-1 rounded-2xl text-xs font-medium bg-white/10 text-white/90 border border-white/20 min-w-[20px] min-h-[20px] cursor-default"
+                         title="雲端同步狀態 - 點擊可查看詳情">
+                        <i id="sync-icon" class="fa-solid fa-circle text-[9px] sm:text-[10px]"></i>
+                        <span id="sync-text" class="hidden text-[9px] sm:text-[10px] leading-none"></span>
+                    </div>
+
+                    <!-- Initial Load Status Indicator (A. 右上角，login/refresh 時 getLogs + rebuild workoutHistory 的明確反饋) -->
+                    <div id="initial-load-indicator"
+                         class="hidden items-center gap-1.5 px-2 py-1 rounded-2xl text-xs font-medium bg-white/10 text-white/90 border border-white/20 min-w-[22px] min-h-[20px] cursor-default"
+                         title="初始載入狀態">
+                        <i id="initial-sync-icon" class="fa-solid fa-cloud-download-alt text-[9px] sm:text-[10px]"></i>
+                        <span id="initial-sync-text" class="hidden text-[9px] sm:text-[10px] leading-none"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -450,7 +537,7 @@ Local Development Instructions:
         </div>
         <div class="flex gap-x-3 mt-6">
             <button onclick="hideLoginModal()" class="flex-1 py-2.5 rounded-2xl border border-[#57534e]">取消</button>
-            <button onclick="loginUser()"
+            <button id="login-btn" onclick="loginUser()"
                 class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">登入</button>
         </div>
     </div>
@@ -786,7 +873,7 @@ Local Development Instructions:
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 3</span>
                             <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Legs + Shoulders + Core</span>
                         </div>
-                        <div class="text-[#a8a29e] text-sm mt-0.5">腿部 + 肩膀 + 前臂 + 核心 • 5 個動作</div>
+                        <div class="text-[#a8a29e] text-sm mt-0.5">腿部 + 肩膀 + 前臂 + 核心 • 6 個動作</div>
                     </div>
                     <i class="fa-solid fa-chevron-down text-xl text-[#a8a29e] transition-transform duration-200"></i>
                 </button>
@@ -800,20 +887,24 @@ Local Development Instructions:
                             <div class="text-sm sm:text-base pt-0.5">1. 澤奇深蹲 (Zercher Squats)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
+                            <img src="images/finger_curls.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <div class="text-sm sm:text-base pt-0.5">2. 指力彎舉 (Finger Curls)</div>
+                        </div>
+                        <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/reverse_forearm_curl.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">2. 反向腕彎舉 (Reverse Forearm Curl)</div>
+                            <div class="text-sm sm:text-base pt-0.5">3. 反向腕彎舉 (Reverse Forearm Curl)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/lateral_raises.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">3. 側舉 (Lateral Raises)</div>
+                            <div class="text-sm sm:text-base pt-0.5">4. 側舉 (Lateral Raises)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/rear_delt_raises.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">4. 後飛 (Rear Delt Raises)</div>
+                            <div class="text-sm sm:text-base pt-0.5">5. 後飛 (Rear Delt Raises)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
                             <img src="images/dragon_flag.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
-                            <div class="text-sm sm:text-base pt-0.5">5. 龍旗 (Dragon Flag)</div>
+                            <div class="text-sm sm:text-base pt-0.5">6. 龍旗 (Dragon Flag)</div>
                         </div>
                     </div>
                 </div>
@@ -828,8 +919,23 @@ Local Development Instructions:
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div>
                 <h3 class="font-bold text-lg sm:text-xl">訓練日誌 <span id="logUserName" class="text-[#4ade80]"></span></h3>
-                <p class="text-[10px] sm:text-xs text-[#a8a29e]">快速記錄 • 每組間休息計時 • 慈善噸數追蹤</p>
+                <p class="text-[10px] sm:text-xs text-[#a8a29e]">快速記錄 • 慈善噸數追蹤</p>
             </div>
+
+        <!-- Loading state inside Workout Log (requirement 1) -->
+        <div id="log-loading-state" class="hidden mb-6">
+            <div class="log-card rounded-3xl p-8 text-center border border-[#57534e]">
+                <i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-400 mb-4"></i>
+                <div class="font-semibold text-base mb-2">正在從 Google 載入訓練紀錄...</div>
+                <p class="text-sm text-[#a8a29e] mb-4 max-w-[260px] mx-auto">請稍候，數據會安全同步到你的帳號。載入完成後會自動顯示歷史記錄。</p>
+                <button id="log-retry-load-btn"
+                        onclick="retryLoadUserLogs()"
+                        class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl text-sm font-semibold hidden">
+                    <i class="fa-solid fa-redo mr-1.5"></i> 重試載入
+                </button>
+                <div class="mt-3 text-[10px] text-[#a8a29e]">如果持續失敗，請檢查網絡或稍後再試。</div>
+            </div>
+        </div>
 
         <!-- LIVE LOGGING PANEL - Immersive / Near Full-Screen Mode -->
         <div id="live-log-panel" class="hidden mb-6">
@@ -837,14 +943,26 @@ Local Development Instructions:
             <div class="immersive-container log-card rounded-3xl border border-emerald-900/50 flex flex-col overflow-hidden">
                 
                 <!-- STICKY TOP: Rest Timer (always visible) + header info -->
-                <div class="immersive-sticky-top px-4 sm:px-6 py-3">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div id="immersive-sticky-top" class="immersive-sticky-top px-4 sm:px-6 py-3 relative">
+                    <!-- Collapse/expand chevron: always visible, >=44px tap target, non-obtrusive -->
+                    <button id="immersive-collapse-btn"
+                            onclick="toggleImmersiveTopCollapse()"
+                            class="absolute top-2 right-2 z-[75] p-2 text-[#a8a29e] hover:text-emerald-300 active:bg-[#292524] active:text-white rounded-full bg-[#1c1917]/80 border border-[#57534e]/60"
+                            style="min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center;"
+                            aria-label="收合或展開頂部訓練資訊">
+                        <i id="immersive-collapse-icon" class="fa-solid fa-chevron-up text-lg transition-transform duration-200"></i>
+                    </button>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pr-10 sm:pr-12 immersive-header">
                         <div class="flex items-center gap-x-3">
                             <div class="text-emerald-400">
                                 <i class="fa-solid fa-stopwatch text-2xl"></i>
                             </div>
                             <div>
-                                <div class="font-bold text-lg">進行中訓練</div>
+                                <div class="font-bold text-lg flex items-center gap-2">
+                                    <span id="training-mode-title">進行中訓練</span>
+                                    <span id="continue-badge" class="hidden text-[10px] px-2 py-0.5 bg-emerald-900/70 text-emerald-300 rounded-full font-medium">繼續今日訓練</span>
+                                </div>
                                 <div class="flex items-center gap-x-2 text-sm">
                                     <label for="current-workout-date" class="sr-only">訓練日期</label>
                                     <input type="date" id="current-workout-date" class="log-input px-3 py-1 rounded-xl text-sm w-auto" onchange="updateCurrentWorkoutDate()">
@@ -852,43 +970,14 @@ Local Development Instructions:
                                 </div>
                             </div>
                         </div>
-                        <!-- Dynamic Workout Sets bar (backend-driven, no hard-coded plans). + for add/edit/delete custom sets. -->
+                        <!-- Dynamic Workout Sets bar (backend-driven, no hard-coded plans). Hidden when top is collapsed. -->
                         <div id="workout-sets-bar" class="flex items-center gap-1.5 flex-wrap min-h-[28px]">
                             <!-- Populated by renderWorkoutSetsBar() after loadWorkoutSets() -->
                         </div>
                     </div>
 
-                    <!-- Rest Timer - Fixed at top -->
-                    <div class="bg-[#1f1c1a] border border-[#57534e] rounded-2xl p-3">
-                        <div class="flex items-center justify-between mb-1.5">
-                            <div class="flex items-center gap-x-2">
-                                <i class="fa-solid fa-hourglass-half text-emerald-400"></i>
-                                <span class="font-semibold text-sm">休息計時器</span>
-                            </div>
-                            <div class="flex gap-1 text-[10px]">
-                                <button onclick="setRestPreset(60)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">60s</button>
-                                <button onclick="setRestPreset(90)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">90s</button>
-                                <button onclick="setRestPreset(120)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">120s</button>
-                                <button onclick="setRestPreset(180)" class="px-1.5 py-0.5 rounded bg-[#292524] hover:bg-[#3f3a36]">180s</button>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 mb-1.5">
-                            <button onclick="pauseRestTimer()" class="flex-1 px-3 py-1 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">暫停</button>
-                            <button onclick="resetRestTimer()" class="flex-1 px-3 py-1 bg-[#292524] hover:bg-red-900/30 text-red-400 rounded-2xl text-sm">重設</button>
-                            <button onclick="addTimeToTimer(30)" class="flex-1 px-3 py-1 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl text-sm">+30秒</button>
-                        </div>
-                        <div class="flex items-end gap-3">
-                            <div id="timer-display" class="timer-display text-emerald-400 tabular-nums text-3xl">01:00</div>
-                            <div class="flex-1 flex items-center gap-2">
-                                <button id="timer-start-btn" onclick="startRestTimer()" 
-                                    class="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始</button>
-                            </div>
-                        </div>
-                        <div id="timer-status" class="text-[10px] text-[#a8a29e] mt-0.5 h-3"></div>
-                    </div>
-
-                    <!-- Session Summary Bar - will be sticky in fullscreen (below timer) -->
-                    <div class="mt-3 bg-[#292524] rounded-2xl p-3 flex items-center justify-between text-sm">
+                    <!-- Session Summary Bar (直接接在 header 之後，timer 已移除，騰出空間給動作列表) -->
+                    <div class="bg-[#292524] rounded-2xl p-3 flex items-center justify-between text-sm session-summary">
                         <div>
                             <span class="text-[#a8a29e]">訓練量</span>
                             <span id="session-volume" class="volume-number font-bold text-emerald-400 tabular-nums ml-2">0</span>
@@ -898,6 +987,7 @@ Local Development Instructions:
                             <span id="session-sets-count">0 組</span>
                             <span class="mx-1">•</span>
                             <span id="session-tonnes" class="text-amber-400">0.00 t</span>
+                            <span id="sync-status" class="text-[10px] ml-1 text-emerald-300/70"></span>
                         </div>
                     </div>
                 </div>
@@ -932,8 +1022,8 @@ Local Development Instructions:
                 <div class="immersive-sticky-bottom px-4 sm:px-6">
                     <!-- Inner wrapper absorbs safe-area padding so buttons stay fully visible and tappable -->
                     <div class="pt-3 pb-[max(env(safe-area-inset-bottom,14px),14px)]">
-                        <button onclick="finishCurrentWorkout()" 
-                            class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-x-2 shadow-lg">
+                        <button id="immersive-finish-btn" onclick="finishCurrentWorkout()" 
+                            class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-x-2 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:bg-amber-800/70">
                             <i class="fa-solid fa-flag-checkered"></i> 
                             <span>完成訓練</span>
                         </button>
@@ -953,10 +1043,7 @@ Local Development Instructions:
                 <div class="font-semibold mb-1">準備好訓練了嗎？</div>
                 <p class="text-sm text-[#a8a29e] max-w-md mx-auto mb-4">點擊開始新訓練，計時器幫助你在組間適當休息。</p>
                 <div class="flex flex-wrap justify-center gap-2">
-                    <button onclick="startNewWorkout()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始新訓練</button>
-                </div>
-                <div class="mt-2 text-[10px]">
-                    <a href="#" onclick="localStorage.setItem('disableAutoResumePrompt', 'true'); this.textContent='已停用（重整生效）'; return false;" class="text-[#a8a29e] hover:underline">停用自動恢復提示（power user）</a>
+                    <button id="start-training-btn" onclick="startNewWorkout()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始新訓練</button>
                 </div>
             </div>
         </div>
@@ -1186,7 +1273,7 @@ Local Development Instructions:
                     <input id="loginPin" type="password" maxlength="6"
                            class="log-input w-full px-4 py-3 rounded-2xl" placeholder="123456">
                 </div>
-                <button onclick="loginUser()" 
+                <button id="login-btn-modal" onclick="loginUser()" 
                         class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl font-semibold">
                     登入
                 </button>
@@ -1320,8 +1407,8 @@ Local Development Instructions:
                             class="flex-1 py-2.5 rounded-2xl border border-[#57534e] hover:bg-[#252321] text-sm font-medium transition-colors">
                         繼續編輯
                     </button>
-                    <button onclick="confirmFinishWorkout()" 
-                            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl font-semibold text-sm shadow transition-colors">
+                    <button id="confirm-finish-btn" onclick="confirmFinishWorkout()" 
+                            class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-emerald-800/60 disabled:cursor-not-allowed disabled:opacity-70 rounded-2xl font-semibold text-sm shadow transition-all">
                         <i class="fa-solid fa-check mr-1.5"></i> 儲存並完成訓練
                     </button>
                 </div>
@@ -1362,7 +1449,7 @@ Local Development Instructions:
             <!-- Footer actions -->
             <div class="p-4 border-t border-[#57534e] flex-shrink-0 bg-[#1c1917]">
                 <div class="flex flex-col gap-2">
-                    <button onclick="saveHistoryEdit()"
+                    <button id="save-history-btn" onclick="saveHistoryEdit()"
                             class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl font-semibold text-sm">
                         <i class="fa-solid fa-save mr-2"></i> 儲存修改
                     </button>
@@ -1371,7 +1458,7 @@ Local Development Instructions:
                                 class="flex-1 py-2 border border-[#57534e] hover:bg-[#292524] rounded-2xl text-sm">
                             取消
                         </button>
-                        <button onclick="deleteHistoryWorkout()"
+                        <button id="delete-history-btn" onclick="deleteHistoryWorkout()"
                                 class="flex-1 py-2 bg-red-900/70 hover:bg-red-900 text-red-300 rounded-2xl text-sm border border-red-900/50">
                             <i class="fa-solid fa-trash mr-1"></i> 刪除這次訓練
                         </button>
@@ -1557,13 +1644,13 @@ Local Development Instructions:
             return String(raw).trim().replace(/\D/g, '');
         }
 
-        async function callAppsScript(action, data = {}) {
+        async function callAppsScript(action, data = {}, options = {}) {
             try {
                 if (action === "getLogs" && currentUser) {
                     const url = new URL(APPS_SCRIPT_URL);
                     url.searchParams.append("action", "getLogs");
                     url.searchParams.append("user", currentUser);
-                    const res = await fetch(url);
+                    const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
                     return await res.json();
                 }
                 if (action === "getWorkoutSets" && currentUser) {
@@ -1571,18 +1658,20 @@ Local Development Instructions:
                     const url = new URL(APPS_SCRIPT_URL);
                     url.searchParams.append("action", "getWorkoutSets");
                     url.searchParams.append("user", currentUser);
-                    const res = await fetch(url);
+                    const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
                     return await res.json();
                 }
-                const response = await fetch(APPS_SCRIPT_URL, {
+                const fetchOpts = {
                     method: "POST",
                     body: JSON.stringify({ action, ...data })
-                });
+                };
+                if (options.keepalive) fetchOpts.keepalive = true;
+                const response = await fetch(APPS_SCRIPT_URL, fetchOpts);
                 return await response.json();
             } catch (error) {
-                console.error(error);
-                alert("連接 Apps Script 失敗，請檢查 URL 或網絡");
-                return { status: "error" };
+                console.error('[callAppsScript] POST error:', error);
+                // Do not hard alert (was disruptive on mobile during save); return error object for graceful handling in callers (finish/edit/delete)
+                return { status: "error", message: "連接 Apps Script 失敗" };
             }
         }
 
@@ -1648,6 +1737,22 @@ Local Development Instructions:
 
         async function loginUser() {
             console.debug('[DEBUG] loginUser called');
+
+            if (isLoggingIn) return;
+            isLoggingIn = true;
+
+            // Target both possible login buttons
+            const loginBtns = document.querySelectorAll('#login-btn, #login-btn-modal');
+            const origHtmls = [];
+            loginBtns.forEach((b, i) => {
+                origHtmls[i] = b ? b.innerHTML : '';
+                if (b) {
+                    b.disabled = true;
+                    b.classList.add('opacity-70', 'cursor-wait');
+                    b.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 登入中...`;
+                }
+            });
+
             try {
                 // Frontend normalization: force lowercase username + digits-only PIN
                 let rawUsername = document.getElementById('loginUsername').value.trim();
@@ -1656,7 +1761,18 @@ Local Development Instructions:
                 const username = rawUsername.toLowerCase().replace(/[^a-z0-9]/g, '');
                 const pin = rawPin.replace(/\D/g, '');
 
-                if (!username || !pin) return alert("請輸入用戶名稱同 PIN");
+                if (!username || !pin) {
+                    // restore buttons before return
+                    loginBtns.forEach((b, i) => {
+                        if (b) {
+                            b.disabled = false;
+                            b.classList.remove('opacity-70', 'cursor-wait');
+                            b.innerHTML = origHtmls[i] || '登入';
+                        }
+                    });
+                    isLoggingIn = false;
+                    return alert("請輸入用戶名稱同 PIN");
+                }
 
                 console.debug('[DEBUG] Calling GAS login for', username);
                 const result = await callAppsScript("login", { user: username, pin: pin });
@@ -1700,6 +1816,17 @@ Local Development Instructions:
             } catch (err) {
                 console.error('loginUser error:', err);
                 alert("登入過程出錯，請檢查網絡或 Apps Script URL");
+            } finally {
+                isLoggingIn = false;
+                // Always restore login buttons
+                const loginBtns2 = document.querySelectorAll('#login-btn, #login-btn-modal');
+                loginBtns2.forEach((b, i) => {
+                    if (b) {
+                        b.disabled = false;
+                        b.classList.remove('opacity-70', 'cursor-wait');
+                        b.innerHTML = origHtmls[i] || '登入';
+                    }
+                });
             }
         }
 
@@ -1729,6 +1856,7 @@ Local Development Instructions:
             currentWorkout = null;
             workoutHistory = [];
             lastPerformed = {};
+            lastWorkoutSetName = null;
             workoutSets = [];
             workoutSetsCache = null;
             workoutSetsCacheTimestamp = 0;
@@ -1751,62 +1879,132 @@ Local Development Instructions:
 
         async function loadUserLogs() {
             if (!currentUser) return;
-            workoutLogs = await callAppsScript("getLogs");
-            renderLogTable();
 
-            // === Load rich per-user data from backend and rebuild history ===
+            // 1. 顯示 #content-log 內部的 loading 畫面（最主要反饋）
+            const loadingEl = document.getElementById('log-loading-state');
+            const emptyState = document.getElementById('log-empty-state');
+            const historyList = document.getElementById('workout-history-list');
+            const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
+
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (emptyState) emptyState.style.display = 'none';
+            if (historyList) historyList.innerHTML = '';
+            if (subNav) subNav.style.visibility = 'hidden';
+
+            // 右上角也顯示簡短狀態（保留但次要）
+            showInitialSyncStatus('loading');
+
+            const retryBtn = document.getElementById('log-retry-load-btn');
+            if (retryBtn) retryBtn.classList.add('hidden');
+
+            setInitialLoadRetry(() => {
+                if (currentUser) loadUserLogs().catch(() => {});
+            });
+
             try {
-                const rawSets = await callAppsScript("getLogs");  // already has user in URL for some calls
-                // Rebuild workoutHistory by grouping on session_id (or date+exercise as fallback)
-                const grouped = {};
-                (rawSets || []).forEach(row => {
-                    const sid = row.session_id || row.sessionId || (row.date + '|' + row.exercise);
-                    if (!grouped[sid]) {
-                        grouped[sid] = {
-                            id: sid,
-                            date: row.date,
-                            exercises: {},
-                            notes: ''
-                        };
-                    }
-                    const exName = row.exercise;
-                    if (!grouped[sid].exercises[exName]) {
-                        grouped[sid].exercises[exName] = { name: exName, sets: [] };
-                    }
-                    grouped[sid].exercises[exName].sets.push({
-                        weight: parseFloat(row.weight) || 0,
-                        reps: parseInt(row.reps) || 0,
-                        notes: row.notes || '',
-                        volume: parseFloat(row.volume) || ((parseFloat(row.weight)||0) * (parseInt(row.reps)||0))
+                const logs = await callAppsScript("getLogs");
+                workoutLogs = logs;
+                renderLogTable();
+
+                // === Load rich per-user data from backend and rebuild history ===
+                try {
+                    const rawSets = logs || [];
+                    const grouped = {};
+                    (rawSets || []).forEach(row => {
+                        const normalizedRowDate = normalizeDateToLocal(row.date);
+                        const sid = row.session_id || row.sessionId || (normalizedRowDate + '|' + row.exercise);
+                        if (!grouped[sid]) {
+                            grouped[sid] = {
+                                id: sid,
+                                date: normalizedRowDate,
+                                exercises: {},
+                                notes: ''
+                            };
+                        }
+                        const exName = row.exercise;
+                        if (!grouped[sid].exercises[exName]) {
+                            grouped[sid].exercises[exName] = { name: exName, sets: [] };
+                        }
+                        grouped[sid].exercises[exName].sets.push({
+                            weight: parseFloat(row.weight) || 0,
+                            reps: parseInt(row.reps) || 0,
+                            notes: row.notes || '',
+                            volume: parseFloat(row.volume) || ((parseFloat(row.weight)||0) * (parseInt(row.reps)||0))
+                        });
                     });
-                });
 
-                workoutHistory = Object.values(grouped).map(w => {
-                    w.exercises = Object.values(w.exercises);
-                    w.totalVolume = w.exercises.reduce((sum, ex) => {
-                        return sum + ex.sets.reduce((s, st) => s + (st.volume || 0), 0);
-                    }, 0);
-                    return w;
-                }).sort((a,b) => b.date.localeCompare(a.date));
+                    console.log('[DATE DEBUG] loadUserLogs - rebuilding workoutHistory from backend rows');
+                    workoutHistory = Object.values(grouped).map(w => {
+                        // 使用 normalize 確保日期正確（即使後端偶爾返回 ISO）
+                        const normalizedDate = normalizeDateToLocal(w.date);
+                        console.log('[DATE DEBUG] loadUserLogs - raw row date:', w.date, '-> normalized:', normalizedDate, 'for sid:', w.id || 'unknown');
+                        w.date = normalizedDate;  // 確保 w.date 是乾淨本地日期
+                        w.exercises = Object.values(w.exercises);
+                        w.totalVolume = w.exercises.reduce((sum, ex) => {
+                            return sum + ex.sets.reduce((s, st) => s + (st.volume || 0), 0);
+                        }, 0);
+                        return w;
+                    }).sort((a,b) => b.date.localeCompare(a.date));
 
-                if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
-                if (typeof saveWorkoutData === 'function') saveWorkoutData(); // also cache locally
-            } catch (e) {
-                console.warn('Backend data load failed, using local cache', e);
-            }
+                    if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
+                    if (typeof saveWorkoutData === 'function') saveWorkoutData();
+                } catch (e) {
+                    console.warn('Backend data load failed, using local cache', e);
+                }
 
-            // Refresh rich UI views - protected
-            try {
-                if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
-                if (typeof renderOverallStats === 'function') renderOverallStats();
-                if (typeof renderCalendar === 'function') renderCalendar();
-                if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
+                // Refresh rich UI views
+                try {
+                    if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                    if (typeof renderOverallStats === 'function') renderOverallStats();
+                    if (typeof renderCalendar === 'function') renderCalendar();
+                    if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
+                } catch (err) {
+                    console.warn('post loadUserLogs render error (non-fatal):', err);
+                }
+
+                // 更新「開始新訓練 / 繼續今日訓練」按鈕
+                try { updateStartTrainingButton(); } catch (e) {}
+
+                // 1. 載入成功 → 隱藏 loading，還原正常 Workout Log 內容
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (emptyState) emptyState.style.display = '';
+                if (subNav) subNav.style.visibility = '';
+
+                // 右上角成功提示
+                showInitialSyncStatus('success');
+
             } catch (err) {
-                console.warn('post loadUserLogs render error (non-fatal):', err);
+                console.error('[loadUserLogs] getLogs / rebuild failed:', err);
+
+                // 顯示錯誤狀態在 log 區域內
+                if (loadingEl) {
+                    loadingEl.classList.remove('hidden');
+                    // 替換內容為錯誤 + 重試
+                    loadingEl.innerHTML = `
+                        <div class="log-card rounded-3xl p-8 text-center border border-red-900/40 bg-red-950/10">
+                            <i class="fa-solid fa-exclamation-triangle text-3xl text-red-400 mb-3"></i>
+                            <div class="font-semibold text-base mb-2 text-red-300">載入訓練紀錄失敗</div>
+                            <p class="text-sm text-[#a8a29e] mb-4">無法從 Google 取得最新數據。已顯示本地快取（如有）。</p>
+                            <button onclick="retryLoadUserLogs()" 
+                                    class="px-6 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-2xl text-sm font-semibold">
+                                <i class="fa-solid fa-redo mr-1.5"></i> 立即重試
+                            </button>
+                        </div>`;
+                }
+
+                // 還原其他內容（本地資料）
+                if (emptyState) emptyState.style.display = '';
+                if (subNav) subNav.style.visibility = '';
+                if (historyList) {
+                    try { if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory(); } catch (_) {}
+                }
+
+                showInitialSyncStatus('error');
+                try { updateGlobalSyncIndicator('error'); } catch (_) {}
+                try { showToast('載入失敗，請點擊 log 區域內的重試按鈕', 3800); } catch (_) {}
             }
 
-            // Note: checkForUnfinishedWorkout is no longer auto-called here on login/load to avoid aggressive prompts on fresh page loads.
-            // It is now only triggered explicitly inside startNewWorkout when user clicks to start training (and only for valid recent unfinished with volume).
+            // Note: 自動恢復未完成訓練提示已完全停用（checkForUnfinishedWorkout 及 startNewWorkout 內的舊邏輯已移除）
         }
 
         function renderLogTable() {
@@ -1822,7 +2020,7 @@ Local Development Instructions:
             if (!currentUser) return alert("請先登入");
             document.getElementById('addLogModal').classList.remove('hidden');
             document.getElementById('addLogModal').classList.add('flex');
-            document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('logDate').value = getLocalDateString();
         }
 
         function hideAddLogModal() {
@@ -1858,7 +2056,8 @@ Local Development Instructions:
            ============================================================ */
 
         // --- Core State ---
-        let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, notes, volume}]}] }
+        let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, notes, volume, id?, _clientLogId? }]}] }
+                                             // id / _clientLogId 用於已同步到 Google 的 log id，刪除 exercise 時會用來呼叫 deleteLog
         let workoutHistory = [];             // Array of finished workouts
 
         // History view/edit mode state (completely separate from active new-training currentWorkout)
@@ -1872,10 +2071,17 @@ Local Development Instructions:
         let exerciseLibrary = [];            // {name, category}
         let routines = [];                   // {id, name, exercises: string[] }
         let lastPerformed = {};              // { exerciseName: {weight, reps, date} }
+        let lastWorkoutSetName = null;       // Remember last chosen set from the bar so next startNewWorkout can "接埋" it automatically
         let personalRecords = {};            // Computed on the fly or cached
-        let restTimerInterval = null;
-        let restTimeLeft = 60;
-        let restTimerRunning = false;
+
+        // === Duplicate submission prevention flags (mobile-first) ===
+        let isFinishingWorkout = false;
+        let isSavingHistory = false;
+        let isDeletingHistory = false;
+        let isLoggingIn = false;
+        let lastFinishClick = 0;  // for simple debounce on finish button
+        // restTimer* 變數已移除（計時器功能完全刪除）
+        // hasExplicitlyStartedTrainingThisSession 已移除（自動恢復提示功能已完全停用）
         let currentLogSub = 'history';
         let analysisTimeRange = 'all'; // 'all' | '12w' | '30d'
         let analysisChart1RM = null;
@@ -1894,11 +2100,11 @@ Local Development Instructions:
         // Full-screen training state management
         let isInFullScreenTraining = false;
         let isInitializing = false;
-        let hasExplicitlyStartedTrainingThisSession = false;  // to gate auto-resume prompt on fresh loads
+        // hasExplicitlyStartedTrainingThisSession 已移除（自動恢復提示功能已完全停用）
         // For robust full-screen: remember original parent of live panel so we can move it to body for fixed positioning (avoids parent hidden/clip issues causing blank page)
         let immersivePanelOriginalParent = null;
 
-        const DEFAULT_REST = 60;
+        // DEFAULT_REST 已移除（休息計時器功能刪除）
         const EXERCISE_CATEGORIES = ['胸部', '背部', '腿部', '肩膀', '手臂', '核心', '全身', '有氧'];
 
         // Unified Exercise Database - Clean deduplicated, all names in "中文 (English)" format
@@ -2023,6 +2229,7 @@ Local Development Instructions:
                     library: exerciseLibrary,
                     routines: routines,
                     lastPerformed: lastPerformed,
+                    lastWorkoutSetName: lastWorkoutSetName || null,  // for auto "接埋" last chosen training set
                     currentWorkout: currentWorkout || null   // persist in-progress training for resume
                 };
                 localStorage.setItem(getUserStorageKey(), JSON.stringify(data));
@@ -2046,6 +2253,7 @@ Local Development Instructions:
                     exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
                     routines = data.routines || [];
                     lastPerformed = data.lastPerformed || {};
+                    lastWorkoutSetName = data.lastWorkoutSetName || null;  // restore remembered training set for auto-continue ("接埋")
                     // Smarter restore: only restore currentWorkout from storage if it's a valid recent unfinished workout with real volume.
                     // This prevents stale/old sessions from being treated as active on fresh loads.
                     if (data.currentWorkout && data.currentWorkout.exercises) {
@@ -2097,7 +2305,7 @@ Local Development Instructions:
 
             // Only today or within last 2 hours (use startTime if available for precision)
             if (!workout.date) return false;
-            const todayStr = new Date().toISOString().split('T')[0];
+            const todayStr = getLocalDateString();
             if (workout.date !== todayStr) return false;
 
             if (workout.startTime) {
@@ -2127,22 +2335,8 @@ Local Development Instructions:
             }
         }
 
-        function checkForUnfinishedWorkout() {
-            if (!hasExplicitlyStartedTrainingThisSession) return;
-            if (!isValidUnfinishedWorkout(currentWorkout)) return;
-
-            // Respect power user disable
-            if (localStorage.getItem('disableAutoResumePrompt') === 'true') return;
-
-            // Use setTimeout so UI has time to render.
-            setTimeout(() => {
-                if (!hasExplicitlyStartedTrainingThisSession || !isValidUnfinishedWorkout(currentWorkout)) {
-                    return;
-                }
-                if (localStorage.getItem('disableAutoResumePrompt') === 'true') return;
-                showUnfinishedWorkoutModal();
-            }, 300);
-        }
+        // 自動恢復未完成訓練提示已完全停用（用戶要求）
+        // checkForUnfinishedWorkout 函數已無作用，已移除。
 
         function showUnfinishedWorkoutModal() {
             const modal = document.getElementById('unfinishedWorkoutModal');
@@ -2178,7 +2372,7 @@ Local Development Instructions:
             const empty = document.getElementById('log-empty-state');
             if (empty) empty.classList.add('hidden');
             const dateInput = document.getElementById('current-workout-date');
-            if (dateInput) dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
+            if (dateInput) dateInput.value = currentWorkout.date || getLocalDateString();
             renderCurrentWorkout();
             updateSessionSummary();
             console.log('[DEBUG] Resumed unfinished workout in normal mode (no auto full-screen to allow tab clicks)');
@@ -2213,7 +2407,7 @@ Local Development Instructions:
             const d1 = new Date(today); d1.setDate(d1.getDate() - 5);
             samples.push({
                 id: Date.now() - 500000,
-                date: d1.toISOString().split('T')[0],
+                date: getLocalDateString(d1),
                 exercises: [
                     {name: "上斜啞鈴推胸 (Incline Dumbbell Press)", sets: [{weight: 28, reps: 8, notes: ""}, {weight: 30, reps: 7, notes: ""}]},
                     {name: "平板啞鈴推胸 (Flat Dumbbell Press)", sets: [{weight: 24, reps: 9, notes: ""}]},
@@ -2226,7 +2420,7 @@ Local Development Instructions:
             const d2 = new Date(today); d2.setDate(d2.getDate() - 3);
             samples.push({
                 id: Date.now() - 300000,
-                date: d2.toISOString().split('T')[0],
+                date: getLocalDateString(d2),
                 exercises: [
                     {name: "引體向上 (Pull-ups)", sets: [{weight: 0, reps: 7, notes: "Bodyweight"}, {weight: 0, reps: 6, notes: ""}]},
                     {name: "硬拉 (Deadlift)", sets: [{weight: 80, reps: 5, notes: ""}, {weight: 85, reps: 4, notes: ""}]},
@@ -2239,7 +2433,7 @@ Local Development Instructions:
             const d3 = new Date(today); d3.setDate(d3.getDate() - 1);
             samples.push({
                 id: Date.now() - 100000,
-                date: d3.toISOString().split('T')[0],
+                date: getLocalDateString(d3),
                 exercises: [
                     {name: "澤奇深蹲 (Zercher Squats)", sets: [{weight: 42, reps: 8, notes: ""}, {weight: 45, reps: 6, notes: ""}]},
                     {name: "側舉 (Lateral Raises)", sets: [{weight: 8, reps: 15, notes: ""}, {weight: 8, reps: 14, notes: ""}]},
@@ -2252,7 +2446,7 @@ Local Development Instructions:
             const d4 = new Date(today); d4.setDate(d4.getDate() - 8);
             samples.push({
                 id: Date.now() - 800000,
-                date: d4.toISOString().split('T')[0],
+                date: getLocalDateString(d4),
                 exercises: [
                     {name: "硬拉 (Deadlift)", sets: [{weight: 75, reps: 6, notes: ""}]},
                     {name: "坐姿繩索拉背 (Seated Cable Row)", sets: [{weight: 55, reps: 10, notes: ""}, {weight: 60, reps: 8, notes: ""}]}
@@ -2326,7 +2520,207 @@ Local Development Instructions:
         }
 
         // --- Current Workout Management (the fast logging core) ---
+
+        /* ============================================================
+           B. 今日繼續邏輯 - Helpers
+        ============================================================ */
+
+        /**
+         * 統一的本地日期字串函數（解決時區問題）
+         * 傳回 YYYY-MM-DD 格式，使用本地時間（香港 UTC+8）
+         */
+        function getLocalDateString(date = new Date()) {
+            console.log('[DATE DEBUG] getLocalDateString called with:', date);
+            console.log('[DATE DEBUG] getLocalDateString - full Date object:', date.toString());
+            console.log('[DATE DEBUG] getLocalDateString - toISOString():', date.toISOString());
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const result = `${year}-${month}-${day}`;
+            console.log('[DATE DEBUG] getLocalDateString result (local):', result);
+            return result;
+        }
+
+        /**
+         * 健壯的日期正規化函數
+         * 無論後端返回 YYYY-MM-DD 或完整 ISO 字串，都轉成正確的本地 YYYY-MM-DD
+         */
+        function normalizeDateToLocal(dateValue) {
+            if (!dateValue) return '';
+            const str = String(dateValue);
+            if (str.includes('T')) {
+                // ISO 格式（例如 2026-06-12T16:00:00.000Z），用本地時間解析
+                const d = new Date(str);
+                return getLocalDateString(d);
+            }
+            // 已經是 YYYY-MM-DD 或有其他格式
+            return str.split('T')[0];
+        }
+
+        // 取得今天日期字串 YYYY-MM-DD（統一使用本地時間）
+        function getTodayStr() {
+            console.log('[DATE DEBUG] getTodayStr called');
+            const result = getLocalDateString();
+            console.log('[DATE DEBUG] getTodayStr result:', result);
+            return result;
+        }
+
+        /**
+         * 從 workoutHistory 找出「今日」的所有訓練（支援同日多場，合併 exercises + sets）
+         * 回傳一個 workout-like 物件，方便 preload。
+         * 如果無今日紀錄則回 null。
+         */
+        function getTodayWorkoutFromHistory() {
+            if (!Array.isArray(workoutHistory) || workoutHistory.length === 0) return null;
+            const today = getTodayStr();
+
+            // 優先直接在 workoutHistory 找（已按日期排序）
+            let matches = workoutHistory.filter(w => {
+                const d = normalizeDateToLocal(w.date);
+                return d === today;
+            });
+
+            if (matches.length === 0) return null;
+
+            // 合併所有今日紀錄的 exercises + sets （保持順序，後面 append）
+            const mergedExercises = {};
+            let combinedNotes = '';
+
+            matches.forEach(w => {
+                if (w.notes) combinedNotes = (combinedNotes ? combinedNotes + ' | ' : '') + w.notes;
+                (w.exercises || []).forEach(ex => {
+                    const key = ex.name;
+                    if (!mergedExercises[key]) {
+                        mergedExercises[key] = { name: key, sets: [] };
+                    }
+                    // 複製 sets
+                    (ex.sets || []).forEach(s => {
+                        mergedExercises[key].sets.push({
+                            weight: s.weight || 0,
+                            reps: s.reps || 0,
+                            notes: s.notes || '',
+                            volume: s.volume || ((s.weight||0)*(s.reps||0))
+                        });
+                    });
+                });
+            });
+
+            const primary = matches[0];
+            return {
+                id: primary.id || primary.session_id || primary.sessionId || ('today_' + today + '_' + Date.now()),
+                session_id: primary.session_id || primary.sessionId || primary.id || ('today_' + today + '_' + Date.now()),
+                date: today,
+                exercises: Object.values(mergedExercises),
+                notes: combinedNotes,
+                isContinuedFromToday: true,
+                // 記錄所有原本的 session ids，如果有需要可全刪（但此處只繼承主一個）
+                _originalSessionIds: matches.map(m => m.id || m.session_id || m.sessionId).filter(Boolean)
+            };
+        }
+
+        /**
+         * 根據日期 preload 一個 currentWorkout 結構（同全新訓練一致）
+         * 給 startNewWorkout 使用。
+         */
+        function preloadWorkoutFromHistory(dateStr) {
+            if (!dateStr) return null;
+            const d = normalizeDateToLocal(dateStr);
+            const today = getTodayStr();
+            if (d !== today) return null; // 只支援今日繼續
+
+            const todayData = getTodayWorkoutFromHistory();
+            if (!todayData || !todayData.exercises || todayData.exercises.length === 0) return null;
+
+            return {
+                id: Date.now(),
+                date: today,
+                exercises: JSON.parse(JSON.stringify(todayData.exercises)), // 深拷貝，避免污染 history
+                notes: todayData.notes || '',
+                startTime: Date.now(),
+                isContinuedFromToday: true
+            };
+        }
+
+        /**
+         * 新增 helper：檢查今日是否有訓練紀錄
+         */
+        function hasTrainingToday() {
+            const todayWorkout = getTodayWorkoutFromHistory();
+            return !!(todayWorkout && todayWorkout.exercises && todayWorkout.exercises.length > 0);
+        }
+
+        /**
+         * 新增 helper：取得今日的 workout（已合併）
+         */
+        function getTodayWorkout() {
+            return getTodayWorkoutFromHistory();
+        }
+
+        /**
+         * 新增 helper：將今日紀錄 preload 入 currentWorkout
+         * 結構與全新訓練一致
+         */
+        function loadTodayWorkoutIntoCurrent() {
+            if (currentWorkout) return false; // 已有進行中訓練就不覆蓋
+
+            const todayData = getTodayWorkout();
+            if (!todayData || !todayData.exercises || todayData.exercises.length === 0) return false;
+
+            currentWorkout = {
+                id: todayData.id,
+                session_id: todayData.session_id || todayData.sessionId,
+                date: getTodayStr(),
+                exercises: JSON.parse(JSON.stringify(todayData.exercises)), // 深拷貝
+                notes: todayData.notes || '',
+                startTime: Date.now(),
+                isContinuedFromToday: true,
+                _originalSessionIds: todayData._originalSessionIds || []
+            };
+
+            console.log('[loadTodayWorkoutIntoCurrent] 已 preload 今日訓練紀錄');
+            return true;
+        }
+
+        /**
+         * 動態更新「開始新訓練」按鈕（或「繼續今日訓練」）
+         * 在 empty-state 區域顯示正確的入口
+         */
+        function updateStartTrainingButton() {
+            const btn = document.getElementById('start-training-btn');
+            if (!btn) return;
+
+            const hasToday = hasTrainingToday();
+            const descP = document.querySelector('#log-empty-state p');
+
+            if (hasToday) {
+                btn.textContent = '繼續今日訓練';
+                // 可選：用不同顏色強調繼續模式
+                btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                btn.classList.add('bg-amber-600', 'hover:bg-amber-700');
+
+                if (descP) {
+                    descP.textContent = '今日已有訓練記錄，點擊繼續完成今日訓練。';
+                }
+            } else {
+                btn.textContent = '開始新訓練';
+                btn.classList.remove('bg-amber-600', 'hover:bg-amber-700');
+                btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+
+                if (descP) {
+                    descP.textContent = '點擊開始新訓練，計時器幫助你在組間適當休息。';
+                }
+            }
+        }
+
         function startNewWorkout(dateStr = null) {
+            console.log('[DATE DEBUG] startNewWorkout called');
+            console.log('[DATE DEBUG] new Date():', new Date());
+            console.log('[DATE DEBUG] new Date().toString():', new Date().toString());
+            console.log('[DATE DEBUG] new Date().toISOString():', new Date().toISOString());
+            console.log('[DATE DEBUG] new Date().toISOString().split(\'T\')[0]:', new Date().toISOString().split('T')[0]);
+            console.log('[DATE DEBUG] getLocalDateString():', getLocalDateString());
+            console.log('[DATE DEBUG] getTodayStr():', getTodayStr());
+
             const alreadyInFullscreen = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
             console.log(`[DEBUG] startNewWorkout called, alreadyInFullscreen=${alreadyInFullscreen}, hasCurrent=${!!currentWorkout}`);
 
@@ -2334,17 +2728,57 @@ Local Development Instructions:
                 showLoginModal();
                 return;
             }
-            hasExplicitlyStartedTrainingThisSession = true;  // gate for auto-resume prompt
 
-            if (currentWorkout && isValidUnfinishedWorkout(currentWorkout)) {
-                showUnfinishedWorkoutModal();
-                return;  // wait for user to choose resume / discard in the modal
+            // 自動恢復未完成訓練的提示已完全停用（按用戶要求）
+            // 不再彈出 showUnfinishedWorkoutModal()
+            // 如有 currentWorkout（來自 localStorage），會直接重用（或由「今日繼續」邏輯處理）
+
+            // If there's already a currentWorkout loaded from storage, reuse it
+            if (!currentWorkout) {
+                const today = getTodayStr();
+                const date = dateStr || today;
+
+                console.log('[DATE DEBUG] startNewWorkout - dateStr param:', dateStr);
+                console.log('[DATE DEBUG] startNewWorkout - computed today:', today);
+                console.log('[DATE DEBUG] startNewWorkout - final date for newWorkout:', date);
+
+                // === B. 智能「今日繼續」邏輯 ===
+                let loadedFromToday = false;
+                if (date === today) {
+                    loadedFromToday = loadTodayWorkoutIntoCurrent();
+                }
+
+                if (loadedFromToday) {
+                    console.log('[startNewWorkout] 偵測到今日已有訓練紀錄 → 進入繼續模式，preload 了', currentWorkout.exercises.length, '個動作');
+                    console.log('[DATE DEBUG] startNewWorkout - after preload, currentWorkout.date:', currentWorkout.date, 'inherited id:', currentWorkout.id, 'session_id:', currentWorkout.session_id);
+                } else {
+                    currentWorkout = { id: Date.now(), date, exercises: [], notes: '', startTime: Date.now() };
+                    console.log('[DATE DEBUG] startNewWorkout - created new currentWorkout with date:', currentWorkout.date);
+                }
             }
 
-            // If there's already a currentWorkout loaded from storage, reuse it (resume case handled in check)
-            if (!currentWorkout) {
-                const date = dateStr || new Date().toISOString().split('T')[0];
-                currentWorkout = { id: Date.now(), date, exercises: [], notes: '', startTime: Date.now() };
+            console.log('[DATE DEBUG] startNewWorkout - final currentWorkout.date after setup:', currentWorkout ? currentWorkout.date : null);
+
+            // Reset any previous sync status when starting fresh training
+            activeBackgroundSyncs = 0;
+            const syncEl = document.getElementById('sync-status');
+            if (syncEl) syncEl.innerHTML = '';
+
+            // === Auto "接埋" last chosen training set ===
+            // 只有全新空白訓練才自動接 last set；繼續今日訓練已 preload 了內容，跳過。
+            const isContinueMode = !!(currentWorkout && currentWorkout.isContinuedFromToday);
+            if (!isContinueMode && lastWorkoutSetName && currentWorkout && (!currentWorkout.exercises || currentWorkout.exercises.length === 0)) {
+                const lastSet = (workoutSets || []).find(s => s.name === lastWorkoutSetName);
+                if (lastSet && Array.isArray(lastSet.exercises) && lastSet.exercises.length > 0) {
+                    console.log(`[AUTO] Auto-applying last used workout set "${lastWorkoutSetName}" (接埋)`);
+                    lastSet.exercises.forEach(name => {
+                        const ex = getExerciseByName(name);
+                        const displayName = ex ? getExerciseDisplay(ex) : name;
+                        if (!currentWorkout.exercises.find(e => e.name === displayName)) {
+                            currentWorkout.exercises.push({ name: displayName, sets: [] });
+                        }
+                    });
+                }
             }
 
             // Robust tab activation for log: only switch if the content-log is currently hidden.
@@ -2411,7 +2845,7 @@ Local Development Instructions:
 
             const dateInput = document.getElementById('current-workout-date');
             if (dateInput) {
-                dateInput.value = currentWorkout.date || new Date().toISOString().split('T')[0];
+                dateInput.value = currentWorkout.date || getLocalDateString();
             } else {
                 console.warn('[DEBUG] startNewWorkout: #current-workout-date not found');
             }
@@ -2431,6 +2865,27 @@ Local Development Instructions:
                 updateLastPerformedHint();
             } catch (e) {
                 console.warn('[DEBUG] updateLastPerformedHint failed (non-fatal):', e);
+            }
+
+            // === B. 繼續今日訓練的 UI 提示 ===
+            const continueBadge = document.getElementById('continue-badge');
+            const modeTitle = document.getElementById('training-mode-title');
+            const isContinue = !!(currentWorkout && currentWorkout.isContinuedFromToday);
+
+            if (continueBadge) {
+                continueBadge.classList.toggle('hidden', !isContinue);
+            }
+            if (modeTitle) {
+                modeTitle.textContent = isContinue ? '繼續今日訓練' : '進行中訓練';
+            }
+
+            if (isContinue) {
+                // 給用戶一個清楚的一次性提示（mobile friendly）
+                const exCount = (currentWorkout.exercises || []).length;
+                const setCount = (currentWorkout.exercises || []).reduce((sum, ex) => sum + (ex.sets || []).length, 0);
+                try {
+                    showToast(`繼續今日訓練 • 已載入 ${exCount} 動作 / ${setCount} 組`, 2800);
+                } catch (_) {}
             }
 
             // Use cache for instant Workout Sets bar display (key for perceived speed after "開始新訓練")
@@ -2484,7 +2939,49 @@ Local Development Instructions:
         function cancelCurrentWorkout() {
             console.log('[DEBUG] cancelCurrentWorkout called, exiting full-screen');
             if (!currentWorkout) return;
-            if (!confirm('Discard current workout?')) return;
+
+            // C. 放棄也要自動儲存已記錄的組數
+            const hasData = (currentWorkout.exercises || []).some(ex => (ex.sets || []).length > 0);
+            const isContinue = !!currentWorkout.isContinuedFromToday;
+
+            if (hasData) {
+                // 確認時給清楚提示
+                if (!confirm('確定放棄本次訓練？\n之前已記錄的組數會自動背景儲存到 Google（只係唔繼續呢個 session）。')) {
+                    return;
+                }
+
+                // 背景 sync：盡量把這次 session 的內容（preload + 新增）push 一次
+                // 對於 continue 模式，使用 finalizeAndSaveWorkout 以執行 deleteSession + addWorkout，確保不 duplicate
+                if (currentUser) {
+                    // fire-and-forget，非阻塞
+                    const isCont = !!currentWorkout.isContinuedFromToday;
+                    if (isCont) {
+                        finalizeAndSaveWorkout(currentWorkout, currentWorkout.notes || '').then(res => {
+                            if (res && res.status === 'success') {
+                                console.log('[cancel] abandon 時 background save 成功 (continue mode used delete+add)');
+                            }
+                        }).catch(() => {});
+                    } else {
+                        pushCurrentWorkoutToBackend(currentWorkout).then(res => {
+                            if (res && res.status === 'success') {
+                                console.log('[cancel] abandon 時 background push 成功');
+                            }
+                        }).catch(() => {});
+                    }
+                    // 同時更新右上角狀態
+                    try { updateGlobalSyncIndicator('syncing'); } catch (_) {}
+                    setTimeout(() => {
+                        try { updateGlobalSyncIndicator('synced'); } catch (_) {}
+                    }, 1200);
+                }
+
+                try {
+                    showToast('已自動儲存你之前記錄的組數', 3200);
+                } catch (_) {}
+            } else {
+                if (!confirm('Discard current workout?')) return;
+            }
+
             currentWorkout = null;
             const liveP2 = document.getElementById('live-log-panel');
             if (liveP2) {
@@ -2495,7 +2992,7 @@ Local Development Instructions:
             }
             const empty = document.getElementById('log-empty-state');
             if (empty) empty.classList.remove('hidden');
-            resetRestTimer();
+            // resetRestTimer(); // 休息計時器已移除
             exitImmersiveMode();
             saveWorkoutData(); // clear the draft
         }
@@ -2614,6 +3111,26 @@ Local Development Instructions:
 
                 isInFullScreenTraining = false;
 
+                // Reset collapse state for next training session (always start expanded)
+                const topBar = document.getElementById('immersive-sticky-top');
+                if (topBar) topBar.classList.remove('collapsed');
+                _immersiveTopCollapsed = false;
+                const ic = document.getElementById('immersive-collapse-icon');
+                if (ic) {
+                    ic.classList.remove('fa-chevron-down');
+                    ic.classList.add('fa-chevron-up');
+                }
+
+                // Also reset rest timer collapse
+                // const timerContainer = document.getElementById('rest-timer-container'); // 已移除
+                if (timerContainer) timerContainer.classList.remove('timer-collapsed');
+                _restTimerSectionCollapsed = false;
+                const tc = document.getElementById('rest-timer-chevron');
+                if (tc) {
+                    tc.classList.remove('fa-chevron-up');
+                    tc.classList.add('fa-chevron-down');
+                }
+
                 const panel = document.getElementById('live-log-panel');
                 if (panel) {
                     // Reset inline styles so normal layout resumes
@@ -2651,7 +3168,7 @@ Local Development Instructions:
 
                 // Explicit post-exit ensure for timer controls / live panel elements (prevents null in pause/reset after cancel in FS)
                 // These elements live inside live-log-panel, so if panel restored, they should be present.
-                // We don't set values here (let resetRestTimer handle), but log for debug.
+                // (timer 已移除，此行僅為舊 debug 殘留，可刪除)
                 if (!document.getElementById('timer-start-btn') || !document.getElementById('timer-status')) {
                     console.warn('[DEBUG] exitImmersiveMode: timer controls missing after panel restore');
                 }
@@ -2739,19 +3256,390 @@ Local Development Instructions:
             updateLastPerformedHint(displayName);
         }
 
-        function removeExerciseFromCurrent(idx) {
-            console.log(`[DEBUG] removeExerciseFromCurrent called: idx=${idx}`);
+        /**
+         * 3. 改善「加入動作」自動建議：優先顯示 workoutSets（用戶動作倉 / 自訂組合）中最相關的動作
+         * 使用簡單 fuzzy / 包含匹配 + 優先排序。
+         * 動態更新 datalist，mobile 體驗佳（原生 dropdown）。
+         */
+        function updateExerciseSuggestions(query = '') {
+            const datalist = document.getElementById('exercise-datalist');
+            if (!datalist) return;
+
+            const q = (query || '').toLowerCase().trim();
+
+            // 收集來源：workoutSets（最高優先） + lastPerformed（最近用過） + EXERCISES
+            const librarySet = new Set();
+            (workoutSets || []).forEach(ws => {
+                (ws.exercises || []).forEach(name => {
+                    if (name) librarySet.add(name);
+                });
+            });
+
+            const recentSet = new Set(Object.keys(lastPerformed || {}));
+
+            let candidates = [];
+
+            // 1. workoutSets 裡的動作（最高權重）
+            librarySet.forEach(name => candidates.push({ name, score: 100 }));
+
+            // 2. 最近用過的（中高權重），避免重複
+            recentSet.forEach(name => {
+                if (!librarySet.has(name)) candidates.push({ name, score: 80 });
+            });
+
+            // 3. 完整 EXERCISES 作為 fallback
+            (EXERCISES || []).forEach(ex => {
+                const name = ex.name || ex;
+                const already = candidates.find(c => c.name.toLowerCase() === name.toLowerCase());
+                if (!already) {
+                    candidates.push({ name, score: 10 });
+                }
+            });
+
+            // 過濾 + 評分
+            if (q.length > 0) {
+                candidates = candidates.filter(c => c.name.toLowerCase().includes(q)).map(c => {
+                    const lower = c.name.toLowerCase();
+                    let extra = 0;
+                    if (lower.startsWith(q)) extra = 50;
+                    else if (lower.indexOf(q) === 0) extra = 30;
+                    // 如果在 library 裡再加分（已經在 score 基礎上）
+                    if (librarySet.has(c.name)) extra += 20;
+                    if (recentSet.has(c.name)) extra += 10;
+                    return { ...c, score: c.score + extra };
+                });
+            } else {
+                // 無輸入時也優先顯示 library + recent
+                candidates.forEach(c => {
+                    if (librarySet.has(c.name)) c.score += 30;
+                    if (recentSet.has(c.name)) c.score += 15;
+                });
+            }
+
+            // 排序：score 降冪，然後名稱
+            candidates.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.name.localeCompare(b.name);
+            });
+
+            // 限制數量（mobile 避免太長）
+            const top = candidates.slice(0, 28);
+
+            // 重建 datalist
+            datalist.innerHTML = top.map(c => `<option value="${c.name.replace(/"/g, '&quot;')}">`).join('');
+        }
+
+        function removeExerciseFromCurrent(exIdx) {
+            console.log(`[DEBUG] removeExerciseFromCurrent called: exIdx=${exIdx}`);
             if (!currentWorkout) return;
-            if (idx < 0 || idx >= currentWorkout.exercises.length) {
-                console.warn('[DEBUG] removeExerciseFromCurrent: invalid idx');
+            if (exIdx < 0 || exIdx >= currentWorkout.exercises.length) {
+                console.warn('[DEBUG] removeExerciseFromCurrent: invalid exIdx');
                 return;
             }
-            const removedName = currentWorkout.exercises[idx].name;
-            currentWorkout.exercises.splice(idx, 1);
+
+            const ex = currentWorkout.exercises[exIdx];
+            if (!ex) return;
+
+            const removedName = ex.name;
+
+            // 1. 收集已同步到 Google 的 set IDs（只有成功 sync 後才會有 .id ）
+            // 尚未同步的（只有 _clientLogId 或完全沒有）就本地刪除，in-flight add 會被 Finish reconcile
+            const syncedLogIds = (ex.sets || [])
+                .map(s => s.id)
+                .filter(Boolean);
+
+            // 2. 立即從本地移除 exercise（用戶體驗優先，UI 馬上更新）
+            currentWorkout.exercises.splice(exIdx, 1);
             console.log(`[DEBUG] removed exercise "${removedName}", remaining=${currentWorkout.exercises.length}`);
             renderCurrentWorkout();
             updateSessionSummary();
+            saveWorkoutData();
+
+            // 3. 背景刪除後端已同步的數據
+            if (currentUser && syncedLogIds.length > 0) {
+                // 使用現有 backgroundDeleteLog 機制，會正確更新右上角 sync indicator 及 pending count
+                syncedLogIds.forEach(logId => {
+                    backgroundDeleteLog(logId);
+                });
+            }
+
+            // 注意：即使 backgroundDeleteLog 內部 delete 失敗（catch 會 console + 可能設 error indicator），
+            // 我們仍然已本地移除，避免數據不一致。
+            // 如果需要更明確的 toast，可以在 backgroundDeleteLog 的 catch 裡加，但這裡保持靜默為主。
         }
+
+        // === Background Incremental Sync Helpers (for live training) ===
+        let activeBackgroundSyncs = 0;
+
+        async function backgroundSyncNewSet(exerciseName, setObj, sessionId) {
+            if (!currentUser || !sessionId || !setObj) return;
+
+            activeBackgroundSyncs++;
+            updateSyncStatus('syncing');
+
+            // Ensure we have a client ID for tracking synced log ID
+            if (!setObj._clientLogId) {
+                setObj._clientLogId = 'inc_' + Date.now() + Math.random().toString(36).slice(2, 10);
+            }
+
+            console.log('[DATE DEBUG] backgroundSyncNewSet - currentWorkout.date:', currentWorkout ? currentWorkout.date : null);
+            console.log('[DATE DEBUG] backgroundSyncNewSet - fallback getLocalDateString():', getLocalDateString());
+            const logPayload = {
+                id: setObj._clientLogId,
+                session_id: sessionId,
+                date: (currentWorkout && currentWorkout.date) || getLocalDateString(),
+                exercise: exerciseName,
+                weight: setObj.weight || 0,
+                reps: setObj.reps || 0,
+                notes: setObj.notes || '',
+                volume: setObj.volume || ((setObj.weight || 0) * (setObj.reps || 0))
+            };
+            console.log('[DATE DEBUG] backgroundSyncNewSet - logPayload.date:', logPayload.date);
+
+            // Fire-and-forget: non-blocking, local UI already updated
+            callAppsScript("addLog", { user: currentUser, log: logPayload })
+                .then(res => {
+                    activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs - 1);
+                    if (res && res.status === 'success') {
+                        setObj.id = logPayload.id;           // store backend log ID for future delete
+                        setObj._clientLogId = logPayload.id; // for compatibility with deleteSet
+                        setObj._lastSynced = Date.now(); // optional marker
+                        if (activeBackgroundSyncs === 0) {
+                            updateSyncStatus('synced');
+                        }
+                    } else {
+                        console.warn('[backgroundSync] addLog non-success for set', res);
+                        if (activeBackgroundSyncs === 0) updateSyncStatus('error');
+                    }
+                })
+                .catch(err => {
+                    activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs - 1);
+                    console.warn('[backgroundSync] incremental addLog failed (will be reconciled on finish)', err);
+                    if (activeBackgroundSyncs === 0) updateSyncStatus('error');
+                });
+        }
+
+        async function backgroundDeleteLog(logId) {
+            if (!currentUser || !logId) return;
+
+            globalPendingSyncs = Math.max(0, globalPendingSyncs) + 1; // reuse for status
+            updateGlobalSyncIndicator('syncing');
+
+            callAppsScript("deleteLog", { user: currentUser, logId: logId })
+                .then(res => {
+                    globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
+                    if (res && res.status === 'success') {
+                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
+                    } else {
+                        console.warn('[backgroundDelete] failed', res);
+                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('error');
+                    }
+                })
+                .catch(err => {
+                    globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
+                    console.warn('[backgroundDelete] error (will reconcile on finish)', err);
+                    if (globalPendingSyncs === 0) updateGlobalSyncIndicator('error');
+                });
+        }
+
+        function updateSyncStatus(status) {
+            const el = document.getElementById('sync-status');
+            if (el) {
+                if (status === 'syncing') {
+                    el.innerHTML = '↻ 同步中...';
+                    el.style.color = '#fbbf24';
+                } else if (status === 'synced') {
+                    el.innerHTML = '✓ 已備份';
+                    el.style.color = '#4ade80';
+                    setTimeout(() => {
+                        if (el && el.innerHTML.includes('已備份')) el.innerHTML = '';
+                    }, 2500);
+                } else if (status === 'error') {
+                    el.innerHTML = '⚠ 稍後同步';
+                    el.style.color = '#f87171';
+                    setTimeout(() => {
+                        if (el && el.innerHTML.includes('稍後')) el.innerHTML = '';
+                    }, 4500);
+                } else {
+                    el.innerHTML = '';
+                }
+            }
+
+            // Global top-right indicator (A. requirement)
+            updateGlobalSyncIndicator(status);
+        }
+
+        let globalPendingSyncs = 0;
+        let lastSyncError = null;
+
+        function updateGlobalSyncIndicator(status) {
+            const container = document.getElementById('global-sync-indicator');
+            const icon = document.getElementById('sync-icon');
+            const text = document.getElementById('sync-text');
+            if (!container || !icon) return;
+
+            // Manage pending count for multiple concurrent ops
+            if (status === 'syncing') {
+                globalPendingSyncs = Math.max(0, globalPendingSyncs) + 1;
+            } else if (status === 'synced' || status === 'error') {
+                globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
+            }
+
+            container.classList.remove('hidden', 'syncing', 'success', 'error');
+            container.classList.add('flex');
+            text.classList.add('hidden');
+
+            if (globalPendingSyncs > 0 || status === 'syncing') {
+                container.classList.add('syncing');
+                icon.className = 'fa-solid fa-sync fa-spin text-[9px] sm:text-[10px]';
+                text.classList.remove('hidden');
+                text.textContent = '同步中';
+                container.title = '正在上傳數據到 Google...';
+                container.onclick = null;
+            } else if (status === 'synced' || (status === 'idle' && globalPendingSyncs === 0)) {
+                container.classList.add('success');
+                icon.className = 'fa-solid fa-check text-[9px] sm:text-[10px]';
+                text.classList.add('hidden');
+                container.title = '最近同步成功';
+                // Auto hide success after short time
+                setTimeout(() => {
+                    if (container && container.classList.contains('success') && globalPendingSyncs === 0) {
+                        container.classList.remove('flex', 'success');
+                        container.classList.add('hidden');
+                    }
+                }, 2200);
+                container.onclick = null;
+            } else if (status === 'error') {
+                container.classList.add('error');
+                icon.className = 'fa-solid fa-exclamation-triangle text-[9px] sm:text-[10px]';
+                text.classList.remove('hidden');
+                text.textContent = '失敗';
+                container.title = '同步失敗，點擊重試';
+                lastSyncError = { time: Date.now() };
+                container.onclick = () => {
+                    container.onclick = null;
+                    // Simple retry: re-trigger last known pending if any, or just hide error
+                    container.classList.remove('error', 'flex');
+                    container.classList.add('hidden');
+                    // In real use, we could re-queue last op, but for simplicity clear
+                    showToast('已清除錯誤狀態，下次操作會重試同步', 2000);
+                };
+            } else {
+                // idle
+                container.classList.remove('flex', 'syncing', 'success', 'error');
+                container.classList.add('hidden');
+                container.onclick = null;
+            }
+        }
+
+        // Expose for retry if needed
+        window.retryLastSyncIfError = function() {
+            const ind = document.getElementById('global-sync-indicator');
+            if (ind) ind.click();
+        };
+
+        /* ============================================================
+           A. 初始載入狀態指示器 (Initial Load Status in header right)
+           用於登入成功或已登入刷新時的 getLogs + workoutHistory 重建
+           status: 'loading' | 'success' | 'error'
+        ============================================================ */
+        let _initialLoadRetryFn = null;
+
+        function showInitialSyncStatus(status) {
+            const container = document.getElementById('initial-load-indicator');
+            const icon = document.getElementById('initial-sync-icon');
+            const text = document.getElementById('initial-sync-text');
+            if (!container || !icon) return;
+
+            container.classList.remove('hidden', 'loading', 'success', 'error');
+            container.classList.add('flex');
+            if (text) text.classList.add('hidden');
+
+            if (status === 'loading') {
+                container.classList.add('loading');
+                icon.className = 'fa-solid fa-spinner fa-spin text-[9px] sm:text-[10px]';
+                if (text) {
+                    text.classList.remove('hidden');
+                    text.textContent = '載入中';
+                }
+                container.title = '正在從 Google 載入訓練記錄...';
+                container.onclick = null;
+                container.style.cursor = 'default';
+            } else if (status === 'success') {
+                container.classList.add('success');
+                icon.className = 'fa-solid fa-check text-[9px] sm:text-[10px]';
+                if (text) text.classList.add('hidden');
+                container.title = '載入成功';
+                container.onclick = null;
+                container.style.cursor = 'default';
+                // 短暫顯示綠剔 1.2–1.8s 後隱藏（或轉靜態）
+                setTimeout(() => {
+                    if (container && container.classList.contains('success')) {
+                        container.classList.remove('flex', 'success');
+                        container.classList.add('hidden');
+                    }
+                }, 1450);
+            } else if (status === 'error') {
+                container.classList.add('error');
+                icon.className = 'fa-solid fa-exclamation-triangle text-[9px] sm:text-[10px]';
+                if (text) {
+                    text.classList.remove('hidden');
+                    text.textContent = '失敗';
+                }
+                container.title = '載入失敗，點擊重試';
+                container.style.cursor = 'pointer';
+                container.onclick = () => {
+                    container.onclick = null;
+                    container.classList.remove('flex', 'error');
+                    container.classList.add('hidden');
+                    // 觸發重試
+                    if (typeof _initialLoadRetryFn === 'function') {
+                        _initialLoadRetryFn();
+                    } else {
+                        // fallback: 重新整理（或可呼叫 loadUserLogs）
+                        if (currentUser && typeof loadUserLogs === 'function') {
+                            loadUserLogs().catch(() => {});
+                        }
+                    }
+                };
+            } else {
+                // idle / hide
+                container.classList.remove('flex', 'loading', 'success', 'error');
+                container.classList.add('hidden');
+                container.onclick = null;
+                container.style.cursor = 'default';
+            }
+        }
+
+        // Helper: register a retry function (usually re-runs the login/refresh load sequence)
+        function setInitialLoadRetry(fn) {
+            _initialLoadRetryFn = (typeof fn === 'function') ? fn : null;
+        }
+
+        // 公開重試函數，給 log 內部 loading 錯誤畫面的重試按鈕使用
+        window.retryLoadUserLogs = function() {
+            if (currentUser && typeof loadUserLogs === 'function') {
+                loadUserLogs().catch(() => {});
+            }
+        };
+
+        // beforeunload protection for pending background syncs (D.)
+        window.addEventListener('beforeunload', function (e) {
+            if (globalPendingSyncs > 0 || isFinishingWorkout) {
+                const msg = '數據正在背景同步到 Google，建議等待完成再離開頁面。';
+                e.preventDefault();
+                e.returnValue = msg;
+                return msg;
+            }
+        });
+
+        // Optional: try to flush on hide (visibilitychange)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden' && (globalPendingSyncs > 0 || isFinishingWorkout)) {
+                // Best effort: the keepalive fetches from finish should help
+                console.log('[sync] page hidden with pending syncs - keepalive should help');
+            }
+        });
 
         function addSetToExercise(exIdx) {
             if (!currentWorkout) return;
@@ -2768,7 +3656,13 @@ Local Development Instructions:
             }
 
             const vol = weight * reps;
-            const newSet = { weight, reps, notes: '', volume: vol };
+            const newSet = { 
+                weight, 
+                reps, 
+                notes: '', 
+                volume: vol,
+                _clientLogId: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)  // for delete sync
+            };
 
             ex.sets.push(newSet);
 
@@ -2783,11 +3677,16 @@ Local Development Instructions:
             updateSessionSummary();
             saveWorkoutData();
 
-            // Auto-start rest timer (very useful between sets)
-            if (!restTimerRunning && restTimeLeft <= 5) {
-                resetRestTimer(DEFAULT_REST);
-                startRestTimer();
+            // === Background incremental upload (non-blocking) ===
+            // Local is always instant; this is best-effort partial backup during training.
+            // IMPORTANT: 訓練中 incremental sync 只係 best-effort。
+            // Finish 流程（confirmFinishWorkout）會使用 finalizeAndSaveWorkout 做 deleteSession + addWorkout，
+            // 確保最終只有一次乾淨、有正確 session_id 的完整 workout。
+            if (currentUser && currentWorkout && currentWorkout.id) {
+                backgroundSyncNewSet(ex.name, newSet, currentWorkout.id);
             }
+
+            // (休息計時器已移除，無需自動啟動)
         }
 
         function deleteSet(exIdx, setIdx) {
@@ -2816,9 +3715,16 @@ Local Development Instructions:
             }
 
             // Perform deletion
+            const deletedSet = ex.sets[setIdx];
             ex.sets.splice(setIdx, 1);
 
             console.log(`[DEBUG] deleteSet: removed set, remaining sets for ex ${exIdx}: ${ex.sets.length}`);
+
+            // Background delete sync if we have the synced log id (id or _clientLogId for backward)
+            const logId = deletedSet && (deletedSet.id || deletedSet._clientLogId);
+            if (currentUser && logId) {
+                backgroundDeleteLog(logId);
+            }
 
             // Re-render everything for consistency (works in fullscreen + normal mode)
             renderCurrentWorkout();
@@ -3124,9 +4030,33 @@ Local Development Instructions:
             } catch (e) {}
         }
 
+        /*
+          === 休息計時器相關函數（已完全移除 UI）===
+          以下函數因為需求 2 而不再使用，可安全刪除或整個區塊註解掉：
+            - setRestPreset
+            - resetRestTimer
+            - updateTimerDisplay
+            - startRestTimer
+            - pauseRestTimer
+            - addTimeToTimer
+            - playBeep   (僅 timer 用)
+            - toggleRestTimerSection (已刪除)
+            - 相關變數：restTimerInterval, restTimeLeft, restTimerRunning, DEFAULT_REST, _restTimerSectionCollapsed
+
+          目前保留函數定義是為了避免舊程式碼呼叫時出錯（非關鍵路徑已清理）。
+          建議之後做大掃除時整段刪除。
+        */
+
         // --- Finish Workout + PR Detection + Charity ---
         function finishCurrentWorkout() {
             console.log('[DEBUG] finishCurrentWorkout called. currentWorkout=', currentWorkout, 'isFullscreen=', document.body.classList.contains('fullscreen-training'));
+
+            // Simple debounce + guard for rapid mobile taps on "完成訓練" button
+            const now = Date.now();
+            if (now - lastFinishClick < 250) return;
+            lastFinishClick = now;
+
+            if (isFinishingWorkout) return;  // prevent while confirming
 
             if (!currentWorkout) {
                 console.warn('[DEBUG] finishCurrentWorkout: no currentWorkout');
@@ -3206,6 +4136,10 @@ Local Development Instructions:
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
+            // Disable the bottom immersive finish button while modal is open (prevents duplicate finish attempts)
+            const immersiveBtn = document.getElementById('immersive-finish-btn');
+            if (immersiveBtn) immersiveBtn.disabled = true;
+
             // Auto-focus notes
             setTimeout(() => {
                 if (notesEl) notesEl.focus();
@@ -3261,6 +4195,9 @@ Local Development Instructions:
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
             }
+            // Re-enable the immersive finish button (in case user cancelled the modal)
+            const immersiveBtn = document.getElementById('immersive-finish-btn');
+            if (immersiveBtn) immersiveBtn.disabled = false;
         }
 
         // Simple premium toast for success feedback (works in normal + fullscreen)
@@ -3277,38 +4214,92 @@ Local Development Instructions:
             }, timeout);
         }
 
-        function confirmFinishWorkout() {
+        // Optional reusable helper (for future buttons or refactors)
+        // Usage example:
+        //   const btn = document.getElementById('foo');
+        //   await withAsyncButtonLock(btn, '儲存中...', async () => { await doSomething(); });
+        async function withAsyncButtonLock(btn, loadingHtml, actionFn) {
+            if (!btn || btn.disabled) return;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('opacity-70', 'cursor-wait');
+            btn.innerHTML = loadingHtml || `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> 處理中...`;
+            try {
+                return await Promise.resolve().then(() => actionFn());
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70', 'cursor-wait');
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        // === Immersive sticky top collapse/expand ===
+        // Mobile-friendly: 44px+ tap target (top-right), Tailwind transition + class toggle.
+        // When collapsed (.collapsed added): hides the header (title + sets-bar) + rest timer.
+        // ONLY the session-summary bar remains visible (volume / sets / tonnes stats).
+        let _immersiveTopCollapsed = false;
+        function toggleImmersiveTopCollapse() {
+            const top = document.getElementById('immersive-sticky-top');
+            if (!top) return;
+            _immersiveTopCollapsed = !_immersiveTopCollapsed;
+            top.classList.toggle('collapsed', _immersiveTopCollapsed);
+            const icon = document.getElementById('immersive-collapse-icon');
+            if (icon) {
+                if (_immersiveTopCollapsed) {
+                    icon.classList.remove('fa-chevron-up');
+                    icon.classList.add('fa-chevron-down');
+                } else {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                }
+            }
+        }
+
+        // NEW: Allow the Rest Timer section itself to be collapsed / "收埋"
+        // This hides the presets + secondary controls (timer-controls), but keeps the timer display + Start button visible in a compact form.
+        // Gives users maximum scroll space in immersive mode while still having quick access to rest timing.
+        // toggleRestTimerSection + _restTimerSectionCollapsed 已移除（休息計時器完全刪除）
+        // 可以安全刪除以上變數與函數。
+
+        async function confirmFinishWorkout() {
+            console.log('[DATE DEBUG] confirmFinishWorkout called');
+            console.log('[DATE DEBUG] new Date():', new Date());
+            console.log('[DATE DEBUG] new Date().toISOString():', new Date().toISOString());
+            console.log('[DATE DEBUG] getLocalDateString():', getLocalDateString());
+
             if (!currentWorkout) return;
+
+            const isContinue = !!currentWorkout.isContinuedFromToday;
+            const hasSid = !!(currentWorkout.id || currentWorkout.session_id || currentWorkout.sessionId);
+
+            console.log('[FINISH DEBUG] confirmFinishWorkout called, isContinue:', isContinue, 'hasSid:', hasSid, 'current id:', currentWorkout.id, 'session_id:', currentWorkout.session_id || currentWorkout.sessionId);
+
+            // 簡單防重複點擊 guard（防止極短時間內連擊，不影響 UI 退出速度）
+            if (isFinishingWorkout) return;
+            isFinishingWorkout = true;
 
             const notes = document.getElementById('finish-notes').value.trim();
             currentWorkout.notes = notes;
 
-            // Compute final volume before nulling
             const finalVol = calculateWorkoutVolume(currentWorkout);
             currentWorkout.totalVolume = finalVol;
 
-            // Add to history (newest first)
-            workoutHistory.unshift(currentWorkout);
+            console.log('[DATE DEBUG] confirmFinishWorkout - currentWorkout.date before save:', currentWorkout.date);
 
-            // Rebuild last performed
+            // Capture snapshot 供背景儲存使用
+            const workoutToSave = JSON.parse(JSON.stringify(currentWorkout));
+
+            console.log('[DATE DEBUG] confirmFinishWorkout - workoutToSave.date:', workoutToSave.date, 'exercises count:', (workoutToSave.exercises || []).length);
+
+            // === 立即退出介面（無任何 loading / 等待提示） ===
+            // 1. 本地立即更新（歷史 + 持久化）
+            workoutHistory.unshift(workoutToSave);
             rebuildLastPerformed();
-
-            // Optional: Push to backend for sync
-            if (typeof pushCurrentWorkoutToLegacyGAS === 'function') {
-                pushCurrentWorkoutToLegacyGAS(currentWorkout).catch(console.warn);
-            }
-
-            // Capture for toast
-            const finishedTonnes = (finalVol / 1000).toFixed(2);
-
-            // Reset UI - use defensive gets
-            hideFinishModal();
-            const finishedDate = currentWorkout ? currentWorkout.date : '';
-            const volForToast = currentWorkout ? calculateWorkoutVolume(currentWorkout) : 0;
-            currentWorkout = null;
-
-            // Save AFTER clearing currentWorkout so storage is clean and no more resume prompts on next load
             saveWorkoutData();
+
+            // 2. 立即隱藏 summary modal 及退出 immersive
+            hideFinishModal();
+            currentWorkout = null;
 
             const liveP2 = document.getElementById('live-log-panel');
             if (liveP2) {
@@ -3321,19 +4312,97 @@ Local Development Instructions:
             const emptyState = document.getElementById('log-empty-state');
             if (emptyState) emptyState.classList.remove('hidden');
 
-            resetRestTimer();
             exitImmersiveMode();
 
-            // Refresh all views
-            try { renderWorkoutHistory(); } catch (e) { console.warn('renderWorkoutHistory after finish failed:', e); }
-            try { renderOverallStats(); } catch (e) { console.warn('renderOverallStats after finish failed:', e); }
-            try { renderCalendar(); } catch (e) { console.warn('renderCalendar after finish failed:', e); }
-            try { updateExerciseSelectForAnalysis(); } catch (e) { console.warn('updateExerciseSelectForAnalysis after finish failed:', e); }
+            // 3. 立即刷新歷史（用戶可即時看到新紀錄）
+            try { renderWorkoutHistory(); } catch (e) {}
+            try { renderOverallStats(); } catch (e) {}
+            try { renderCalendar(); } catch (e) {}
+            try { updateExerciseSelectForAnalysis(); } catch (e) {}
 
-            // Show toast (use captured tonnes, delay to after DOM updates)
-            setTimeout(() => {
-                showToast(`🎉 訓練已儲存！你今日移動了 ${finishedTonnes} 噸。感謝你的慈善貢獻！`, 4200);
-            }, 150);
+            // 4. 簡單即時 toast（無阻塞，快速消失）
+            showToast('訓練已記錄', 2200);
+
+            // 重置 guard（UI 已完全退出）
+            isFinishingWorkout = false;
+
+            // === 背景默默儲存（deleteSession + addWorkout + keepalive） ===
+            // 完全不阻塞、不顯示狀態、不彈錯誤 toast 給用戶
+            if (currentUser) {
+                const willDelete = !!(workoutToSave.id || workoutToSave.session_id || workoutToSave.sessionId);
+                console.log('[FINISH DEBUG] confirmFinishWorkout - starting bg save, will do deleteSession first?', willDelete, 'sid:', workoutToSave.id || workoutToSave.session_id || workoutToSave.sessionId);
+                setTimeout(() => {
+                    finalizeAndSaveWorkout(workoutToSave, notes)
+                        .then((res) => {
+                            if (res && res.status === 'success') {
+                                // 可選：靜默更新 indicator（不影響已退出的畫面）
+                                try { updateGlobalSyncIndicator('synced'); } catch (_) {}
+                                console.log('[FINISH DEBUG] confirmFinishWorkout - bg save SUCCESS, exercises in payload:', (workoutToSave.exercises || []).length);
+                            } else {
+                                console.warn('[FINISH DEBUG] confirmFinishWorkout - bg save non-success:', res);
+                            }
+                        })
+                        .catch((e) => {
+                            // 完全靜默，僅 console
+                            console.warn('[FINISH DEBUG] confirmFinishWorkout - bg save ERROR (本地已安全):', e);
+                        });
+                }, 0);
+            }
+        }
+
+
+
+
+        /**
+         * Helper：執行「先刪後寫」的乾淨儲存
+         * 用於 confirmFinishWorkout 及未來其他需要 reconcile 的地方（例如歷史大幅編輯）。
+         * 強烈建議 Finish 流程使用此 helper 保證一致性。
+         */
+        async function finalizeAndSaveWorkout(workout, notes = '') {
+            console.log('[DATE DEBUG] finalizeAndSaveWorkout called');
+            console.log('[DATE DEBUG] finalizeAndSaveWorkout - input workout.date:', workout.date);
+            console.log('[DATE DEBUG] finalizeAndSaveWorkout - getLocalDateString():', getLocalDateString());
+
+            if (!currentUser || !workout) {
+                return { status: 'skipped', message: 'no user or workout' };
+            }
+
+            const sid = String(
+                workout.id || workout.session_id || workout.sessionId || Date.now()
+            );
+
+            const isContinueSave = !!workout.isContinuedFromToday || !!workout._originalSessionIds || (workout.id && workoutHistory.some(h => (h.id === workout.id || h.session_id === workout.id) && normalizeDateToLocal(h.date) === normalizeDateToLocal(workout.date)));
+            console.log('[FINISH DEBUG] finalizeAndSaveWorkout - sid for delete/add:', sid, 'isContinueSave:', isContinueSave, 'has original id:', !!workout.id, 'ex count:', (workout.exercises || []).length);
+
+            // 先刪（清 background incremental 可能造成的重複）
+            let didDelete = false;
+            try {
+                await callAppsScript("deleteSession", {
+                    user: currentUser,
+                    sessionId: sid
+                }, { keepalive: true });
+                didDelete = true;
+                console.log('[FINISH DEBUG] finalizeAndSaveWorkout - deleteSession done for sid:', sid);
+            } catch (e) {
+                console.warn('[FINISH DEBUG] finalizeAndSaveWorkout - deleteSession 警告（繼續寫入）:', e);
+            }
+
+            // 再寫完整最新版本
+            const payload = {
+                session_id: sid,
+                date: workout.date || getLocalDateString(),
+                exercises: workout.exercises || [],
+                notes: notes || ''
+            };
+
+            console.log('[FINISH DEBUG] finalizeAndSaveWorkout - will addWorkout with sid:', sid, 'date:', payload.date, 'exercises:', payload.exercises.length, 'didDelete:', didDelete);
+
+            const addResult = await callAppsScript("addWorkout", {
+                user: currentUser,
+                workout: payload
+            }, { keepalive: true });
+            console.log('[FINISH DEBUG] finalizeAndSaveWorkout - addWorkout result:', addResult ? addResult.status : 'null', 'for sid:', sid);
+            return addResult;
         }
 
         async function pushCurrentWorkoutToLegacyGAS(workout) {
@@ -3357,6 +4426,53 @@ Local Development Instructions:
                         });
                     } catch (e) { console.warn('GAS save set failed', e); }
                 }
+            }
+        }
+
+        /**
+         * 新增的乾淨 bulk push（Priority 1 核心）
+         * 使用單一 addWorkout endpoint，一次過儲存整個 workout + exercises + sets + session_id
+         * 絕不使用舊的 per-set loop。
+         * 良好 error handling：永遠回傳結果物件，caller 決定如何處理。
+         */
+        async function pushCurrentWorkoutToBackend(workout) {
+            if (!currentUser || !APPS_SCRIPT_URL || !workout) {
+                return { status: 'skipped', message: 'no currentUser or invalid workout' };
+            }
+            try {
+                // 確保有穩定的 session_id（用於 deleteSession 及 load 時 grouping）
+                const sessionId = String(workout.id || workout.session_id || workout.sessionId || Date.now());
+                workout.id = sessionId; // 回寫，方便本地 history 一致性
+
+                console.log('[DATE DEBUG] pushCurrentWorkoutToBackend - workout.date:', workout.date, '-> using:', workout.date || getLocalDateString());
+                const payload = {
+                    session_id: sessionId,
+                    date: workout.date || getLocalDateString(),
+                    exercises: (workout.exercises || []).map(ex => ({
+                        name: ex.name || '',
+                        sets: (ex.sets || []).map(set => ({
+                            weight: parseFloat(set.weight) || 0,
+                            reps: parseInt(set.reps) || 0,
+                            notes: set.notes || '',
+                            volume: (set.volume != null ? parseFloat(set.volume) : (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0))
+                        }))
+                    })),
+                    notes: workout.notes || ''
+                };
+
+                const result = await callAppsScript("addWorkout", {
+                    user: currentUser,
+                    workout: payload
+                });
+
+                if (result && result.status === 'success') {
+                    return result;
+                }
+                console.warn('[pushCurrentWorkoutToBackend] backend returned non-success:', result);
+                return result || { status: 'error', message: 'Backend did not confirm success' };
+            } catch (err) {
+                console.error('[pushCurrentWorkoutToBackend] exception:', err);
+                return { status: 'error', message: err && err.message ? err.message : String(err) };
             }
         }
 
@@ -3532,6 +4648,9 @@ Local Development Instructions:
                     // No change to what we rendered initially; bar stays usable.
                 }
             }
+
+            // 建議自動完成：當 workoutSets 更新後，刷新 datalist 優先順序
+            try { updateExerciseSuggestions(''); } catch (_) {}
         }
 
         function renderWorkoutSetsBar() {
@@ -3559,9 +4678,19 @@ Local Development Instructions:
             // Render one button per set (click loads directly into training flow)
             (workoutSets || []).forEach(set => {
                 const btn = document.createElement('button');
-                btn.className = 'text-xs px-3 py-1 bg-[#166534] hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl transition';
-                btn.title = '載入此訓練組合到目前訓練';
+                let cls = 'text-xs px-3 py-1 bg-[#166534] hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl transition';
+                const isLast = lastWorkoutSetName && set.name === lastWorkoutSetName;
+                if (isLast) {
+                    cls += ' ring-2 ring-emerald-400 ring-offset-1 ring-offset-[#1c1917]';  // highlight as "last used / auto 接埋"
+                    btn.title = '上次使用的訓練組合（下次開始新訓練會自動接續）';
+                } else {
+                    btn.title = '載入此訓練組合到目前訓練';
+                }
+                btn.className = cls;
                 btn.innerHTML = `<span class="font-medium">${set.name}</span>`;
+                if (isLast) {
+                    btn.innerHTML += ` <span class="text-[10px] opacity-70">✓</span>`;
+                }
                 btn.onclick = (e) => {
                     console.log(`[DEBUG] Workout Set button clicked in bar (fullscreen=${isFs}): ${set.name}`);
                     loadWorkoutSet(set);
@@ -3640,9 +4769,24 @@ Local Development Instructions:
             renderCurrentWorkout();
             updateSessionSummary();
 
+            // Remember this choice so next time user starts a new workout, we can auto "接埋" it
+            lastWorkoutSetName = set.name;
+            saveWorkoutData();
+
             // Re-render the sets bar while in fullscreen so it stays fresh and interactive
             if (typeof renderWorkoutSetsBar === 'function') {
                 renderWorkoutSetsBar();
+            }
+
+            // Auto-collapse the top sticky bar (header + timer hidden) after the user selects a training set.
+            // Only the session-summary bar remains visible. This gives more room for the exercise list right after picking a 訓練組合.
+            if (isFullscreen) {
+                const topBar = document.getElementById('immersive-sticky-top');
+                if (topBar && !topBar.classList.contains('collapsed')) {
+                    if (typeof toggleImmersiveTopCollapse === 'function') {
+                        toggleImmersiveTopCollapse();
+                    }
+                }
             }
 
             // Explicit guarantee: we never want to exit full-screen just because user loaded a preset Set.
@@ -3901,6 +5045,7 @@ Local Development Instructions:
             fullName: "訓練日 3（Legs + Shoulders + Forearms + Core）",
             exercises: [
               "澤奇深蹲 (Zercher Squats)",
+              "指力彎舉 (Finger Curls)",
               "反向腕彎舉 (Reverse Forearm Curl)",
               "側舉 (Lateral Raises)",
               "後飛 (Rear Delt Raises)",
@@ -3989,9 +5134,11 @@ Local Development Instructions:
          * renderWorkoutHistory() 及 renderCalendar() 都應使用此函數，確保邏輯一致。
          */
         function groupWorkoutsByDate(workouts = workoutHistory) {
+            console.log('[DATE DEBUG] groupWorkoutsByDate called');
             const grouped = {};
             (workouts || []).forEach(w => {
-                const d = (w.date || '').split('T')[0];
+                const d = normalizeDateToLocal(w.date);
+                console.log('[DATE DEBUG] groupWorkoutsByDate - raw w.date:', w.date, '-> normalized d:', d);
                 if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
                 if (!grouped[d]) {
                     grouped[d] = {
@@ -4028,13 +5175,18 @@ Local Development Instructions:
             }
 
             // 組成與 renderWorkoutHistory 點擊時相同的 merged 物件
+            // 同時附帶 _sessionIds，方便 save/delete 時精準 sync backend（deleteSession + re-push）
+            const sessionIds = (g.workouts || [])
+                .map(w => w.id || w.session_id || w.sessionId)
+                .filter(Boolean);
             const merged = {
                 date: g.date,
                 exercises: g.exercises ? [...g.exercises] : [],
                 totalVolume: g.totalVolume,
                 notes: g.notes || '',
                 _isDayGroup: true,
-                _originalCount: g.workouts.length
+                _originalCount: g.workouts.length,
+                _sessionIds: sessionIds
             };
 
             showWorkoutDetail(merged, -1);
@@ -4054,7 +5206,7 @@ Local Development Instructions:
             if (!modal) {
                 console.error('#historyEditModal not found — falling back to legacy behaviour');
                 // 極少數 fallback（保留舊行為以防萬一）
-                const cleanDate = (original.date || '').split('T')[0];
+                const cleanDate = normalizeDateToLocal(original.date);
                 if (confirm(`日期: ${cleanDate}\n\n確定刪除這次訓練？`)) {
                     workoutHistory.splice(currentViewingHistoryIndex, 1);
                     saveWorkoutData();
@@ -4067,7 +5219,7 @@ Local Development Instructions:
 
             // 設定標題日期
             const dateEl = document.getElementById('history-edit-date');
-            if (dateEl) dateEl.textContent = (currentViewingHistory.date || '').split('T')[0] || '未知日期';
+            if (dateEl) dateEl.textContent = normalizeDateToLocal(currentViewingHistory.date) || '未知日期';
 
             // 顯示 modal
             modal.classList.remove('hidden');
@@ -4153,10 +5305,17 @@ Local Development Instructions:
                                 <div class="font-semibold text-sm">${ex.name}</div>
                                 <div class="text-[10px] text-[#a8a29e]">${getMuscleGroup ? getMuscleGroup(ex.name) : ''}</div>
                             </div>
-                            <button onclick="addSetToHistoryExercise(${exIdx})"
-                                    class="px-2.5 py-1 text-xs bg-emerald-900/60 hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl flex items-center gap-1">
-                                <i class="fa-solid fa-plus text-[10px]"></i> <span>加組</span>
-                            </button>
+                            <div class="flex items-center gap-1">
+                                <button onclick="addSetToHistoryExercise(${exIdx})"
+                                        class="px-2.5 py-1 text-xs bg-emerald-900/60 hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl flex items-center gap-1">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> <span>加組</span>
+                                </button>
+                                <button onclick="deleteHistoryExercise(${exIdx})"
+                                        class="px-1.5 py-1 text-xs text-red-400 hover:text-red-300 active:bg-red-900/30 rounded"
+                                        title="刪除此動作">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="space-y-0.5">
                             ${setsHtml}
@@ -4211,87 +5370,240 @@ Local Development Instructions:
             renderHistoryEditContent();
         }
 
-        function saveHistoryEdit() {
+        /**
+         * 刪除整個動作（exercise-log-card）
+         * 從 currentViewingHistory.exercises 移除，並重新計算總量 + re-render
+         */
+        function deleteHistoryExercise(exIdx) {
+            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
+            if (exIdx < 0 || exIdx >= currentViewingHistory.exercises.length) return;
+
+            currentViewingHistory.exercises.splice(exIdx, 1);
+            renderHistoryEditContent();  // 會自動更新總量和 DOM
+        }
+
+        async function saveHistoryEdit() {
             if (!currentViewingHistory) {
                 closeHistoryEditModal();
                 return;
             }
 
-            const isDayGroup = !!currentViewingHistory._isDayGroup;
-            const d = (currentViewingHistory.date || '').split('T')[0];
+            if (isSavingHistory) return;
+            isSavingHistory = true;
 
-            if (isDayGroup) {
-                // 日期群組虛擬物件：刪除該日所有舊記錄，然後用編輯後的合併版本替換（合併為單一記錄）
-                workoutHistory = workoutHistory.filter(w => (w.date || '').split('T')[0] !== d);
+            // Use ids for reliable targeting + immediate disable
+            const saveBtn = document.getElementById('save-history-btn');
+            const deleteBtn = document.getElementById('delete-history-btn');
+            const origSaveHtml = saveBtn ? saveBtn.innerHTML : '';
+            const origDeleteHtml = deleteBtn ? deleteBtn.innerHTML : '';
 
-                // 清理特殊標記
-                delete currentViewingHistory._isDayGroup;
-                delete currentViewingHistory._originalCount;
-
-                // 重新計算 volume 確保正確
-                currentViewingHistory.totalVolume = calculateWorkoutVolume(currentViewingHistory);
-
-                // 插入合併後的單一記錄（置頂）
-                workoutHistory.unshift(currentViewingHistory);
-            } else {
-                // 單一記錄正常處理
-                let targetIdx = currentViewingHistoryIndex;
-                if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
-                    (workoutHistory[targetIdx] && (workoutHistory[targetIdx].date || '').split('T')[0] !== d)) {
-                    targetIdx = workoutHistory.findIndex(w => (w.date || '').split('T')[0] === d);
+            try {
+                // Disable both buttons during save (prevents double tap on mobile)
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.classList.add('opacity-70', 'cursor-wait');
+                    saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> 儲存中...`;
+                }
+                if (deleteBtn) {
+                    deleteBtn.disabled = true;
+                    deleteBtn.classList.add('opacity-50', 'cursor-wait');
                 }
 
-                if (targetIdx >= 0) {
-                    workoutHistory[targetIdx] = currentViewingHistory;
-                } else {
+                const isDayGroup = !!currentViewingHistory._isDayGroup;
+                const d = normalizeDateToLocal(currentViewingHistory.date);
+
+                // === Priority 2: 先 sync backend，再更新本地（失敗即 revert）===
+                if (currentUser) {
+                    // 準備要刪除的舊 session(s)
+                    let oldSessionIds = [];
+                    if (isDayGroup) {
+                        oldSessionIds = (currentViewingHistory._sessionIds || []).slice();
+                    } else {
+                        const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
+                        if (sid) oldSessionIds = [sid];
+                    }
+
+                    // 清理 dayGroup 標記，準備推送版本（保持 exercises 為合併後狀態）
+                    const toPush = JSON.parse(JSON.stringify(currentViewingHistory));
+                    delete toPush._isDayGroup;
+                    delete toPush._originalCount;
+                    delete toPush._sessionIds;
+                    if (!toPush.id) toPush.id = Date.now().toString();
+
+                    try {
+                        updateGlobalSyncIndicator('syncing');
+                        // 1. 刪除舊 session（支援 dayGroup 多個） + C. 刪除操作也更新狀態
+                        for (const sid of oldSessionIds) {
+                            const delRes = await callAppsScript("deleteSession", { user: currentUser, sessionId: sid });
+                            if (delRes && delRes.status === 'error') {
+                                throw new Error(delRes.message || 'deleteSession failed');
+                            }
+                        }
+                        // 2. 用單一 addWorkout 重推更新後版本（bulk）
+                        const pushRes = await pushCurrentWorkoutToBackend(toPush);
+                        if (!pushRes || pushRes.status !== 'success') {
+                            throw new Error(pushRes && pushRes.message ? pushRes.message : 'addWorkout push failed');
+                        }
+                        // 成功後同步 id 回 clone
+                        currentViewingHistory.id = toPush.id;
+                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
+                    } catch (err) {
+                        console.error('[saveHistoryEdit] backend sync failed, revert:', err);
+                        updateGlobalSyncIndicator('error');
+                        showToast('❌ 同步後端失敗，修改未保存。請檢查網絡後重試。', 5500);
+                        closeHistoryEditModal();
+                        return; // 不執行本地 mutation
+                    }
+                }
+
+                // Backend 成功（或無登入），才執行本地更新
+                if (isDayGroup) {
+                    // 日期群組虛擬物件：刪除該日所有舊記錄，然後用編輯後的合併版本替換（合併為單一記錄）
+                    workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
+
+                    // 清理特殊標記
+                    delete currentViewingHistory._isDayGroup;
+                    delete currentViewingHistory._originalCount;
+                    delete currentViewingHistory._sessionIds;
+
+                    // 重新計算 volume 確保正確
+                    currentViewingHistory.totalVolume = calculateWorkoutVolume(currentViewingHistory);
+
+                    // 插入合併後的單一記錄（置頂）
                     workoutHistory.unshift(currentViewingHistory);
+                } else {
+                    // 單一記錄正常處理
+                    let targetIdx = currentViewingHistoryIndex;
+                    if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
+                        (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
+                        targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
+                    }
+
+                    if (targetIdx >= 0) {
+                        workoutHistory[targetIdx] = currentViewingHistory;
+                    } else {
+                        workoutHistory.unshift(currentViewingHistory);
+                    }
+
+                    const finalVol = calculateWorkoutVolume(currentViewingHistory);
+                    const slot = (targetIdx >= 0 ? targetIdx : 0);
+                    if (workoutHistory[slot]) {
+                        workoutHistory[slot].totalVolume = finalVol;
+                    }
                 }
 
-                const finalVol = calculateWorkoutVolume(currentViewingHistory);
-                const slot = (targetIdx >= 0 ? targetIdx : 0);
-                if (workoutHistory[slot]) {
-                    workoutHistory[slot].totalVolume = finalVol;
+                // 持久化 + 刷新所有相關 UI（包括日曆，避免同一日顯示不一致）
+                saveWorkoutData();
+                try { renderWorkoutHistory(); } catch (e) {}
+                try { renderOverallStats(); } catch (e) {}
+                try { renderCalendar(); } catch (e) {}
+
+                // 同步更新開始訓練按鈕（今日繼續提示）
+                try { updateStartTrainingButton(); } catch (e) {}
+
+                closeHistoryEditModal();
+            } finally {
+                isSavingHistory = false;
+
+                // Restore buttons (always restore original text)
+                const saveBtn2 = document.getElementById('save-history-btn');
+                const deleteBtn2 = document.getElementById('delete-history-btn');
+                if (saveBtn2) {
+                    saveBtn2.disabled = false;
+                    saveBtn2.classList.remove('opacity-70', 'cursor-wait');
+                    saveBtn2.innerHTML = origSaveHtml || '儲存修改';
+                }
+                if (deleteBtn2) {
+                    deleteBtn2.disabled = false;
+                    deleteBtn2.classList.remove('opacity-50', 'cursor-wait');
                 }
             }
-
-            // 持久化 + 刷新所有相關 UI（包括日曆，避免同一日顯示不一致）
-            saveWorkoutData();
-            try { renderWorkoutHistory(); } catch (e) {}
-            try { renderOverallStats(); } catch (e) {}
-            try { renderCalendar(); } catch (e) {}
-
-            closeHistoryEditModal();
         }
 
-        function deleteHistoryWorkout() {
+        async function deleteHistoryWorkout() {
             if (!currentViewingHistory) return;
             if (!confirm('確定要刪除這次訓練記錄嗎？\n刪除後無法恢復。')) return;
 
-            const isDayGroup = !!currentViewingHistory._isDayGroup;
-            const d = (currentViewingHistory.date || '').split('T')[0];
+            if (isDeletingHistory) return;
+            isDeletingHistory = true;
 
-            if (isDayGroup) {
-                // 刪除該日期的所有訓練記錄（多場合併情況）
-                workoutHistory = workoutHistory.filter(w => (w.date || '').split('T')[0] !== d);
-            } else {
-                // 單一記錄刪除
-                let targetIdx = currentViewingHistoryIndex;
-                if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
-                    (workoutHistory[targetIdx] && (workoutHistory[targetIdx].date || '').split('T')[0] !== d)) {
-                    targetIdx = workoutHistory.findIndex(w => (w.date || '').split('T')[0] === d);
+            const deleteBtn = document.getElementById('delete-history-btn');
+            const saveBtn = document.getElementById('save-history-btn');
+            const origDeleteHtml = deleteBtn ? deleteBtn.innerHTML : '';
+
+            try {
+                if (deleteBtn) {
+                    deleteBtn.disabled = true;
+                    deleteBtn.classList.add('opacity-70', 'cursor-wait');
+                    deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> 刪除中...`;
+                }
+                if (saveBtn) saveBtn.disabled = true;
+
+                const isDayGroup = !!currentViewingHistory._isDayGroup;
+                const d = normalizeDateToLocal(currentViewingHistory.date);
+
+                // === Priority 2: 先 sync backend 刪除 (C. 刪除操作 background / status sync)，再更新本地 ===
+                if (currentUser) {
+                    let targetSessionIds = [];
+                    if (isDayGroup) {
+                        targetSessionIds = (currentViewingHistory._sessionIds || []).slice();
+                    } else {
+                        const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
+                        if (sid) targetSessionIds = [sid];
+                    }
+
+                    try {
+                        updateGlobalSyncIndicator('syncing');
+                        for (const sid of targetSessionIds) {
+                            const delRes = await callAppsScript("deleteSession", { user: currentUser, sessionId: sid });
+                            if (delRes && delRes.status === 'error') {
+                                throw new Error(delRes.message || 'deleteSession failed for ' + sid);
+                            }
+                        }
+                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
+                    } catch (err) {
+                        console.error('[deleteHistoryWorkout] backend delete failed, revert:', err);
+                        updateGlobalSyncIndicator('error');
+                        showToast('❌ 後端刪除失敗，記錄未移除。請檢查網絡後重試。', 5500);
+                        return; // 不 mutate 本地
+                    }
                 }
 
-                if (targetIdx >= 0) {
-                    workoutHistory.splice(targetIdx, 1);
+                // 成功刪 backend 才改本地
+                if (isDayGroup) {
+                    // 刪除該日期的所有訓練記錄（多場合併情況）
+                    workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
+                } else {
+                    // 單一記錄刪除
+                    let targetIdx = currentViewingHistoryIndex;
+                    if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
+                        (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
+                        targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
+                    }
+
+                    if (targetIdx >= 0) {
+                        workoutHistory.splice(targetIdx, 1);
+                    }
                 }
+
+                saveWorkoutData();
+                try { renderWorkoutHistory(); } catch (e) {}
+                try { renderOverallStats(); } catch (e) {}
+                try { renderCalendar(); } catch (e) {}
+
+                closeHistoryEditModal();
+            } finally {
+                isDeletingHistory = false;
+
+                const deleteBtn2 = document.getElementById('delete-history-btn');
+                const saveBtn2 = document.getElementById('save-history-btn');
+                if (deleteBtn2) {
+                    deleteBtn2.disabled = false;
+                    deleteBtn2.classList.remove('opacity-70', 'cursor-wait');
+                    deleteBtn2.innerHTML = origDeleteHtml || deleteBtn2.innerHTML;
+                }
+                if (saveBtn2) saveBtn2.disabled = false;
             }
-
-            saveWorkoutData();
-            try { renderWorkoutHistory(); } catch (e) {}
-            try { renderOverallStats(); } catch (e) {}
-            try { renderCalendar(); } catch (e) {}
-
-            closeHistoryEditModal();
         }
 
         // --- Per Exercise Analysis (Redesigned) ---
@@ -4379,7 +5691,7 @@ Local Development Instructions:
             } else {
                 return allSets;
             }
-            const cutoffStr = cutoffDate.toISOString().split('T')[0];
+            const cutoffStr = getLocalDateString(cutoffDate);
             return allSets.filter(s => s.date >= cutoffStr);
         }
 
@@ -4412,7 +5724,7 @@ Local Development Instructions:
                 if (!w.exercises) return;
                 const ex = w.exercises.find(e => e.name === exercise);
                 if (!ex || !ex.sets || ex.sets.length === 0) return;
-                const d = (w.date || '').split('T')[0];
+                const d = normalizeDateToLocal(w.date);
                 if (!dayGroups[d]) dayGroups[d] = { date: d, sets: [], volume: 0, maxE1RM: 0, notes: '' };
                 ex.sets.forEach(s => {
                     const vol = (s.volume != null) ? s.volume : (s.weight * s.reps);
@@ -4749,6 +6061,7 @@ Local Development Instructions:
             const maxVol = volValues.length > 0 ? Math.max(1, ...volValues) : 1;
 
             const today = new Date();
+            console.log('[DATE DEBUG] renderCalendar - today for highlight:', getLocalDateString(today), 'full:', today);
             const isViewingCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
 
             // 前面空白日子（對齊星期）
@@ -4794,7 +6107,7 @@ Local Development Instructions:
             const muscleVol = {};
             const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
             workoutHistory.forEach(w => {
-                const key = (w.date || '').split('T')[0];
+                const key = normalizeDateToLocal(w.date);
                 const wd = key ? new Date(key) : new Date(w.date);
                 if (wd >= cutoff) {
                     w.exercises.forEach(ex => {
@@ -4862,7 +6175,7 @@ Local Development Instructions:
             // Aggregate by normalized date (YYYY-MM-DD) — same logic as the fixed renderCalendar
             const groups = {};
             workoutHistory.forEach((w, idx) => {
-                const d = (w.date || '').split('T')[0];
+                const d = normalizeDateToLocal(w.date);
                 if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
 
                 if (!groups[d]) {
@@ -5131,7 +6444,7 @@ Local Development Instructions:
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `charity-training-log-${currentUser || 'guest'}-${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `charity-training-log-${currentUser || 'guest'}-${getLocalDateString()}.json`;
             a.click();
             URL.revokeObjectURL(url);
 
@@ -5214,10 +6527,20 @@ Local Development Instructions:
                     rebuildLastPerformed();
                 }
 
-                // Populate datalist for quick add (unified bilingual)
+                // Populate datalist for quick add — 現在改用動態優先建議（見 updateExerciseSuggestions）
                 const dl = document.getElementById('exercise-datalist');
-                if (dl && typeof EXERCISES !== 'undefined') {
-                    dl.innerHTML = EXERCISES.map(e => `<option value="${e.name}">`).join('');
+                if (dl) {
+                    // 初始時顯示所有（無輸入），之後由 input 事件動態更新
+                    updateExerciseSuggestions('');
+                }
+
+                // 為 add-exercise-input 綁定即時建議（輸入 / focus 時重新排序）
+                const addExInput = document.getElementById('add-exercise-input');
+                if (addExInput) {
+                    const handler = () => updateExerciseSuggestions(addExInput.value);
+                    addExInput.addEventListener('input', handler);
+                    addExInput.addEventListener('focus', handler);
+                    // 首次 focus 也觸發一次
                 }
 
                 // Initial renders - each wrapped individually for partial failure tolerance
@@ -5226,10 +6549,11 @@ Local Development Instructions:
                 try { if (typeof renderOverallStats === 'function') renderOverallStats(); } catch (e) { console.warn('renderOverallStats init error (non-fatal):', e); }
                 try { if (typeof renderCalendar === 'function') renderCalendar(); } catch (e) { console.warn('renderCalendar init error (non-fatal):', e); }
 
-                // Default timer
-                if (typeof resetRestTimer === 'function') {
-                    resetRestTimer(typeof DEFAULT_REST !== 'undefined' ? DEFAULT_REST : 60);
-                }
+                // 初始化開始訓練按鈕狀態（今日繼續智能）
+                try { updateStartTrainingButton(); } catch (e) {}
+
+                // (休息計時器功能已移除，無需預設 timer)
+                // if (typeof resetRestTimer === 'function') { resetRestTimer(...); }
 
                 // Make sure sub sections start correctly
                 if (typeof showLogSubSection === 'function') {
@@ -5250,8 +6574,9 @@ Local Development Instructions:
                     }
                 });
 
-                // Note: auto checkForUnfinishedWorkout removed from init to prevent popup on fresh load.
-                // Explicit check now only happens via startNewWorkout when user intentionally starts training.
+                // Note: 自動恢復未完成訓練提示（Unfinished Workout Recovery Prompt）已完全停用。
+                // startNewWorkout() 內的舊 modal 提示已移除，不再自動彈出。
+                // 如有未完成 currentWorkout，現在會直接重用或由「今日繼續」邏輯處理。
 
                 // Global beforeunload protection for in-progress training
                 if (typeof saveDraftBeforeUnload === 'function') {
@@ -5606,6 +6931,17 @@ Local Development Instructions:
                 if (addUserBtn) addUserBtn.classList.add('hidden');
                 const logUserName = document.getElementById('logUserName');
                 if (logUserName) logUserName.textContent = `(${currentUser})`;
+
+                // A. 初始載入保護（刷新時）：在 loadUserLogs 完成前先隱藏 log 豐富內容
+                const preEmpty = document.getElementById('log-empty-state');
+                const preHist = document.getElementById('workout-history-list');
+                const preSub = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
+                if (preEmpty) preEmpty.style.display = 'none';
+                if (preHist) preHist.innerHTML = `<div class="p-4 text-center text-xs text-[#a8a29e]"><i class="fa-solid fa-spinner fa-spin mr-1"></i>載入中...</div>`;
+                if (preSub) preSub.style.visibility = 'hidden';
+
+                // B. 刷新時（已登入）也顯示明確初始載入狀態
+                showInitialSyncStatus('loading');
                 await loadUserLogs();
             } else {
                 // Not logged in: ensure addUserBtn is visible
