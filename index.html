@@ -1330,10 +1330,13 @@ Local Development Instructions:
                 <input type="text" id="logExercise" placeholder="動作名稱"
                     class="w-full bg-[#292524] border border-[#57534e] rounded-2xl px-4 py-2">
                 <div class="grid grid-cols-3 gap-2">
+                    <!-- logSets kept for legacy compat only; downstream (loadUserLogs/calc) treats legacy rows as single-set using reps/weight (no *sets multiplier) -->
                     <input type="number" id="logSets" placeholder="組數" value="3"
                         class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2 text-sm">
                     <input type="text" id="logReps" placeholder="次數"
-                        class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2 text-sm">
+                        class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2 text-sm"
+                        inputmode="numeric" pattern="[0-9]*"
+                        oninput="this.value = this.value.replace(/\D/g, '')">
                     <input type="number" id="logWeight" placeholder="重量 (kg)"
                         class="bg-[#292524] border border-[#57534e] rounded-2xl px-3 py-2 text-sm">
                 </div>
@@ -1544,12 +1547,12 @@ Local Development Instructions:
                 </div>
             </div>
 
-            <!-- Existing sets list (click to edit, or use the bar buttons to load directly) -->
-            <div class="text-xs text-[#a8a29e] mb-1">你嘅 Workout Sets（點擊「編輯」管理，訓練中直接點擊載入）</div>
+            <!-- Existing custom sets list (only user-created; fixed presets are always shown in the bar above) -->
+            <div class="text-xs text-[#a8a29e] mb-1">你嘅自訂 Workout Sets（點擊「編輯」管理，訓練中可直接喺 Bar 點擊固定預設或自訂 Set 載入）</div>
             <div id="wset-existing-list" class="space-y-2 text-sm max-h-[220px] overflow-auto"></div>
 
             <div class="mt-4 text-[10px] text-[#a8a29e]">
-                提示：預設 3 個 Set 會在你首次使用時自動建立（由後端或前端 seed）。所有資料 per-user 存 Google Sheets。
+                提示：前三個為系統固定預設訓練日（不可修改）。之後係你自己新增嘅自訂 Set，資料只存你自己嘅 Google Sheets。
             </div>
         </div>
     </div>
@@ -2018,31 +2021,56 @@ Local Development Instructions:
 
         function showAddLogModal() {
             if (!currentUser) return alert("請先登入");
-            document.getElementById('addLogModal').classList.remove('hidden');
-            document.getElementById('addLogModal').classList.add('flex');
-            document.getElementById('logDate').value = getLocalDateString();
+            const modal = document.getElementById('addLogModal');
+            if (!modal) {
+                console.error('#addLogModal not found in DOM');
+                alert('記錄視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
+                return;
+            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            const dateEl = document.getElementById('logDate');
+            if (dateEl) dateEl.value = getLocalDateString();
         }
 
         function hideAddLogModal() {
-            document.getElementById('addLogModal').classList.add('hidden');
-            document.getElementById('addLogModal').classList.remove('flex');
+            const modal = document.getElementById('addLogModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
 
         async function addNewLog() {
             if (!currentUser) return;
+            const dateEl = document.getElementById('logDate');
+            const exEl = document.getElementById('logExercise');
+            const setsEl = document.getElementById('logSets');
+            const repsEl = document.getElementById('logReps');
+            const weightEl = document.getElementById('logWeight');
             const newLog = {
                 id: Date.now(),
                 user: currentUser,
-                date: document.getElementById('logDate').value,
-                exercise: document.getElementById('logExercise').value,
-                sets: document.getElementById('logSets').value,
-                reps: document.getElementById('logReps').value,
-                weight: document.getElementById('logWeight').value
+                date: dateEl ? dateEl.value : '',
+                exercise: exEl ? exEl.value : '',
+                // sets: vestigial from legacy flat model; sent for compat but ignored by loadUserLogs / volume / PR paths (rich training uses per-set arrays)
+                sets: setsEl ? setsEl.value : '',
+                reps: repsEl ? repsEl.value : '',
+                weight: weightEl ? weightEl.value : ''
             };
             if (!newLog.exercise) return alert("請輸入動作名稱");
-            await callAppsScript("addLog", { user: currentUser, log: newLog });
-            hideAddLogModal();
-            await loadUserLogs();
+            const reps = parseInt(newLog.reps) || 0;
+            if (reps <= 0) {
+                alert('請輸入次數');
+                return;
+            }
+            const result = await callAppsScript("addLog", { user: currentUser, log: newLog });
+            if (result && result.status === 'success') {
+                hideAddLogModal();
+                await loadUserLogs();
+            } else {
+                alert((result && result.message) || '儲存失敗，請重試');
+            }
         }
 
         async function deleteLog(logId) {
@@ -3820,6 +3848,11 @@ Local Development Instructions:
                         </div>
 
                         <!-- Quick Add: ONLY kg + reps  -->
+                        <!-- 小型「使用上組」方便按鈕：一鍵將目前 workout 該動作最後一組（或歷史上次）的 reps/weight 複製到 quick-add 輸入欄（供編輯中的 current input fields 使用）。嚴格跟隨現有樣式、內聯 onclick、zh-HK 標籤、Tailwind classes。 -->
+                        <div class="mb-0.5 flex justify-end">
+                            <button onclick="copyPrevSetToExercise(${exIdx})" 
+                                    class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上組</button>
+                        </div>
                         <div class="mt-2 grid grid-cols-12 gap-1.5 items-end">
                             <div class="col-span-5">
                                 <label for="set-weight-${exIdx}" class="text-[9px] text-[#a8a29e] mb-0.5 block">重量 (kg)</label>
@@ -3890,6 +3923,31 @@ Local Development Instructions:
             const rEl = document.getElementById(`set-reps-${exIdx}`);
             if (wEl) wEl.value = lastSet.weight || '';
             if (rEl) rEl.value = lastSet.reps || '';
+        }
+
+        function copyPrevSetToExercise(exIdx) {
+            if (!currentWorkout) return;
+            const ex = currentWorkout.exercises[exIdx];
+            let source = null;
+            if (ex.sets && ex.sets.length > 0) {
+                // last completed set from current workout (previous sets in this session)
+                source = ex.sets[ex.sets.length - 1];
+            } else {
+                // fallback to previous sets from history (lastPerformed), to match prefill + task requirement
+                const perf = lastPerformed[ex.name];
+                if (perf && perf.sets && perf.sets.length > 0) {
+                    source = perf.sets[perf.sets.length - 1];
+                }
+            }
+            if (!source) {
+                return alert('沒有 ' + ex.name + ' 的上組數據');
+            }
+            // Copy previous set values from last completed set (current workout's sets or lastPerformed previous) into quick-add inputs.
+            // Exact same pattern as copyLastToExercise: direct value set, no save/render, inline JS, zh-HK alert/text.
+            const wEl = document.getElementById(`set-weight-${exIdx}`);
+            const rEl = document.getElementById(`set-reps-${exIdx}`);
+            if (wEl) wEl.value = source.weight || '';
+            if (rEl) rEl.value = source.reps || '';
         }
 
         function updateSessionSummary() {
@@ -4557,23 +4615,14 @@ Local Development Instructions:
         }
 
         /* ============================================================
-           WORKOUT SETS (訓練組合) - FULLY BACKEND DRIVEN (Google Sheets via GAS)
-           Replaces all previous hard-coded Chest+Tri / Back+Bi / Legs+Shoulder quick buttons.
-           - loadWorkoutSets() has cache (workoutSetsCache) for instant access after login/pre-load. Only fetches backend on force, first time, or TTL expiry.
-           - Defaults (訓練日 1/2/3) are now proactively seeded by backend inside addNewUser at registration time.
-             Their exercises exactly match the static "訓練日 1 / 2 / 3" lists defined in the UI (including order).
-           - Subsequent getWorkoutSets loads prefer cache for speed (key optimization for "開始新訓練").
-           - Cache cleared on logout. Pre-loaded in updateUIAfterLogin / initialize for fast bar in fullscreen.
-           - + button opens modal for full CRUD (create/edit/delete)
-           - Clicking a set button directly loads its exercises into current training (startNewWorkout if needed)
-           - NO set data (defaults or otherwise) is hard-coded in index.html. All data backend-driven.
-           REQUIRED GAS (Apps Script) ACTIONS (implement in backend doGet/doPost):
-             - getWorkoutSets (via ?action=getWorkoutSets&user=xxx OR POST): return {status:"success", sets: [{id, name, exercises: string[]}, ...]}
-               If user has zero sets, backend SHOULD auto-create the 3 defaults below and return them.
-             - saveWorkoutSet (POST {action:"saveWorkoutSet", user, set: {id?, name, exercises:[]}} ): create or update, return {status, set?}
-             - deleteWorkoutSet (POST {action:"deleteWorkoutSet", user?, setId }): {status:"success"}
-           Store per-user in Sheets (e.g. a sheet "workout_sets" with columns user, set_id, name, exercises_json).
-           Exercises always use the canonical "中文 (English)" bilingual strings from EXERCISES.
+           WORKOUT SETS (訓練組合) 架構（嚴格分離）
+           - 訓練日 1/2/3 是**前端固定預設**（TRAINING_DAYS 陣列），永不存入 Workout_Sets 表，用戶不可修改。
+           - Workout_Sets 表**只儲存用戶自己新增的自訂 Set**（完全由後端管理）。
+           - Workout Sets Bar 顯示順序：固定預設（3個）→ 用戶自訂 Set → + 新增自訂 Set 按鈕。
+           - loadWorkoutSets() 只負責從後端 load 自訂 Set（workoutSets 變數只存 custom）。
+           - renderWorkoutSetsBar() 永遠先渲染 3 個固定預設（來自 TRAINING_DAYS），再渲染 customs。
+           - 無註冊時 seed 預設的邏輯。新用戶的 Workout_Sets 表一開始為空。
+           - + 按鈕只用於自訂 Set 的 CRUD。
            ============================================================ */
 
         async function loadWorkoutSets(forceRefresh = false) {
@@ -4583,73 +4632,36 @@ Local Development Instructions:
                 return;
             }
 
-            // OPTIMIZATION: Always immediately render the 3 frontend-defined default Workout Sets
-            // so the bar is usable instantly on page load, login, or "開始新訓練".
-            // No waiting for backend.
-            workoutSets = DEFAULT_WORKOUT_SETS.map(s => ({
-                name: s.name,
-                exercises: [...s.exercises]
-            }));
-            renderWorkoutSetsBar();
-            console.log('[DEBUG] loadWorkoutSets: rendered 3 frontend DEFAULT_WORKOUT_SETS immediately for instant bar');
+            // Only load *user-created custom* Workout Sets from the backend.
+            // The 3 fixed Training Days (訓練日 1/2/3) are frontend-only (from TRAINING_DAYS).
+            // They are always prepended in renderWorkoutSetsBar() and never stored in the sheet.
 
             const now = Date.now();
-            let usedCache = false;
 
-            // If cache valid and not force, upgrade to cached version (which may include user customs + any edited presets)
-            // This gives better initial UX if cache has more than the 3 defaults.
             if (!forceRefresh && workoutSetsCache && (now - workoutSetsCacheTimestamp < WORKOUT_SETS_CACHE_TTL)) {
-                console.log('[DEBUG] loadWorkoutSets: upgrading to cache for richer initial set (age=' + Math.round((now - workoutSetsCacheTimestamp)/1000) + 's)');
                 workoutSets = JSON.parse(JSON.stringify(workoutSetsCache));
                 renderWorkoutSetsBar();
-                usedCache = true;
+                return;
             }
 
-            // Background fetch to sync with backend ONLY if forced or no valid cache.
-            // This reduces unnecessary requests while still allowing sync on demand.
-            // The initial defaults are always shown instantly.
-            if (forceRefresh || !usedCache) {
-                console.log('[DEBUG] loadWorkoutSets: starting background backend fetch' + (forceRefresh ? ' (forced)' : ''));
-                try {
-                    const res = await callAppsScript("getWorkoutSets", { user: currentUser });
-                    const backendSets = (res && res.sets) ? res.sets : (Array.isArray(res) ? res : []);
-                    console.log('[DEBUG] loadWorkoutSets background got', backendSets.length, 'sets');
+            try {
+                const res = await callAppsScript("getWorkoutSets", { user: currentUser });
+                const backendSets = (res && res.sets) ? res.sets : (Array.isArray(res) ? res : []);
 
-                    if (backendSets.length > 0) {
-                        // Merge strategy:
-                        // - For the 3 known preset names, prefer backend version (in case user edited the Set name/exercises via modal).
-                        // - Add any additional user-created custom Sets from backend.
-                        // This fulfills "合併顯示（預設 + 自訂）" and "以後端資料為準" for updates.
-                        const mergedPresets = DEFAULT_WORKOUT_SETS.map(def => {
-                            const match = backendSets.find(s => s.name === def.name);
-                            return match ? {
-                                name: match.name,
-                                exercises: [...(match.exercises || [])]
-                            } : {
-                                name: def.name,
-                                exercises: [...def.exercises]
-                            };
-                        });
-                        const customs = backendSets.filter(s => !DEFAULT_WORKOUT_SETS.some(def => def.name === s.name));
-                        workoutSets = [...mergedPresets, ...customs];
+                // workoutSets now contains ONLY what the user has explicitly saved as custom Sets.
+                workoutSets = backendSets || [];
 
-                        // Update cache with the merged result
-                        workoutSetsCache = JSON.parse(JSON.stringify(workoutSets));
-                        workoutSetsCacheTimestamp = now;
-                    } else {
-                        // Backend returned empty (e.g. very first load before seed completed, or error).
-                        // Keep the frontend defaults we already rendered.
-                        console.log('[DEBUG] loadWorkoutSets: backend empty, keeping frontend defaults');
-                    }
+                workoutSetsCache = JSON.parse(JSON.stringify(workoutSets));
+                workoutSetsCacheTimestamp = now;
 
-                    renderWorkoutSetsBar();
-                } catch (e) {
-                    console.warn('[DEBUG] loadWorkoutSets background fetch failed, keeping the instant frontend defaults or cache:', e);
-                    // No change to what we rendered initially; bar stays usable.
-                }
+                renderWorkoutSetsBar();
+            } catch (e) {
+                console.warn('loadWorkoutSets fetch failed:', e);
+                workoutSets = workoutSets || [];
+                renderWorkoutSetsBar();
             }
 
-            // 建議自動完成：當 workoutSets 更新後，刷新 datalist 優先順序
+            // Refresh exercise suggestions after custom sets are loaded
             try { updateExerciseSuggestions(''); } catch (_) {}
         }
 
@@ -4675,16 +4687,39 @@ Local Development Instructions:
                 return;
             }
 
-            // Render one button per set (click loads directly into training flow)
+            // === 固定預設 Training Day（永遠顯示，frontend only，不可修改） ===
+            // 使用 TRAINING_DAYS 作為唯一來源，確保與主訓練日 UI 一致。
+            const fixedPresets = (typeof TRAINING_DAYS !== 'undefined' ? TRAINING_DAYS : []).map(day => ({
+                name: day.fullName,
+                exercises: day.exercises,
+                isPreset: true
+            }));
+
+            // 先渲染三個固定預設
+            fixedPresets.forEach(preset => {
+                const btn = document.createElement('button');
+                // 固定預設用不同顏色（藍色系）以區分，並標示不可編輯
+                let cls = 'text-xs px-3 py-1 bg-sky-700 hover:bg-sky-600 active:bg-sky-800 rounded-2xl transition';
+                btn.className = cls;
+                btn.title = '固定預設訓練日（不可編輯 / 不可刪除）';
+                btn.innerHTML = `<span class="font-medium">${preset.name}</span> <span class="text-[9px] opacity-70">🔒</span>`;
+                btn.onclick = (e) => {
+                    console.log(`[DEBUG] Preset clicked in bar: ${preset.name}`);
+                    loadWorkoutSet(preset);  // 直接用前端 preset 物件載入
+                };
+                bar.appendChild(btn);
+            });
+
+            // 然後渲染用戶自訂 Set（只來自後端，workoutSets 變數只存 custom）
             (workoutSets || []).forEach(set => {
                 const btn = document.createElement('button');
                 let cls = 'text-xs px-3 py-1 bg-[#166534] hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl transition';
                 const isLast = lastWorkoutSetName && set.name === lastWorkoutSetName;
                 if (isLast) {
-                    cls += ' ring-2 ring-emerald-400 ring-offset-1 ring-offset-[#1c1917]';  // highlight as "last used / auto 接埋"
+                    cls += ' ring-2 ring-emerald-400 ring-offset-1 ring-offset-[#1c1917]';
                     btn.title = '上次使用的訓練組合（下次開始新訓練會自動接續）';
                 } else {
-                    btn.title = '載入此訓練組合到目前訓練';
+                    btn.title = '載入此自訂訓練組合到目前訓練';
                 }
                 btn.className = cls;
                 btn.innerHTML = `<span class="font-medium">${set.name}</span>`;
@@ -4692,28 +4727,28 @@ Local Development Instructions:
                     btn.innerHTML += ` <span class="text-[10px] opacity-70">✓</span>`;
                 }
                 btn.onclick = (e) => {
-                    console.log(`[DEBUG] Workout Set button clicked in bar (fullscreen=${isFs}): ${set.name}`);
+                    console.log(`[DEBUG] Custom Workout Set button clicked in bar (fullscreen=${isFs}): ${set.name}`);
                     loadWorkoutSet(set);
                 };
                 bar.appendChild(btn);
             });
 
-            // Prominent + button for managing (add/edit/delete) custom Workout Sets
+            // Prominent + button for managing (add/edit/delete) **custom** Workout Sets only
             const plus = document.createElement('button');
             plus.className = 'text-xs px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 active:bg-amber-700 text-white rounded-2xl font-bold flex items-center gap-1 border border-emerald-500/60';
             plus.title = '新增、編輯或刪除自訂 Workout Set（訓練組合）';
-            plus.innerHTML = `<i class="fa-solid fa-plus"></i> <span class="font-semibold">+</span>`;
+            plus.innerHTML = `<i class="fa-solid fa-plus"></i> <span class="font-semibold">+ 新增自訂 Set</span>`;
             plus.onclick = (e) => {
                 console.log(`[DEBUG] "+" button clicked in workout-sets-bar (fullscreen=${isFs})`);
                 showWorkoutSetModal();
             };
             bar.appendChild(plus);
 
-            // Small help text if no sets yet
+            // Small help text only if user has no custom sets yet (presets are always shown above)
             if ((workoutSets || []).length === 0) {
                 const empty = document.createElement('span');
                 empty.className = 'text-[10px] text-[#a8a29e] ml-1';
-                empty.textContent = '點 + 建立你的第一個 Set';
+                empty.textContent = '點 + 建立你的第一個自訂 Set';
                 bar.appendChild(empty);
             }
 
@@ -4971,7 +5006,7 @@ Local Development Instructions:
             if (!container) return;
             container.innerHTML = '';
             if (!workoutSets || !workoutSets.length) {
-                container.innerHTML = `<div class="text-xs text-[#a8a29e]">尚未有任何 Workout Set。使用上方表單新增，或等預設自動建立。</div>`;
+                container.innerHTML = `<div class="text-xs text-[#a8a29e]">尚未有任何自訂 Workout Set。使用上方表單新增（固定預設訓練日已喺 Bar 上方顯示）。</div>`;
                 return;
             }
             workoutSets.forEach(set => {
@@ -5002,13 +5037,9 @@ Local Development Instructions:
             });
         }
 
-        // Legacy quickLoadFromPlan kept ONLY for backward compatibility / direct calls.
-        // The 3 original hard-coded plans are NO LONGER used for the training UI buttons (replaced by backend workoutSets).
-        // Canonical defaults + seed logic live ONLY in Google Apps Script backend.
-
-        // Source of truth for the 3 Training Days (matches the static HTML sections above).
-        // The backend (Google_Apps_Script.txt seedDefaultWorkoutSetsForNewUser + DEFAULT_WORKOUT_SETS)
-        // MUST stay in sync with this data for new user registration.
+        // Source of truth for the 3 fixed, non-modifiable Training Days.
+        // These are used to populate the static training day sections in the UI.
+        // IMPORTANT: These live ONLY in frontend. They are NEVER stored in the Workout_Sets sheet.
         const TRAINING_DAYS = [
           {
             id: 1,
@@ -5054,20 +5085,18 @@ Local Development Instructions:
           }
         ];
 
-        // Frontend defaults for instant Workout Sets bar rendering (optimization for load speed)
-        // These are used immediately on login / startNewTraining for the 3 presets.
-        // Backend is still the source of truth for persisted (possibly customized) versions + user customs.
+        // Kept for potential legacy quick-load compatibility only.
+        // The Workout Sets Bar (renderWorkoutSetsBar) now ONLY renders user custom sets
+        // loaded by loadWorkoutSets(). The 3 fixed days are shown via separate UI using TRAINING_DAYS directly.
         const DEFAULT_WORKOUT_SETS = TRAINING_DAYS.map(day => ({
           name: day.fullName,
           exercises: [...day.exercises]
         }));
 
-        // Note: The 3 defaults here must stay in sync with the TRAINING_DAYS lists and the
-        // backend DEFAULT_WORKOUT_SETS in Google_Apps_Script.txt (for registration-time seeding).
-
         function quickLoadFromPlan(day) {
-            // LEGACY ONLY - the original hard-coded 3 plans have been removed from UI and from this function body.
-            // All Workout Sets now come from backend (seeded at registration to exactly match TRAINING_DAYS above).
+            // LEGACY compatibility shim.
+            // The 3 fixed Training Days are now rendered via static HTML + TRAINING_DAYS.
+            // Custom sets are in the workout-sets-bar (only user-saved ones).
             console.warn('[DEBUG] quickLoadFromPlan legacy called for day=', day, '- redirecting to dynamic sets if possible');
             const kwMap = {1: 'chest', 2: 'back', 3: 'leg'};
             const kw = kwMap[day] || '';
@@ -6670,7 +6699,8 @@ Local Development Instructions:
                     }
                     updateUIAfterLogin();
                     await loadUserLogs();
-                    // Ensure per-user Workout Sets (3 defaults + custom) are loaded immediately after login
+                    // Load user's custom Workout Sets (the bar will only show what the user has actually saved).
+                    // The 3 fixed Training Days are handled separately via TRAINING_DAYS + static UI.
                     if (typeof loadWorkoutSets === 'function') {
                         loadWorkoutSets().catch(e => console.warn('loadWorkoutSets after login (non-fatal):', e));
                     }
@@ -6678,12 +6708,6 @@ Local Development Instructions:
                         if (typeof showLogSubSection === 'function') showLogSubSection('history');
                     } catch (err) {
                         console.warn('showLogSubSection after login error (non-fatal):', err);
-                    }
-
-                    // For new users: proactively load the 3 default Workout Sets that were just seeded on the backend
-                    // during addNewUser registration. This populates the workout-sets-bar immediately.
-                    if (typeof loadWorkoutSets === 'function') {
-                        loadWorkoutSets().catch(e => console.warn('loadWorkoutSets after new user registration (non-fatal):', e));
                     }
                 } else {
                     const msg = result.message || "";
