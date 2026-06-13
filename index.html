@@ -1630,6 +1630,20 @@ Local Development Instructions:
         </div>
     </div>
 
+    <!-- Extracted data for architecture refactor (Option A) -->
+    <script src="js/data.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/fullscreen.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/ui-log.js"></script>
+    <script src="js/ui-history.js"></script>
+    <script src="js/ui-calendar.js"></script>
+    <script src="js/ui-workoutsets.js"></script>
+    <script src="js/ui-library.js"></script>
+    <script src="js/ui-analysis.js"></script>
+
     <script>
         /*
           BACKEND (Google Apps Script) VALIDATION RULES REQUIRED:
@@ -1663,11 +1677,15 @@ Local Development Instructions:
 
         // IMPORTANT: Replace this with your own deployed Google Apps Script Web App /exec URL
         // (From GAS: Deploy > New deployment > Web app > Copy the /exec URL)
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8C7XUmx5IvhoSQZ-6JKegxyFtDtoK_gWv_xSS7b2vyRO3Nv7Sc6Kz8p6mWsVOrh1/exec";
-        let currentUser = null;
-        let workoutLogs = [];
+        //
+        // 公開 GitHub 前請改做你自己嘅 URL，否則會連到作者嘅後端！
+        // 詳細步驟請參考 README.md 「GitHub 部署完整指南」
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/【請替換成你自己嘅ID】/exec";
 
         // === Username / PIN normalization helpers (enforce rules on client) ===
+        // Note: core state (currentUser, workoutLogs, currentWorkout, workoutHistory, etc.)
+        // has been moved to js/state.js as part of A refactor.
+
         function normalizeUsername(raw) {
             if (!raw) return '';
             return String(raw).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -1678,36 +1696,7 @@ Local Development Instructions:
             return String(raw).trim().replace(/\D/g, '');
         }
 
-        async function callAppsScript(action, data = {}, options = {}) {
-            try {
-                if (action === "getLogs" && currentUser) {
-                    const url = new URL(APPS_SCRIPT_URL);
-                    url.searchParams.append("action", "getLogs");
-                    url.searchParams.append("user", currentUser);
-                    const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
-                    return await res.json();
-                }
-                if (action === "getWorkoutSets" && currentUser) {
-                    // Use query GET for getWorkoutSets (consistent with getLogs; backend should handle ?action=getWorkoutSets&user=xxx)
-                    const url = new URL(APPS_SCRIPT_URL);
-                    url.searchParams.append("action", "getWorkoutSets");
-                    url.searchParams.append("user", currentUser);
-                    const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
-                    return await res.json();
-                }
-                const fetchOpts = {
-                    method: "POST",
-                    body: JSON.stringify({ action, ...data })
-                };
-                if (options.keepalive) fetchOpts.keepalive = true;
-                const response = await fetch(APPS_SCRIPT_URL, fetchOpts);
-                return await response.json();
-            } catch (error) {
-                console.error('[callAppsScript] POST error:', error);
-                // Do not hard alert (was disruptive on mobile during save); return error object for graceful handling in callers (finish/edit/delete)
-                return { status: "error", message: "連接 Apps Script 失敗" };
-            }
-        }
+        // callAppsScript and related API/sync functions moved to js/api.js (A refactor)
 
         function updateUIAfterLogin() {
             const display = document.getElementById('currentUserDisplay');
@@ -1770,7 +1759,7 @@ Local Development Instructions:
         }
 
         async function loginUser() {
-            console.debug('[DEBUG] loginUser called');
+
 
             if (isLoggingIn) return;
             isLoggingIn = true;
@@ -1808,9 +1797,7 @@ Local Development Instructions:
                     return alert("請輸入用戶名稱同 PIN");
                 }
 
-                console.debug('[DEBUG] Calling GAS login for', username);
                 const result = await callAppsScript("login", { user: username, pin: pin });
-                console.debug('[DEBUG] login result:', result);
 
                 if (result.status === "success") {
                     currentUser = username;   // always store the normalized lowercase version
@@ -1865,7 +1852,7 @@ Local Development Instructions:
         }
 
         function logoutUser() {
-            console.log('[DEBUG] logoutUser, forcing full-screen exit if active');
+
             try {
                 exitImmersiveMode();
             } catch (e) {
@@ -1967,11 +1954,11 @@ Local Development Instructions:
                         });
                     });
 
-                    console.log('[DATE DEBUG] loadUserLogs - rebuilding workoutHistory from backend rows');
+        
                     workoutHistory = Object.values(grouped).map(w => {
                         // 使用 normalize 確保日期正確（即使後端偶爾返回 ISO）
                         const normalizedDate = normalizeDateToLocal(w.date);
-                        console.log('[DATE DEBUG] loadUserLogs - raw row date:', w.date, '-> normalized:', normalizedDate, 'for sid:', w.id || 'unknown');
+
                         w.date = normalizedDate;  // 確保 w.date 是乾淨本地日期
                         w.exercises = Object.values(w.exercises);
                         w.totalVolume = w.exercises.reduce((sum, ex) => {
@@ -2115,283 +2102,28 @@ Local Development Instructions:
            ============================================================ */
 
         // --- Core State ---
-        let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, notes, volume, id?, _clientLogId? }]}] }
-                                             // id / _clientLogId 用於已同步到 Google 的 log id，刪除 exercise 時會用來呼叫 deleteLog
-        let workoutHistory = [];             // Array of finished workouts
+        // All core app state (currentWorkout, workoutHistory, isInFullScreenTraining, workoutSets, etc.)
+        // has been centralized in js/state.js as part of A (architecture refactor).
+        // Additional UI-only flags are kept here for now (to be moved in later steps).
+        // Do NOT re-declare the moved variables with 'let' here to avoid "already declared" errors.
 
-        // History view/edit mode state (completely separate from active new-training currentWorkout)
-        let currentViewingHistory = null;      // cloned workout being viewed/edited
-        let currentViewingHistoryIndex = -1;   // index in workoutHistory at time of opening
-
-        // Calendar navigation state (for advanced month switching)
-        let currentCalendarYear = null;
-        let currentCalendarMonth = null;       // 0 = January ... 11 = December
-
-        let exerciseLibrary = [];            // {name, category}
-        let routines = [];                   // {id, name, exercises: string[] }
-        let lastPerformed = {};              // { exerciseName: {weight, reps, date} }
-        let lastWorkoutSetName = null;       // Remember last chosen set from the bar so next startNewWorkout can "接埋" it automatically
+        // UI-specific state still local for now:
         let personalRecords = {};            // Computed on the fly or cached
-
-        // === Duplicate submission prevention flags (mobile-first) ===
-        let isFinishingWorkout = false;
+        let currentLogSub = 'history';
+        // analysisTimeRange, analysisChart*, bodyPartChart, weeklyVolumeChart moved to js/state.js (A refactor)
+        let workoutSetsCacheTimestamp = 0;
+        const WORKOUT_SETS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL for cache
+        let currentViewingHistory = null;      // cloned workout being viewed/edited (may move to state later)
         let isSavingHistory = false;
         let isDeletingHistory = false;
         let isLoggingIn = false;
-        let lastFinishClick = 0;  // for simple debounce on finish button
-        // restTimer* 變數已移除（計時器功能完全刪除）
-        // hasExplicitlyStartedTrainingThisSession 已移除（自動恢復提示功能已完全停用）
-        let currentLogSub = 'history';
-        let analysisTimeRange = 'all'; // 'all' | '12w' | '30d'
-        let analysisChart1RM = null;
-        let analysisChartVolume = null;
-        let bodyPartChart = null;
-        let weeklyVolumeChart = null;
 
-        let workoutSets = [];  // [{id, name, exercises: string[] }] - backend driven per user
-        let workoutSetsCache = null;    // cache for fast access after login/pre-load
-        let workoutSetsCacheTimestamp = 0;
-        const WORKOUT_SETS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL for cache
+        // Data now loaded from js/data.js (architecture refactor A)
+        // The helpers below still reference EXERCISES etc. which are now global from data.js
 
-        let currentEditingSet = null;   // for the workout set editor modal
-        let editingSetExercises = [];   // temp list while editing in modal
+        // getUserStorageKey, saveWorkoutData, loadWorkoutData now in js/utils.js (A refactor)
 
-        // Full-screen training state management
-        let isInFullScreenTraining = false;
-        let isInitializing = false;
-        // hasExplicitlyStartedTrainingThisSession 已移除（自動恢復提示功能已完全停用）
-        // For robust full-screen: remember original parent of live panel so we can move it to body for fixed positioning (avoids parent hidden/clip issues causing blank page)
-        let immersivePanelOriginalParent = null;
-
-        // DEFAULT_REST 已移除（休息計時器功能刪除）
-        const EXERCISE_CATEGORIES = ['胸部', '背部', '腿部', '肩膀', '手臂', '核心', '全身', '有氧'];
-
-        // Unified Exercise Database - Clean deduplicated, all names in "中文 (English)" format
-        // muscle_group, image (local /images/ only - no fallback)
-        // Unified Exercise Database - Clean, deduplicated, all in "中文 (English)" format
-        // At least 50 common exercises for serious training
-        // All UI (history, analysis, selectors, cards) MUST use this unified bilingual name
-        const EXERCISES = [
-            // 胸部 (香港gym常用「推胸」講法)
-            { id: "incline_dumbbell_press", name: "上斜啞鈴推胸 (Incline Dumbbell Press)", muscle_group: "胸部", image: "images/incline_dumbbell_press.jpg" },
-            { id: "flat_dumbbell_press", name: "平板啞鈴推胸 (Flat Dumbbell Press)", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
-            { id: "barbell_bench_press", name: "槓鈴臥推 (Barbell Bench Press)", muscle_group: "胸部", image: "images/barbell_bench_press.jpg" },
-            { id: "lower_chest_cable_fly", name: "下胸繩索飛鳥 (Lower Chest Cable Fly)", muscle_group: "胸部", image: "images/lower_chest_cable_fly.jpg" },
-            { id: "cable_crossover", name: "繩索夾胸 (Cable Crossover)", muscle_group: "胸部", image: "images/cable_crossover.jpg" },
-            { id: "chest_dips", name: "雙槓胸推 (Chest Dips)", muscle_group: "胸部", image: "images/chest_dips.jpg" },
-            { id: "machine_chest_press", name: "機器胸推 (Machine Chest Press)", muscle_group: "胸部", image: "images/machine_chest_press.jpg" },
-
-            // 背部 (香港常用「拉背」「划船」)
-            { id: "pull_ups", name: "引體向上 (Pull-ups)", muscle_group: "背部", image: "images/pull_ups.jpg" },
-            { id: "deadlift", name: "硬拉 (Deadlift)", muscle_group: "背部", image: "images/deadlift.jpg" },
-            { id: "seated_cable_row", name: "坐姿繩索拉背 (Seated Cable Row)", muscle_group: "背部", image: "images/seated_cable_row.jpg" },
-            { id: "barbell_row", name: "槓鈴划船 (Barbell Bent Over Row)", muscle_group: "背部", image: "images/barbell_row.jpg" },
-            { id: "lat_pulldown", name: "寬握下拉 (Lat Pulldown)", muscle_group: "背部", image: "images/lat_pulldown.jpg" },
-            { id: "dumbbell_row", name: "單臂啞鈴拉 (Single Arm Dumbbell Row)", muscle_group: "背部", image: "images/dumbbell_row.jpg" },
-            { id: "incline_bench_row", name: "上斜啞鈴划船 (Incline Dumbbell Row)", muscle_group: "背部", image: "images/incline_bench_row.jpg" },
-            { id: "t_bar_row", name: "T槓划船 (T-Bar Row)", muscle_group: "背部", image: "images/t_bar_row.jpg" },
-            { id: "face_pulls", name: "臉部拉 (Face Pulls)", muscle_group: "背部", image: "images/face_pulls.jpg" },
-
-            // 腿部 (香港常用「深蹲」「弓步」「保加利亞蹲」)
-            { id: "barbell_back_squat", name: "槓鈴深蹲 (Barbell Back Squat)", muscle_group: "腿部", image: "images/barbell_back_squat.jpg" },
-            { id: "zercher_squats", name: "澤奇深蹲 (Zercher Squats)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
-            { id: "goblet_squat", name: "高腳杯深蹲 (Goblet Squat)", muscle_group: "腿部", image: "images/goblet_squat.jpg" },
-            { id: "romanian_deadlift", name: "羅馬尼亞硬拉 (Romanian Deadlift)", muscle_group: "腿部", image: "images/romanian_deadlift.jpg" },
-            { id: "walking_lunges", name: "行走弓步 (Walking Lunges)", muscle_group: "腿部", image: "images/walking_lunges.jpg" },
-            { id: "bulgarian_split_squat", name: "保加利亞蹲 (Bulgarian Split Squat)", muscle_group: "腿部", image: "images/bulgarian_split_squat.jpg" },
-            { id: "leg_press", name: "腿推機 (Leg Press)", muscle_group: "腿部", image: "images/leg_press.jpg" },
-            { id: "leg_curl", name: "腿彎舉 (Leg Curl)", muscle_group: "腿部", image: "images/leg_curl.jpg" },
-            { id: "leg_extension", name: "腿伸展 (Leg Extension)", muscle_group: "腿部", image: "images/leg_extension.jpg" },
-            { id: "hip_thrust", name: "臀推 (Hip Thrust)", muscle_group: "腿部", image: "images/hip_thrust.jpg" },
-            { id: "standing_calf_raise", name: "站姿小腿提踵 (Standing Calf Raise)", muscle_group: "腿部", image: "images/standing_calf_raise.jpg" },
-
-            // 手臂 (香港常用「彎」「下壓」「牧師椅」)
-            { id: "barbell_curl", name: "槓鈴彎舉 (Barbell Curl)", muscle_group: "手臂", image: "images/barbell_curl.jpg" },
-            { id: "preacher_curls", name: "牧師椅彎舉 (Preacher Curls)", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
-            { id: "bayesian_cable_curls", name: "貝葉斯繩索彎舉 (Bayesian Cable Curls)", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
-            { id: "hammer_curls", name: "錘式彎舉 (Hammer Curls)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
-            { id: "tricep_rope_pushdown", name: "繩索三頭下壓 (Tricep Rope Pushdown)", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
-            { id: "cable_overhead_triceps", name: "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)", muscle_group: "手臂", image: "images/cable_overhead_triceps.jpg" },
-            { id: "skull_crushers", name: "仰臥三頭伸展 (Skull Crushers)", muscle_group: "手臂", image: "images/skull_crushers.jpg" },
-            { id: "reverse_forearm_curl", name: "反向腕彎舉 (Reverse Forearm Curl)", muscle_group: "手臂", image: "images/reverse_forearm_curl.jpg" },
-            { id: "finger_curls", name: "指力彎舉 (Finger Curls)", muscle_group: "手臂", image: "images/finger_curls.jpg" },
-
-            // 肩膀 (香港超常用「側舉」「後飛」「肩推」)
-            { id: "overhead_press", name: "肩推 (Overhead Press)", muscle_group: "肩膀", image: "images/overhead_press.jpg" },
-            { id: "seated_dumbbell_press", name: "坐姿啞鈴肩推 (Seated Dumbbell Shoulder Press)", muscle_group: "肩膀", image: "images/seated_dumbbell_press.jpg" },
-            { id: "arnold_press", name: "阿諾肩推 (Arnold Press)", muscle_group: "肩膀", image: "images/arnold_press.jpg" },
-            { id: "lateral_raises", name: "側舉 (Lateral Raises)", muscle_group: "肩膀", image: "images/lateral_raises.jpg" },
-            { id: "cable_lateral_raise", name: "繩索側舉 (Cable Lateral Raise)", muscle_group: "肩膀", image: "images/cable_lateral_raise.jpg" },
-            { id: "rear_delt_raises", name: "後飛 (Rear Delt Raises)", muscle_group: "肩膀", image: "images/rear_delt_raises.jpg" },
-            { id: "barbell_shrugs", name: "槓鈴聳肩 (Barbell Shrugs)", muscle_group: "肩膀", image: "images/barbell_shrugs.jpg" },
-
-            // 核心 (香港常用「腹輪」「平板撐」「斬木」)
-            { id: "ab_wheel_rollout", name: "腹輪 (Ab Wheel Rollout)", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg" },
-            { id: "dragon_flag", name: "龍旗 (Dragon Flag)", muscle_group: "核心", image: "images/dragon_flag.jpg" },
-            { id: "hanging_leg_raise", name: "懸垂舉腿 (Hanging Leg Raise)", muscle_group: "核心", image: "images/hanging_leg_raise.jpg" },
-            { id: "plank", name: "平板撐 (Plank)", muscle_group: "核心", image: "images/plank.jpg" },
-            { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/wood_chopper.jpg" },
-            { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
-
-            // 全身 / 有氧
-            { id: "farmer_carry", name: "農夫行走 (Farmer's Carry)", muscle_group: "全身", image: "images/farmer_carry.jpg" },
-            { id: "battle_ropes", name: "戰繩 (Battle Ropes)", muscle_group: "全身", image: "images/battle_ropes.jpg" },
-            { id: "burpees", name: "波比跳 (Burpees)", muscle_group: "全身", image: "images/burpees.jpg" },
-            { id: "rowing_machine", name: "划船機 (Rowing Machine)", muscle_group: "有氧", image: "images/rowing_machine.jpg" },
-            { id: "jump_rope", name: "跳繩 (Jump Rope)", muscle_group: "有氧", image: "images/jump_rope.jpg" },
-        ];
-
-        // Unified helpers - all exercises use "中文 (English)" via .name
-        function getExerciseDisplay(ex) {
-            if (typeof ex === 'string') {
-                const lower = ex.toLowerCase();
-                const found = EXERCISES.find(e =>
-                    e.name === ex ||
-                    e.name.toLowerCase() === lower ||
-                    e.name.toLowerCase().includes(lower)
-                );
-                return found ? found.name : ex;
-            }
-            return ex && ex.name ? ex.name : ex;
-        }
-
-        function getExerciseByName(name) {
-            if (!name) return null;
-            const lower = name.toLowerCase().trim();
-            return EXERCISES.find(e =>
-                e.name === name ||
-                e.name.toLowerCase() === lower ||
-                e.name.toLowerCase().includes(lower) ||
-                e.id === name
-            ) || null;
-        }
-
-        function getExerciseImage(name) {
-            const ex = getExerciseByName(name);
-            return ex ? ex.image : '';
-        }
-
-        function getMuscleGroup(name) {
-            const ex = getExerciseByName(name);
-            return ex ? ex.muscle_group : '其他';
-        }
-
-        function getUserStorageKey() {
-            return `charityWorkoutData_${currentUser || 'guest'}`;
-        }
-
-        function saveWorkoutData() {
-            try {
-                const data = {
-                    history: workoutHistory,
-                    library: exerciseLibrary,
-                    routines: routines,
-                    lastPerformed: lastPerformed,
-                    lastWorkoutSetName: lastWorkoutSetName || null,  // for auto "接埋" last chosen training set
-                    currentWorkout: currentWorkout || null   // persist in-progress training for resume
-                };
-                localStorage.setItem(getUserStorageKey(), JSON.stringify(data));
-            } catch (e) { console.warn('Local storage save failed', e); }
-        }
-
-        function loadWorkoutData() {
-            try {
-                const raw = localStorage.getItem(getUserStorageKey());
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    workoutHistory = data.history || [];
-                    // Strip legacy rpe from history sets (RPE feature removed)
-                    workoutHistory.forEach(w => {
-                        if (w.exercises) w.exercises.forEach(ex => {
-                            if (ex.sets) ex.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
-                        });
-                    });
-                    // Use EXERCISES as the source of truth for library (bilingual)
-                    // Keep any custom if stored, but default to EXERCISES
-                    exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
-                    routines = data.routines || [];
-                    lastPerformed = data.lastPerformed || {};
-                    lastWorkoutSetName = data.lastWorkoutSetName || null;  // restore remembered training set for auto-continue ("接埋")
-                    // Smarter restore: only restore currentWorkout from storage if it's a valid recent unfinished workout with real volume.
-                    // This prevents stale/old sessions from being treated as active on fresh loads.
-                    if (data.currentWorkout && data.currentWorkout.exercises) {
-                        if (isValidUnfinishedWorkout(data.currentWorkout)) {
-                            currentWorkout = data.currentWorkout;
-                            // Strip any legacy rpe from sets (RPE feature removed)
-                            currentWorkout.exercises.forEach(ex => {
-                                if (ex.sets) ex.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
-                            });
-                        } else {
-                            currentWorkout = null;
-                            // Clean the stale entry from storage immediately on load
-                            saveWorkoutData();
-                        }
-                    }
-                    // Strip legacy rpe from lastPerformed sets
-                    Object.keys(lastPerformed).forEach(name => {
-                        const p = lastPerformed[name];
-                        if (p && p.sets) p.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
-                    });
-                } else {
-                    // Initialize with unified bilingual display names from EXERCISES
-                    exerciseLibrary = EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
-                    workoutHistory = [];
-                    routines = [];
-                    lastPerformed = {};
-                }
-            } catch (e) {
-                exerciseLibrary = EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
-                workoutHistory = [];
-            }
-        }
-
-        function isValidUnfinishedWorkout(workout) {
-            if (!workout || !workout.exercises || workout.exercises.length === 0) return false;
-
-            // Must have at least one set with actual volume (weight * reps > 0)
-            let hasRealVolume = false;
-            for (const ex of workout.exercises) {
-                for (const s of (ex.sets || [])) {
-                    if ((s.weight || 0) * (s.reps || 0) > 0) {
-                        hasRealVolume = true;
-                        break;
-                    }
-                }
-                if (hasRealVolume) break;
-            }
-            if (!hasRealVolume) return false;
-
-            // Only today or within last 2 hours (use startTime if available for precision)
-            if (!workout.date) return false;
-            const todayStr = getLocalDateString();
-            if (workout.date !== todayStr) return false;
-
-            if (workout.startTime) {
-                const ageHrs = (Date.now() - workout.startTime) / (1000 * 60 * 60);
-                if (ageHrs > 2) return false;
-            }
-
-            return true;
-        }
-
-        function formatDateForDisplay(dateStr) {
-            if (!dateStr) return '未知日期';
-            try {
-                // Handle possible malformed like "2026- -12"
-                const parts = dateStr.split('-');
-                if (parts.length === 3) {
-                    const y = parts[0];
-                    const m = (parts[1] || '').padStart(2, '0');
-                    const d = (parts[2] || '').padStart(2, '0');
-                    return `${y}-${m}-${d}`;
-                }
-                const dt = new Date(dateStr);
-                if (isNaN(dt.getTime())) return dateStr;
-                return dt.toLocaleDateString('zh-HK', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
-            } catch (e) {
-                return dateStr;
-            }
-        }
+        // isValidUnfinishedWorkout, formatDateForDisplay now in js/utils.js (A refactor)
 
         // 自動恢復未完成訓練提示已完全停用（用戶要求）
         // checkForUnfinishedWorkout 函數已無作用，已移除。
@@ -2433,7 +2165,7 @@ Local Development Instructions:
             if (dateInput) dateInput.value = currentWorkout.date || getLocalDateString();
             renderCurrentWorkout();
             updateSessionSummary();
-            console.log('[DEBUG] Resumed unfinished workout in normal mode (no auto full-screen to allow tab clicks)');
+
         }
 
         function discardAndStartNew() {
@@ -2448,7 +2180,7 @@ Local Development Instructions:
         }
 
         function saveDraftBeforeUnload() {
-            console.log('[DEBUG] beforeunload triggered, currentWorkout=' + (currentWorkout ? 'exists' : 'null') + ', isFullscreen=' + document.body.classList.contains('fullscreen-training'));
+
             if (currentWorkout) {
                 saveWorkoutData();
                 // Best-effort: if user is logged in we could push a lightweight draft here,
@@ -2456,111 +2188,10 @@ Local Development Instructions:
             }
         }
 
-        function seedSampleDataIfNeeded() {
-            if (workoutHistory.length > 0) return;
-            const today = new Date();
-            const samples = [];
+        // seedSampleDataIfNeeded disabled (A refactor - guest demo seeding removed)
 
-            // Sample workout 1 (5 days ago) - Day 1 style (use full bilingual display names)
-            const d1 = new Date(today); d1.setDate(d1.getDate() - 5);
-            samples.push({
-                id: Date.now() - 500000,
-                date: getLocalDateString(d1),
-                exercises: [
-                    {name: "上斜啞鈴推胸 (Incline Dumbbell Press)", sets: [{weight: 28, reps: 8, notes: ""}, {weight: 30, reps: 7, notes: ""}]},
-                    {name: "平板啞鈴推胸 (Flat Dumbbell Press)", sets: [{weight: 24, reps: 9, notes: ""}]},
-                    {name: "繩索三頭下壓 (Tricep Rope Pushdown)", sets: [{weight: 15, reps: 12, notes: ""}, {weight: 15, reps: 11, notes: ""}]}
-                ],
-                notes: "Felt strong on chest today."
-            });
 
-            // Sample 2 (3 days ago) - Day 2
-            const d2 = new Date(today); d2.setDate(d2.getDate() - 3);
-            samples.push({
-                id: Date.now() - 300000,
-                date: getLocalDateString(d2),
-                exercises: [
-                    {name: "引體向上 (Pull-ups)", sets: [{weight: 0, reps: 7, notes: "Bodyweight"}, {weight: 0, reps: 6, notes: ""}]},
-                    {name: "硬拉 (Deadlift)", sets: [{weight: 80, reps: 5, notes: ""}, {weight: 85, reps: 4, notes: ""}]},
-                    {name: "腹輪 (Ab Wheel Rollout)", sets: [{weight: 0, reps: 12, notes: ""}]}
-                ],
-                notes: ""
-            });
-
-            // Sample 3 (yesterday) - Day 3
-            const d3 = new Date(today); d3.setDate(d3.getDate() - 1);
-            samples.push({
-                id: Date.now() - 100000,
-                date: getLocalDateString(d3),
-                exercises: [
-                    {name: "澤奇深蹲 (Zercher Squats)", sets: [{weight: 42, reps: 8, notes: ""}, {weight: 45, reps: 6, notes: ""}]},
-                    {name: "側舉 (Lateral Raises)", sets: [{weight: 8, reps: 15, notes: ""}, {weight: 8, reps: 14, notes: ""}]},
-                    {name: "龍旗 (Dragon Flag)", sets: [{weight: 0, reps: 6, notes: "Controlled"}]}
-                ],
-                notes: "Good leg pump."
-            });
-
-            // Add a couple more varied ones
-            const d4 = new Date(today); d4.setDate(d4.getDate() - 8);
-            samples.push({
-                id: Date.now() - 800000,
-                date: getLocalDateString(d4),
-                exercises: [
-                    {name: "硬拉 (Deadlift)", sets: [{weight: 75, reps: 6, notes: ""}]},
-                    {name: "坐姿繩索拉背 (Seated Cable Row)", sets: [{weight: 55, reps: 10, notes: ""}, {weight: 60, reps: 8, notes: ""}]}
-                ],
-                notes: ""
-            });
-
-            samples.forEach(s => {
-                s.totalVolume = calculateWorkoutVolume(s);
-                workoutHistory.push(s);
-            });
-
-            // Update last performed from seed (store full sets for multi-set Last display support)
-            lastPerformed = {};
-            workoutHistory.forEach(w => {
-                w.exercises.forEach(ex => {
-                    if (ex.sets && ex.sets.length) {
-                        lastPerformed[ex.name] = {
-                            sets: ex.sets.map(s => ({weight: s.weight, reps: s.reps})),
-                            date: w.date
-                        };
-                    }
-                });
-            });
-
-            saveWorkoutData();
-        }
-
-        function calculateSetVolume(set) {
-            const w = parseFloat(set.weight) || 0;
-            const r = parseInt(set.reps) || 0;
-            return w * r;
-        }
-
-        function calculateWorkoutVolume(workout) {
-            let total = 0;
-            (workout.exercises || []).forEach(ex => {
-                (ex.sets || []).forEach(set => {
-                    total += calculateSetVolume(set);
-                });
-            });
-            return Math.round(total);
-        }
-
-        function estimate1RM(weight, reps) {
-            const w = parseFloat(weight) || 0;
-            const r = parseInt(reps) || 0;
-            if (w <= 0 || r <= 0) return 0;
-            return Math.round(w * (1 + 0.0333 * r) * 10) / 10;
-        }
-
-        function getAllExercisesFromHistory() {
-            const set = new Set();
-            workoutHistory.forEach(w => w.exercises.forEach(ex => set.add(ex.name)));
-            return Array.from(set).sort();
-        }
+        // estimate1RM and getAllExercisesFromHistory moved to js/utils.js (A refactor)
 
         function rebuildLastPerformed() {
             lastPerformed = {};
@@ -2583,45 +2214,7 @@ Local Development Instructions:
            B. 今日繼續邏輯 - Helpers
         ============================================================ */
 
-        /**
-         * 統一的本地日期字串函數（解決時區問題）
-         * 傳回 YYYY-MM-DD 格式，使用本地時間（香港 UTC+8）
-         */
-        function getLocalDateString(date = new Date()) {
-            console.log('[DATE DEBUG] getLocalDateString called with:', date);
-            console.log('[DATE DEBUG] getLocalDateString - full Date object:', date.toString());
-            console.log('[DATE DEBUG] getLocalDateString - toISOString():', date.toISOString());
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const result = `${year}-${month}-${day}`;
-            console.log('[DATE DEBUG] getLocalDateString result (local):', result);
-            return result;
-        }
-
-        /**
-         * 健壯的日期正規化函數
-         * 無論後端返回 YYYY-MM-DD 或完整 ISO 字串，都轉成正確的本地 YYYY-MM-DD
-         */
-        function normalizeDateToLocal(dateValue) {
-            if (!dateValue) return '';
-            const str = String(dateValue);
-            if (str.includes('T')) {
-                // ISO 格式（例如 2026-06-12T16:00:00.000Z），用本地時間解析
-                const d = new Date(str);
-                return getLocalDateString(d);
-            }
-            // 已經是 YYYY-MM-DD 或有其他格式
-            return str.split('T')[0];
-        }
-
-        // 取得今天日期字串 YYYY-MM-DD（統一使用本地時間）
-        function getTodayStr() {
-            console.log('[DATE DEBUG] getTodayStr called');
-            const result = getLocalDateString();
-            console.log('[DATE DEBUG] getTodayStr result:', result);
-            return result;
-        }
+        // Date utils now from js/utils.js (A refactor)
 
         /**
          * 從 workoutHistory 找出「今日」的所有訓練（支援同日多場，合併 exercises + sets）
@@ -2771,16 +2364,7 @@ Local Development Instructions:
         }
 
         function startNewWorkout(dateStr = null) {
-            console.log('[DATE DEBUG] startNewWorkout called');
-            console.log('[DATE DEBUG] new Date():', new Date());
-            console.log('[DATE DEBUG] new Date().toString():', new Date().toString());
-            console.log('[DATE DEBUG] new Date().toISOString():', new Date().toISOString());
-            console.log('[DATE DEBUG] new Date().toISOString().split(\'T\')[0]:', new Date().toISOString().split('T')[0]);
-            console.log('[DATE DEBUG] getLocalDateString():', getLocalDateString());
-            console.log('[DATE DEBUG] getTodayStr():', getTodayStr());
-
             const alreadyInFullscreen = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-            console.log(`[DEBUG] startNewWorkout called, alreadyInFullscreen=${alreadyInFullscreen}, hasCurrent=${!!currentWorkout}`);
 
             if (!currentUser) {
                 showLoginModal();
@@ -2796,10 +2380,6 @@ Local Development Instructions:
                 const today = getTodayStr();
                 const date = dateStr || today;
 
-                console.log('[DATE DEBUG] startNewWorkout - dateStr param:', dateStr);
-                console.log('[DATE DEBUG] startNewWorkout - computed today:', today);
-                console.log('[DATE DEBUG] startNewWorkout - final date for newWorkout:', date);
-
                 // === B. 智能「今日繼續」邏輯 ===
                 let loadedFromToday = false;
                 if (date === today) {
@@ -2807,15 +2387,11 @@ Local Development Instructions:
                 }
 
                 if (loadedFromToday) {
-                    console.log('[startNewWorkout] 偵測到今日已有訓練紀錄 → 進入繼續模式，preload 了', currentWorkout.exercises.length, '個動作');
-                    console.log('[DATE DEBUG] startNewWorkout - after preload, currentWorkout.date:', currentWorkout.date, 'inherited id:', currentWorkout.id, 'session_id:', currentWorkout.session_id);
+                    // continue mode
                 } else {
                     currentWorkout = { id: Date.now(), date, exercises: [], notes: '', startTime: Date.now() };
-                    console.log('[DATE DEBUG] startNewWorkout - created new currentWorkout with date:', currentWorkout.date);
                 }
             }
-
-            console.log('[DATE DEBUG] startNewWorkout - final currentWorkout.date after setup:', currentWorkout ? currentWorkout.date : null);
 
             // Reset any previous sync status when starting fresh training
             activeBackgroundSyncs = 0;
@@ -2828,7 +2404,7 @@ Local Development Instructions:
             if (!isContinueMode && lastWorkoutSetName && currentWorkout && (!currentWorkout.exercises || currentWorkout.exercises.length === 0)) {
                 const lastSet = (workoutSets || []).find(s => s.name === lastWorkoutSetName);
                 if (lastSet && Array.isArray(lastSet.exercises) && lastSet.exercises.length > 0) {
-                    console.log(`[AUTO] Auto-applying last used workout set "${lastWorkoutSetName}" (接埋)`);
+                    // Auto-apply last set (no debug log)
                     lastSet.exercises.forEach(name => {
                         const ex = getExerciseByName(name);
                         const displayName = ex ? getExerciseDisplay(ex) : name;
@@ -2851,18 +2427,15 @@ Local Development Instructions:
                     logContent.classList.remove('hidden');
                     const logTabBtn = document.getElementById('tab-log');
                     if (logTabBtn) logTabBtn.classList.add('active', 'bg-[#166534]', 'text-white');
-                    console.log('[DEBUG] startNewWorkout: activated log tab content directly (avoided spam)');
+                    // direct tab activation
                 } catch (e) {
-                    console.warn('[DEBUG] direct log tab activation failed (non-fatal):', e);
                     // fallback
                     try {
                         if (typeof switchTab === 'function') switchTab('log');
-                    } catch (e2) {
-                        console.warn('[DEBUG] fallback switchTab("log") failed:', e2);
-                    }
+                    } catch (e2) {}
                 }
             } else if (logContent) {
-                console.log('[DEBUG] startNewWorkout: log tab content already visible, skipping switch');
+                // log tab already visible
             }
 
             // Robust element access with null checks and recovery
@@ -2870,14 +2443,12 @@ Local Development Instructions:
             if (livePanel) {
                 livePanel.classList.remove('hidden');
             } else {
-                console.error('[DEBUG] startNewWorkout: #live-log-panel not found in DOM! Attempting recovery...');
                 const logEl = document.getElementById('content-log');
                 if (logEl && typeof originalLogContent !== 'undefined' && originalLogContent) {
                     // More robust recovery: always attempt restore if we have original content (especially after fullscreen exit + new start)
                     const needsRestore = logEl.innerHTML.includes('需要登入') || !document.getElementById('live-log-panel');
                     if (needsRestore) {
                         logEl.innerHTML = originalLogContent;
-                        console.log('[DEBUG] Restored originalLogContent to recover live-log-panel (robust recovery after fullscreen or init)');
                         // retry finding panel
                         const recoveredPanel = document.getElementById('live-log-panel');
                         if (recoveredPanel) {
@@ -2889,41 +2460,29 @@ Local Development Instructions:
                             }
                         }
                     }
-                } else {
-                    console.warn('[DEBUG] startNewWorkout: recovery skipped - no originalLogContent available');
                 }
             }
 
             const emptyState = document.getElementById('log-empty-state');
             if (emptyState) {
                 emptyState.classList.add('hidden');
-            } else {
-                console.warn('[DEBUG] startNewWorkout: #log-empty-state not found');
             }
 
             const dateInput = document.getElementById('current-workout-date');
             if (dateInput) {
                 dateInput.value = currentWorkout.date || getLocalDateString();
-            } else {
-                console.warn('[DEBUG] startNewWorkout: #current-workout-date not found');
             }
 
             // Defensive renders - these functions should also be null-safe internally, but guard the calls
             try {
                 renderCurrentWorkout();
-            } catch (e) {
-                console.error('[DEBUG] renderCurrentWorkout failed in startNewWorkout:', e);
-            }
+            } catch (e) {}
             try {
                 updateSessionSummary();
-            } catch (e) {
-                console.error('[DEBUG] updateSessionSummary failed in startNewWorkout:', e);
-            }
+            } catch (e) {}
             try {
                 updateLastPerformedHint();
-            } catch (e) {
-                console.warn('[DEBUG] updateLastPerformedHint failed (non-fatal):', e);
-            }
+            } catch (e) {}
 
             // === B. 繼續今日訓練的 UI 提示 ===
             const continueBadge = document.getElementById('continue-badge');
@@ -2949,34 +2508,28 @@ Local Development Instructions:
             // Use cache for instant Workout Sets bar display (key for perceived speed after "開始新訓練")
             if (workoutSetsCache && workoutSetsCache.length > 0 && (!workoutSets || workoutSets.length === 0)) {
                 workoutSets = JSON.parse(JSON.stringify(workoutSetsCache));
-                console.log('[DEBUG] startNewWorkout: populated workoutSets from cache for instant bar');
             }
 
             // Always re-render the dynamic Workout Sets bar (important for full-screen) - now instant if cached
             if (typeof renderWorkoutSetsBar === 'function') {
                 try {
                     renderWorkoutSetsBar();
-                } catch (e) {
-                    console.error('[DEBUG] renderWorkoutSetsBar failed:', e);
-                }
+                } catch (e) {}
             }
 
             // Trigger background refresh if no cache or stale (non-blocking)
             if (!workoutSetsCache && currentUser && typeof loadWorkoutSets === 'function') {
-                loadWorkoutSets().catch(e => console.warn('[DEBUG] background loadWorkoutSets in startNewWorkout failed (non-fatal):', e));
+                loadWorkoutSets().catch(e => {});
             }
 
             // Only enter immersive mode if we are not already in full-screen training.
             // This prevents clicking a Set button from kicking us out or causing re-entry flicker.
-            if (alreadyInFullscreen) {
-                console.log('[DEBUG] startNewWorkout: already in full-screen — skipping enterImmersiveMode, just refreshing content');
-            } else {
+            if (!alreadyInFullscreen) {
                 // Enter immersive full-screen training mode
                 if (typeof enterImmersiveMode === 'function') {
                     try {
                         enterImmersiveMode();
                     } catch (e) {
-                        console.error('[DEBUG] enterImmersiveMode failed:', e);
                         // fallback: at least show the panel
                         const p = document.getElementById('live-log-panel');
                         if (p) p.classList.remove('hidden');
@@ -2995,7 +2548,7 @@ Local Development Instructions:
         }
 
         function cancelCurrentWorkout() {
-            console.log('[DEBUG] cancelCurrentWorkout called, exiting full-screen');
+
             if (!currentWorkout) return;
 
             // C. 放棄也要自動儲存已記錄的組數
@@ -3055,243 +2608,9 @@ Local Development Instructions:
             saveWorkoutData(); // clear the draft
         }
 
-        function enterImmersiveMode() {
-            try {
-                console.log('[DEBUG] ENTERING full-screen immersive mode (開始新訓練)');
-                console.log(`[DEBUG] Before enter: body.className="${document.body.className}", currentUser=${currentUser}`);
+        // enterImmersiveMode moved to js/fullscreen.js (A refactor)
 
-                // Use fullscreen-training class for true full-screen immersive mode
-                document.body.classList.add('fullscreen-training');
-                document.body.style.overflow = 'hidden';  // Prevent body scroll leaking during full-screen
-
-                isInFullScreenTraining = true;
-
-                const panel = document.getElementById('live-log-panel');
-                if (panel) {
-                    // Robust move to body for fixed positioning: this prevents the panel from being trapped in a hidden ancestor (#content-log may have 'hidden' from tab state) which can cause the entire immersive view to appear blank or not render.
-                    if (!immersivePanelOriginalParent) {
-                        immersivePanelOriginalParent = panel.parentNode;
-                    }
-                    if (immersivePanelOriginalParent && panel.parentNode !== document.body) {
-                        document.body.appendChild(panel);
-                    }
-                    // Ensure it pops to full viewport (CSS rules handle most, but force important styles)
-                    panel.style.position = 'fixed';
-                    panel.style.inset = '0';
-                    panel.style.zIndex = '60';
-                    panel.style.margin = '0';
-                    panel.style.borderRadius = '0';
-                    panel.style.backgroundColor = '#1c1917';
-                    panel.style.overflow = 'hidden';
-                    panel.style.height = '100dvh';  /* reinforce dynamic viewport height */
-                    panel.classList.remove('hidden');  // ensure visible
-                }
-
-                const container = panel ? panel.querySelector('.immersive-container') : null;
-                if (container) {
-                    // Use 100dvh so height dynamically matches the visible viewport (address bar hide/show)
-                    container.style.height = '100dvh';
-                    container.style.minHeight = '100dvh';
-                    container.style.maxHeight = '100dvh';
-                    container.style.borderRadius = '0';
-                    container.style.border = 'none';
-                }
-
-                // Hide main navigation elements for focus (explicit JS control instead of broad CSS to prevent blank page issues)
-                const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
-                if (mainNav) mainNav.style.display = 'none';
-
-                const header = document.querySelector('.charity-header');
-                if (header) header.style.display = 'none';
-
-                // After forcing the immersive layout styles, re-render the key Workout Log training UI elements.
-                // This ensures #current-workout-exercises, session summary, rest timer area, and sets bar are populated and visible in the new fixed/flex context.
-                // (renderCurrentWorkout and updateSessionSummary were called before, but re-calling after layout change guarantees they show correctly and avoids "blank" immersive screen.)
-                // Only the log-related training region is affected; other tabs remain intact in DOM for restore on exit.
-                if (typeof renderCurrentWorkout === 'function') renderCurrentWorkout();
-                if (typeof updateSessionSummary === 'function') updateSessionSummary();
-
-                // Re-render sets bar is handled in the logic below; this ensures the core workout list and summary show the required elements in fs.
-
-                // Debug: attach scroll listener to the scroll area to monitor during full screen
-                const scrollArea = document.querySelector('.immersive-scroll');
-                if (scrollArea) {
-                    // Remove previous if any (for re-entrancy)
-                    if (window._debugFullscreenScroll) {
-                        scrollArea.removeEventListener('scroll', window._debugFullscreenScroll);
-                    }
-                    window._debugFullscreenScroll = function(e) {
-                        console.log('[DEBUG] SCROLL event inside .immersive-scroll while in full-screen. ScrollTop=' + scrollArea.scrollTop + '. No tab switch should occur.');
-                    };
-                    scrollArea.addEventListener('scroll', window._debugFullscreenScroll, { passive: true });
-                    console.log('[DEBUG] Attached debug scroll listener to .immersive-scroll');
-                }
-
-                // Also log window scroll if it bubbles (should not affect fixed panel)
-                if (window._debugWindowScroll) {
-                    window.removeEventListener('scroll', window._debugWindowScroll);
-                }
-                window._debugWindowScroll = function() {
-                    if (document.body.classList.contains('fullscreen-training')) {
-                        console.log('[DEBUG] WINDOW scroll detected during full-screen (should be isolated to .immersive-scroll)');
-                    }
-                };
-                window.addEventListener('scroll', window._debugWindowScroll, { passive: true });
-
-                // Auto-save when entering full screen
-                saveWorkoutData();
-
-                // Re-render Workout Sets bar AFTER the panel and container have been forced into full-screen styles.
-                // Reduced to single render here (plus any prior in startNewWorkout) to avoid repeated calls.
-                // Key workout elements (exercises, summary, timer) are re-rendered above after styles.
-                if (typeof renderWorkoutSetsBar === 'function') {
-                    console.log('[DEBUG] enterImmersiveMode: re-rendering #workout-sets-bar after immersive styles applied');
-                    renderWorkoutSetsBar();
-                }
-
-                console.log(`[DEBUG] After enter: body.className="${document.body.className}", isInFullScreenTraining=${isInFullScreenTraining}`);
-            } catch (err) {
-                console.error('[DEBUG] Error in enterImmersiveMode, attempting cleanup', err);
-                // safety
-                document.body.classList.remove('fullscreen-training');
-                document.body.style.overflow = '';
-                isInFullScreenTraining = false;
-            }
-        }
-
-        function exitImmersiveMode() {
-            try {
-                console.log('[DEBUG] EXITING full-screen immersive mode');
-                console.log(`[DEBUG] Before exit: body.className="${document.body.className}"`);
-
-                document.body.classList.remove('fullscreen-training');
-                document.body.style.overflow = '';  // Restore body scroll
-
-                isInFullScreenTraining = false;
-
-                // Reset collapse state for next training session (always start expanded)
-                const topBar = document.getElementById('immersive-sticky-top');
-                if (topBar) topBar.classList.remove('collapsed');
-                _immersiveTopCollapsed = false;
-                const ic = document.getElementById('immersive-collapse-icon');
-                if (ic) {
-                    ic.classList.remove('fa-chevron-down');
-                    ic.classList.add('fa-chevron-up');
-                }
-
-                // Also reset rest timer collapse
-                // const timerContainer = document.getElementById('rest-timer-container'); // 已移除
-                if (timerContainer) timerContainer.classList.remove('timer-collapsed');
-                _restTimerSectionCollapsed = false;
-                const tc = document.getElementById('rest-timer-chevron');
-                if (tc) {
-                    tc.classList.remove('fa-chevron-up');
-                    tc.classList.add('fa-chevron-down');
-                }
-
-                const panel = document.getElementById('live-log-panel');
-                if (panel) {
-                    // Reset inline styles so normal layout resumes
-                    panel.style.position = '';
-                    panel.style.inset = '';
-                    panel.style.zIndex = '';
-                    panel.style.margin = '';
-                    panel.style.borderRadius = '';
-                    panel.style.backgroundColor = '';
-                    panel.style.overflow = '';
-                    panel.classList.add('hidden');
-                    // Restore to original parent if we moved it for immersive (robust for tab switching and avoiding nesting issues)
-                    if (immersivePanelOriginalParent && panel.parentNode !== immersivePanelOriginalParent) {
-                        immersivePanelOriginalParent.appendChild(panel);
-                    }
-                } else {
-                    // Explicit ensure: if panel missing after exit (e.g. partial restore), try recovery
-                    console.warn('[DEBUG] exitImmersiveMode: live-log-panel not found after exit, attempting ensure');
-                    const logEl = document.getElementById('content-log');
-                    if (logEl && typeof originalLogContent !== 'undefined' && originalLogContent) {
-                        logEl.innerHTML = originalLogContent;
-                        const recovered = document.getElementById('live-log-panel');
-                        if (recovered) recovered.classList.add('hidden');
-                    }
-                }
-
-                const container = panel ? panel.querySelector('.immersive-container') : null;
-                if (container) {
-                    container.style.height = '';
-                    container.style.minHeight = '';
-                    container.style.maxHeight = '';
-                    container.style.borderRadius = '';
-                    container.style.border = '';
-                }
-
-                // Explicit post-exit ensure for timer controls / live panel elements (prevents null in pause/reset after cancel in FS)
-                // These elements live inside live-log-panel, so if panel restored, they should be present.
-                // (timer 已移除，此行僅為舊 debug 殘留，可刪除)
-                if (!document.getElementById('timer-start-btn') || !document.getElementById('timer-status')) {
-                    console.warn('[DEBUG] exitImmersiveMode: timer controls missing after panel restore');
-                }
-
-                // Restore main navigation and header (explicit, to match simplified CSS)
-                const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
-                if (mainNav) mainNav.style.display = '';
-
-                const header = document.querySelector('.charity-header');
-                if (header) header.style.display = '';
-
-                // Also restore any previously hidden elements from older logic
-                const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
-                if (topHeader) topHeader.style.display = '';
-                const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
-                if (subNav) subNav.style.display = '';
-
-                // Cleanup debug listeners
-                const scrollArea = document.querySelector('.immersive-scroll');
-                if (scrollArea && window._debugFullscreenScroll) {
-                    scrollArea.removeEventListener('scroll', window._debugFullscreenScroll);
-                    console.log('[DEBUG] Removed debug scroll listener');
-                }
-                if (window._debugWindowScroll) {
-                    window.removeEventListener('scroll', window._debugWindowScroll);
-                    window._debugWindowScroll = null;
-                }
-
-                console.log(`[DEBUG] After exit: body.className="${document.body.className}", isInFullScreenTraining=${isInFullScreenTraining}`);
-            } catch (err) {
-                console.error('[DEBUG] Error in exitImmersiveMode, doing manual ultra-cleanup', err);
-                // Force recovery
-                document.body.classList.remove('fullscreen-training');
-                document.body.style.overflow = '';
-                isInFullScreenTraining = false;
-                const panel = document.getElementById('live-log-panel');
-                if (panel) {
-                    panel.classList.add('hidden');
-                    panel.style.position = '';
-                    panel.style.inset = '';
-                    panel.style.zIndex = '';
-                    panel.style.margin = '';
-                    panel.style.borderRadius = '';
-                    panel.style.backgroundColor = '';
-                    panel.style.overflow = '';
-                    if (immersivePanelOriginalParent && panel.parentNode !== immersivePanelOriginalParent) {
-                        immersivePanelOriginalParent.appendChild(panel);
-                    }
-                } else {
-                    // Ensure in ultra cleanup
-                    const logEl = document.getElementById('content-log');
-                    if (logEl && typeof originalLogContent !== 'undefined' && originalLogContent) {
-                        logEl.innerHTML = originalLogContent;
-                        const rec = document.getElementById('live-log-panel');
-                        if (rec) rec.classList.add('hidden');
-                    }
-                }
-                const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
-                if (mainNav) mainNav.style.display = '';
-                const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
-                if (topHeader) topHeader.style.display = '';
-                const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
-                if (subNav) subNav.style.display = '';
-            }
-        }
+        // exitImmersiveMode moved to js/fullscreen.js (A refactor)
 
         function addExerciseToCurrentWorkout(nameFromInput = null) {
             if (!currentWorkout) startNewWorkout();
@@ -3388,10 +2707,8 @@ Local Development Instructions:
         }
 
         function removeExerciseFromCurrent(exIdx) {
-            console.log(`[DEBUG] removeExerciseFromCurrent called: exIdx=${exIdx}`);
             if (!currentWorkout) return;
             if (exIdx < 0 || exIdx >= currentWorkout.exercises.length) {
-                console.warn('[DEBUG] removeExerciseFromCurrent: invalid exIdx');
                 return;
             }
 
@@ -3408,7 +2725,6 @@ Local Development Instructions:
 
             // 2. 立即從本地移除 exercise（用戶體驗優先，UI 馬上更新）
             currentWorkout.exercises.splice(exIdx, 1);
-            console.log(`[DEBUG] removed exercise "${removedName}", remaining=${currentWorkout.exercises.length}`);
             renderCurrentWorkout();
             updateSessionSummary();
             saveWorkoutData();
@@ -3427,174 +2743,18 @@ Local Development Instructions:
         }
 
         // === Background Incremental Sync Helpers (for live training) ===
-        let activeBackgroundSyncs = 0;
+        // activeBackgroundSyncs moved to js/state.js (A refactor)
 
-        async function backgroundSyncNewSet(exerciseName, setObj, sessionId) {
-            if (!currentUser || !sessionId || !setObj) return;
+        // backgroundSyncNewSet moved to js/api.js (A refactor)
 
-            activeBackgroundSyncs++;
-            updateSyncStatus('syncing');
+        // backgroundDeleteLog moved to js/api.js (A refactor)
 
-            // Ensure we have a client ID for tracking synced log ID
-            if (!setObj._clientLogId) {
-                setObj._clientLogId = 'inc_' + Date.now() + Math.random().toString(36).slice(2, 10);
-            }
+        // updateSyncStatus moved to js/api.js (A refactor)
 
-            console.log('[DATE DEBUG] backgroundSyncNewSet - currentWorkout.date:', currentWorkout ? currentWorkout.date : null);
-            console.log('[DATE DEBUG] backgroundSyncNewSet - fallback getLocalDateString():', getLocalDateString());
-            const logPayload = {
-                id: setObj._clientLogId,
-                session_id: sessionId,
-                date: (currentWorkout && currentWorkout.date) || getLocalDateString(),
-                exercise: exerciseName,
-                weight: setObj.weight || 0,
-                reps: setObj.reps || 0,
-                notes: setObj.notes || '',
-                volume: setObj.volume || ((setObj.weight || 0) * (setObj.reps || 0))
-            };
-            console.log('[DATE DEBUG] backgroundSyncNewSet - logPayload.date:', logPayload.date);
+        // globalPendingSyncs and lastSyncError moved to js/state.js (A refactor)
 
-            // Fire-and-forget: non-blocking, local UI already updated
-            callAppsScript("addLog", { user: currentUser, log: logPayload })
-                .then(res => {
-                    activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs - 1);
-                    if (res && res.status === 'success') {
-                        setObj.id = logPayload.id;           // store backend log ID for future delete
-                        setObj._clientLogId = logPayload.id; // for compatibility with deleteSet
-                        setObj._lastSynced = Date.now(); // optional marker
-                        if (activeBackgroundSyncs === 0) {
-                            updateSyncStatus('synced');
-                        }
-                    } else {
-                        console.warn('[backgroundSync] addLog non-success for set', res);
-                        if (activeBackgroundSyncs === 0) updateSyncStatus('error');
-                    }
-                })
-                .catch(err => {
-                    activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs - 1);
-                    console.warn('[backgroundSync] incremental addLog failed (will be reconciled on finish)', err);
-                    if (activeBackgroundSyncs === 0) updateSyncStatus('error');
-                });
-        }
-
-        async function backgroundDeleteLog(logId) {
-            if (!currentUser || !logId) return;
-
-            globalPendingSyncs = Math.max(0, globalPendingSyncs) + 1; // reuse for status
-            updateGlobalSyncIndicator('syncing');
-
-            callAppsScript("deleteLog", { user: currentUser, logId: logId })
-                .then(res => {
-                    globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
-                    if (res && res.status === 'success') {
-                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
-                    } else {
-                        console.warn('[backgroundDelete] failed', res);
-                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('error');
-                    }
-                })
-                .catch(err => {
-                    globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
-                    console.warn('[backgroundDelete] error (will reconcile on finish)', err);
-                    if (globalPendingSyncs === 0) updateGlobalSyncIndicator('error');
-                });
-        }
-
-        function updateSyncStatus(status) {
-            const el = document.getElementById('sync-status');
-            if (el) {
-                if (status === 'syncing') {
-                    el.innerHTML = '↻ 同步中...';
-                    el.style.color = '#fbbf24';
-                } else if (status === 'synced') {
-                    el.innerHTML = '✓ 已備份';
-                    el.style.color = '#4ade80';
-                    setTimeout(() => {
-                        if (el && el.innerHTML.includes('已備份')) el.innerHTML = '';
-                    }, 2500);
-                } else if (status === 'error') {
-                    el.innerHTML = '⚠ 稍後同步';
-                    el.style.color = '#f87171';
-                    setTimeout(() => {
-                        if (el && el.innerHTML.includes('稍後')) el.innerHTML = '';
-                    }, 4500);
-                } else {
-                    el.innerHTML = '';
-                }
-            }
-
-            // Global top-right indicator (A. requirement)
-            updateGlobalSyncIndicator(status);
-        }
-
-        let globalPendingSyncs = 0;
-        let lastSyncError = null;
-
-        function updateGlobalSyncIndicator(status) {
-            const container = document.getElementById('global-sync-indicator');
-            const icon = document.getElementById('sync-icon');
-            const text = document.getElementById('sync-text');
-            if (!container || !icon) return;
-
-            // Manage pending count for multiple concurrent ops
-            if (status === 'syncing') {
-                globalPendingSyncs = Math.max(0, globalPendingSyncs) + 1;
-            } else if (status === 'synced' || status === 'error') {
-                globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
-            }
-
-            container.classList.remove('hidden', 'syncing', 'success', 'error');
-            container.classList.add('flex');
-            text.classList.add('hidden');
-
-            if (globalPendingSyncs > 0 || status === 'syncing') {
-                container.classList.add('syncing');
-                icon.className = 'fa-solid fa-sync fa-spin text-[9px] sm:text-[10px]';
-                text.classList.remove('hidden');
-                text.textContent = '同步中';
-                container.title = '正在上傳數據到 Google...';
-                container.onclick = null;
-            } else if (status === 'synced' || (status === 'idle' && globalPendingSyncs === 0)) {
-                container.classList.add('success');
-                icon.className = 'fa-solid fa-check text-[9px] sm:text-[10px]';
-                text.classList.add('hidden');
-                container.title = '最近同步成功';
-                // Auto hide success after short time
-                setTimeout(() => {
-                    if (container && container.classList.contains('success') && globalPendingSyncs === 0) {
-                        container.classList.remove('flex', 'success');
-                        container.classList.add('hidden');
-                    }
-                }, 2200);
-                container.onclick = null;
-            } else if (status === 'error') {
-                container.classList.add('error');
-                icon.className = 'fa-solid fa-exclamation-triangle text-[9px] sm:text-[10px]';
-                text.classList.remove('hidden');
-                text.textContent = '失敗';
-                container.title = '同步失敗，點擊重試';
-                lastSyncError = { time: Date.now() };
-                container.onclick = () => {
-                    container.onclick = null;
-                    // Simple retry: re-trigger last known pending if any, or just hide error
-                    container.classList.remove('error', 'flex');
-                    container.classList.add('hidden');
-                    // In real use, we could re-queue last op, but for simplicity clear
-                    showToast('已清除錯誤狀態，下次操作會重試同步', 2000);
-                };
-            } else {
-                // idle
-                container.classList.remove('flex', 'syncing', 'success', 'error');
-                container.classList.add('hidden');
-                container.onclick = null;
-            }
-        }
-
-        // Expose for retry if needed
-        window.retryLastSyncIfError = function() {
-            const ind = document.getElementById('global-sync-indicator');
-            if (ind) ind.click();
-        };
+        // updateGlobalSyncIndicator moved to js/api.js (A refactor)
+        // (leftover body removed)
 
         /* ============================================================
            A. 初始載入狀態指示器 (Initial Load Status in header right)
@@ -3695,346 +2855,13 @@ Local Development Instructions:
         document.addEventListener('visibilitychange', function() {
             if (document.visibilityState === 'hidden' && (globalPendingSyncs > 0 || isFinishingWorkout)) {
                 // Best effort: the keepalive fetches from finish should help
-                console.log('[sync] page hidden with pending syncs - keepalive should help');
+
             }
         });
 
-        function addSetToExercise(exIdx) {
-            if (!currentWorkout) return;
-            const ex = currentWorkout.exercises[exIdx];
-            const weightInput = document.getElementById(`set-weight-${exIdx}`);
-            const repsInput = document.getElementById(`set-reps-${exIdx}`);
+        // addSetToExercise, deleteSet, updateSetField, renderCurrentWorkout, copyLastToExercise, copyPrevSetToExercise moved to js/ui-log.js (A refactor)
 
-            const weight = parseFloat(weightInput?.value) || 0;
-            const reps = parseInt(repsInput?.value) || 0;
-
-            if (reps <= 0) {
-                alert('請輸入次數');
-                return;
-            }
-
-            const vol = weight * reps;
-            const newSet = { 
-                weight, 
-                reps, 
-                notes: '', 
-                volume: vol,
-                _clientLogId: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)  // for delete sync
-            };
-
-            ex.sets.push(newSet);
-
-            // Do NOT overwrite lastPerformed here - it holds historical previous session full record for "Last" display.
-            // Prefill for next set in current session comes from the just-added ex.sets in renderCurrentWorkout prefill logic.
-
-            // Keep values in quick add for fast consecutive sets (common in FitNotes)
-            if (weightInput) weightInput.value = weight || '';
-            if (repsInput) repsInput.value = reps || '';
-
-            renderCurrentWorkout();
-            updateSessionSummary();
-            saveWorkoutData();
-
-            // === Background incremental upload (non-blocking) ===
-            // Local is always instant; this is best-effort partial backup during training.
-            // IMPORTANT: 訓練中 incremental sync 只係 best-effort。
-            // Finish 流程（confirmFinishWorkout）會使用 finalizeAndSaveWorkout 做 deleteSession + addWorkout，
-            // 確保最終只有一次乾淨、有正確 session_id 的完整 workout。
-            if (currentUser && currentWorkout && currentWorkout.id) {
-                backgroundSyncNewSet(ex.name, newSet, currentWorkout.id);
-            }
-
-            // (休息計時器已移除，無需自動啟動)
-        }
-
-        function deleteSet(exIdx, setIdx) {
-            console.log(`[DEBUG] deleteSet called: exIdx=${exIdx}, setIdx=${setIdx}`);
-
-            if (!currentWorkout) {
-                console.warn('[DEBUG] deleteSet: no currentWorkout');
-                return;
-            }
-
-            // Error handling: validate indexes
-            if (typeof exIdx !== 'number' || exIdx < 0 || exIdx >= currentWorkout.exercises.length) {
-                console.warn(`[DEBUG] deleteSet: invalid exIdx=${exIdx}`);
-                return;
-            }
-
-            const ex = currentWorkout.exercises[exIdx];
-            if (!ex || !Array.isArray(ex.sets)) {
-                console.warn('[DEBUG] deleteSet: exercise or sets array missing');
-                return;
-            }
-
-            if (typeof setIdx !== 'number' || setIdx < 0 || setIdx >= ex.sets.length) {
-                console.warn(`[DEBUG] deleteSet: invalid setIdx=${setIdx} for exercise ${exIdx}`);
-                return;
-            }
-
-            // Perform deletion
-            const deletedSet = ex.sets[setIdx];
-            ex.sets.splice(setIdx, 1);
-
-            console.log(`[DEBUG] deleteSet: removed set, remaining sets for ex ${exIdx}: ${ex.sets.length}`);
-
-            // Background delete sync if we have the synced log id (id or _clientLogId for backward)
-            const logId = deletedSet && (deletedSet.id || deletedSet._clientLogId);
-            if (currentUser && logId) {
-                backgroundDeleteLog(logId);
-            }
-
-            // Re-render everything for consistency (works in fullscreen + normal mode)
-            renderCurrentWorkout();
-            updateSessionSummary();
-            saveWorkoutData();
-        }
-
-        function updateSetField(exIdx, setIdx, field, value) {
-            if (!currentWorkout) return;
-            const set = currentWorkout.exercises[exIdx].sets[setIdx];
-            set[field] = (field === 'weight') ? parseFloat(value) || 0 : (field === 'reps' ? parseInt(value) || 0 : value);
-            if (field === 'weight' || field === 'reps') {
-                set.volume = calculateSetVolume(set);
-            }
-            updateSessionSummary();
-            // Auto-save on field edits (debounce not strictly needed for localStorage)
-            saveWorkoutData();
-        }
-
-        function renderCurrentWorkout() {
-            console.log(`[DEBUG] renderCurrentWorkout called. isInFullScreenTraining=${isInFullScreenTraining}, isFullscreenClass=${document.body.classList.contains('fullscreen-training')}, exercisesCount=${currentWorkout ? currentWorkout.exercises.length : 0}`);
-            const container = document.getElementById('current-workout-exercises');
-            const countEl = document.getElementById('current-workout-exercise-count');
-            if (!currentWorkout || !container) return;
-
-            countEl.textContent = `${currentWorkout.exercises.length} 個動作`;
-
-            if (currentWorkout.exercises.length === 0) {
-                container.innerHTML = `<div class="text-center py-4 text-xs text-[#a8a29e]">尚未加入動作。使用下方輸入或從動作庫選擇。</div>`;
-                return;
-            }
-
-            let html = '';
-            currentWorkout.exercises.forEach((ex, exIdx) => {
-                const lastPerf = lastPerformed[ex.name];
-                let lastHtml = '';
-                if (lastPerf && lastPerf.sets && lastPerf.sets.length) {
-                    lastHtml = '<div>Last:</div>';
-                    lastPerf.sets.forEach((s, i) => {
-                        lastHtml += `<div>set ${i+1} : ${s.weight}kg × ${s.reps}</div>`;
-                    });
-                }
-
-                let imgSrc = getExerciseImage(ex.name);
-                const muscle = getMuscleGroup(ex.name);
-
-                // Build added sets list (display only, with delete) - "set 1 : 10kg × 10"
-                // Always show a section so we can display "尚未有組數" when empty.
-                let setsListHtml = '';
-                if (ex.sets.length > 0) {
-                    ex.sets.forEach((set, sIdx) => {
-                        setsListHtml += `
-                            <div class="flex items-center justify-between px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
-                                <span class="font-medium">set ${sIdx+1} : ${set.weight}kg × ${set.reps}</span>
-                                <button onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded" title="刪除此組"><i class="fa-solid fa-times"></i></button>
-                            </div>`;
-                    });
-                    setsListHtml = `<div class="mt-2 space-y-0.5">${setsListHtml}</div>`;
-                } else {
-                    setsListHtml = `<div class="mt-1 px-1 text-[10px] text-[#a8a29e]">尚未有組數</div>`;
-                }
-
-                html += `
-                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-2 border border-[#57534e] relative">
-                        <!-- Delete entire exercise button - top right, always visible even if 0 sets -->
-                        <button onclick="removeExerciseFromCurrent(${exIdx})" 
-                                class="absolute top-1 right-1 text-red-400 hover:text-red-300 px-1.5 py-0.5 text-base leading-none z-10 active:bg-red-900/30 rounded"
-                                title="刪除此動作">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                        <div class="flex gap-2 items-start">
-                            <!-- Left: Image 56x56 rounded (clean path, no fallback) -->
-                            <img src="${imgSrc}" 
-                                 class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer"
-                                 onerror="this.style.display='none';"
-                                 onclick="event.stopImmediatePropagation(); showExerciseDetail('${ex.name}');">
-                            
-                            <div class="flex-1 min-w-0">
-                                <!-- Bilingual name -->
-                                <div class="font-semibold text-sm leading-tight cursor-pointer" onclick="showExerciseDetail('${ex.name}');">${ex.name}</div>
-                                <!-- Muscle chip -->
-                                <div class="flex items-center gap-1 mt-0.5">
-                                    <span class="muscle-chip text-[9px] px-1.5">${muscle}</span>
-                                </div>
-                                <!-- Last line: multi-set format -->
-                                ${lastHtml ? `<div class="text-[10px] text-emerald-300/80 mt-0.5">${lastHtml}</div>` : ''}
-                                <!-- 使用上次 button -->
-                                <button onclick="copyLastToExercise(${exIdx})" 
-                                        class="mt-1 text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上次</button>
-                            </div>
-                        </div>
-
-                        <!-- Quick Add: ONLY kg + reps  -->
-                        <!-- 小型「使用上組」方便按鈕：一鍵將目前 workout 該動作最後一組（或歷史上次）的 reps/weight 複製到 quick-add 輸入欄（供編輯中的 current input fields 使用）。嚴格跟隨現有樣式、內聯 onclick、zh-HK 標籤、Tailwind classes。 -->
-                        <div class="mb-0.5 flex justify-end">
-                            <button onclick="copyPrevSetToExercise(${exIdx})" 
-                                    class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上組</button>
-                        </div>
-                        <div class="mt-2 grid grid-cols-12 gap-1.5 items-end">
-                            <div class="col-span-5">
-                                <label for="set-weight-${exIdx}" class="text-[9px] text-[#a8a29e] mb-0.5 block">重量 (kg)</label>
-                                <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg" 
-                                       class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
-                            </div>
-                            <div class="col-span-4">
-                                <label for="set-reps-${exIdx}" class="text-[9px] text-[#a8a29e] mb-0.5 block">次數</label>
-                                <input id="set-reps-${exIdx}" type="number" placeholder="reps" 
-                                       class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
-                            </div>
-                            <div class="col-span-3">
-                                <button onclick="addSetToExercise(${exIdx})" 
-                                        class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
-                                    <i class="fa-solid fa-plus"></i> <span>加組</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Below: list of added sets "set 1 : 10kg × 10" with delete, or empty state prompt -->
-                        <!-- When no sets, show "尚未有組數" as requested -->
-                        <div class="sets-list mt-1">
-                            ${setsListHtml}
-                        </div>
-                    </div>`;
-            });
-            container.innerHTML = html;
-
-            // Ensure summary is up to date after full re-render (especially important in fullscreen)
-            updateSessionSummary();
-
-            // Pre-fill quick kg/reps:
-            // Priority: last set logged in *this current workout* for the ex (for fast multi-set logging)
-            // Fallback: last set from historical previous session (lastPerformed stores full sets for Last display)
-            currentWorkout.exercises.forEach((ex, idx) => {
-                const wEl = document.getElementById(`set-weight-${idx}`);
-                const rEl = document.getElementById(`set-reps-${idx}`);
-                if (!wEl || !rEl || (wEl.value && rEl.value)) return;
-
-                let source = null;
-                if (ex.sets && ex.sets.length > 0) {
-                    // live from current session
-                    source = ex.sets[ex.sets.length - 1];
-                } else {
-                    // historical
-                    const perf = lastPerformed[ex.name];
-                    if (perf && perf.sets && perf.sets.length > 0) {
-                        source = perf.sets[perf.sets.length - 1];
-                    }
-                }
-                if (source) {
-                    if (!wEl.value) wEl.value = source.weight || '';
-                    if (!rEl.value) rEl.value = source.reps || '';
-                }
-            });
-        }
-
-        function copyLastToExercise(exIdx) {
-            if (!currentWorkout) return;
-            const ex = currentWorkout.exercises[exIdx];
-            const lastPerf = lastPerformed[ex.name];
-            if (!lastPerf || !lastPerf.sets || lastPerf.sets.length === 0) {
-                return alert('沒有 ' + ex.name + ' 的上次數據');
-            }
-            // Copy the last set from the previous performance (for quick add prefill)
-            const lastSet = lastPerf.sets[lastPerf.sets.length - 1];
-            const wEl = document.getElementById(`set-weight-${exIdx}`);
-            const rEl = document.getElementById(`set-reps-${exIdx}`);
-            if (wEl) wEl.value = lastSet.weight || '';
-            if (rEl) rEl.value = lastSet.reps || '';
-        }
-
-        function copyPrevSetToExercise(exIdx) {
-            if (!currentWorkout) return;
-            const ex = currentWorkout.exercises[exIdx];
-            let source = null;
-            if (ex.sets && ex.sets.length > 0) {
-                // last completed set from current workout (previous sets in this session)
-                source = ex.sets[ex.sets.length - 1];
-            } else {
-                // fallback to previous sets from history (lastPerformed), to match prefill + task requirement
-                const perf = lastPerformed[ex.name];
-                if (perf && perf.sets && perf.sets.length > 0) {
-                    source = perf.sets[perf.sets.length - 1];
-                }
-            }
-            if (!source) {
-                return alert('沒有 ' + ex.name + ' 的上組數據');
-            }
-            // Copy previous set values from last completed set (current workout's sets or lastPerformed previous) into quick-add inputs.
-            // Exact same pattern as copyLastToExercise: direct value set, no save/render, inline JS, zh-HK alert/text.
-            const wEl = document.getElementById(`set-weight-${exIdx}`);
-            const rEl = document.getElementById(`set-reps-${exIdx}`);
-            if (wEl) wEl.value = source.weight || '';
-            if (rEl) rEl.value = source.reps || '';
-        }
-
-        function updateSessionSummary() {
-            console.log('[DEBUG] updateSessionSummary called');
-
-            if (!currentWorkout) return;
-            const volEl = document.getElementById('session-volume');
-            const setsEl = document.getElementById('session-sets-count');
-            const tonnesEl = document.getElementById('session-tonnes');
-
-            if (!volEl || !setsEl || !tonnesEl) {
-                console.warn('[DEBUG] updateSessionSummary: one or more summary elements not found');
-                return;
-            }
-
-            let totalVol = 0;
-            let totalSets = 0;
-            currentWorkout.exercises.forEach(ex => {
-                totalSets += ex.sets.length;
-                ex.sets.forEach(s => totalVol += (s.volume || calculateSetVolume(s)));
-            });
-
-            volEl.textContent = totalVol.toLocaleString();
-            setsEl.textContent = `${totalSets} 組`;
-            tonnesEl.textContent = (totalVol / 1000).toFixed(2) + ' t';
-
-            console.log(`[DEBUG] updateSessionSummary: volume=${totalVol}, sets=${totalSets}, tonnes=${(totalVol/1000).toFixed(2)}`);
-        }
-
-        // Alias for backward compatibility with existing calls
-        function updateSessionVolume() {
-            updateSessionSummary();
-        }
-
-        function updateLastPerformedHint(specificExercise = null) {
-            const hint = document.getElementById('last-performed-hint');
-            if (!hint) return;
-            if (specificExercise && lastPerformed[specificExercise]) {
-                const l = lastPerformed[specificExercise];
-                if (l.sets && l.sets.length > 0) {
-                    const lastS = l.sets[l.sets.length - 1];
-                    hint.innerHTML = `<strong>${specificExercise}</strong> 上次：${lastS.weight}kg × ${lastS.reps} 於 ${l.date}`;
-                }
-            } else {
-                hint.innerHTML = '';
-            }
-        }
-
-        // --- Rest Timer ---
-        // Safe DOM helpers to prevent null crashes in fullscreen / recovery scenarios
-        function safeSetTextContent(id, text) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = text;
-        }
-
-        function safeSetInnerHTML(id, html) {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = html;
-        }
+        // updateSessionSummary, updateSessionVolume, updateLastPerformedHint, safeSet* moved to js/ui.js (A refactor)
 
         function setRestPreset(seconds) {
             resetRestTimer(seconds);
@@ -4135,8 +2962,6 @@ Local Development Instructions:
 
         // --- Finish Workout + PR Detection + Charity ---
         function finishCurrentWorkout() {
-            console.log('[DEBUG] finishCurrentWorkout called. currentWorkout=', currentWorkout, 'isFullscreen=', document.body.classList.contains('fullscreen-training'));
-
             // Simple debounce + guard for rapid mobile taps on "完成訓練" button
             const now = Date.now();
             if (now - lastFinishClick < 250) return;
@@ -4145,12 +2970,10 @@ Local Development Instructions:
             if (isFinishingWorkout) return;  // prevent while confirming
 
             if (!currentWorkout) {
-                console.warn('[DEBUG] finishCurrentWorkout: no currentWorkout');
                 alert('沒有進行中的訓練。');
                 return;
             }
             if (!currentWorkout.exercises || currentWorkout.exercises.length === 0) {
-                console.warn('[DEBUG] finishCurrentWorkout: no exercises logged');
                 alert('完成前請至少加入一個動作並記錄組數。');
                 return;
             }
@@ -4160,7 +2983,6 @@ Local Development Instructions:
 
             // Detect new PRs
             const prs = detectNewPRs(currentWorkout);
-            console.log('[DEBUG] finishCurrentWorkout: prs detected=', prs);
 
             // Populate modal - robust getElementById + checks
             const dateEl = document.getElementById('finish-date');
@@ -4172,7 +2994,6 @@ Local Development Instructions:
             const modal = document.getElementById('finishModal');
 
             if (!modal || !volEl || !prContainer) {
-                console.error('[DEBUG] finishCurrentWorkout: missing modal elements!');
                 alert('無法顯示完成摘要，請重試。');
                 return;
             }
@@ -4231,7 +3052,7 @@ Local Development Instructions:
                 if (notesEl) notesEl.focus();
             }, 50);
 
-            console.log('[DEBUG] finishCurrentWorkout: modal shown successfully');
+
         }
 
         function detectNewPRs(workout) {
@@ -4319,27 +3140,8 @@ Local Development Instructions:
             }
         }
 
-        // === Immersive sticky top collapse/expand ===
-        // Mobile-friendly: 44px+ tap target (top-right), Tailwind transition + class toggle.
-        // When collapsed (.collapsed added): hides the header (title + sets-bar) + rest timer.
-        // ONLY the session-summary bar remains visible (volume / sets / tonnes stats).
-        let _immersiveTopCollapsed = false;
-        function toggleImmersiveTopCollapse() {
-            const top = document.getElementById('immersive-sticky-top');
-            if (!top) return;
-            _immersiveTopCollapsed = !_immersiveTopCollapsed;
-            top.classList.toggle('collapsed', _immersiveTopCollapsed);
-            const icon = document.getElementById('immersive-collapse-icon');
-            if (icon) {
-                if (_immersiveTopCollapsed) {
-                    icon.classList.remove('fa-chevron-up');
-                    icon.classList.add('fa-chevron-down');
-                } else {
-                    icon.classList.remove('fa-chevron-down');
-                    icon.classList.add('fa-chevron-up');
-                }
-            }
-        }
+        // toggleImmersiveTopCollapse moved to js/fullscreen.js (A refactor)
+        // (the var _immersiveTopCollapsed is in js/state.js)
 
         // NEW: Allow the Rest Timer section itself to be collapsed / "收埋"
         // This hides the presets + secondary controls (timer-controls), but keeps the timer display + Start button visible in a compact form.
@@ -4348,17 +3150,10 @@ Local Development Instructions:
         // 可以安全刪除以上變數與函數。
 
         async function confirmFinishWorkout() {
-            console.log('[DATE DEBUG] confirmFinishWorkout called');
-            console.log('[DATE DEBUG] new Date():', new Date());
-            console.log('[DATE DEBUG] new Date().toISOString():', new Date().toISOString());
-            console.log('[DATE DEBUG] getLocalDateString():', getLocalDateString());
-
             if (!currentWorkout) return;
 
             const isContinue = !!currentWorkout.isContinuedFromToday;
             const hasSid = !!(currentWorkout.id || currentWorkout.session_id || currentWorkout.sessionId);
-
-            console.log('[FINISH DEBUG] confirmFinishWorkout called, isContinue:', isContinue, 'hasSid:', hasSid, 'current id:', currentWorkout.id, 'session_id:', currentWorkout.session_id || currentWorkout.sessionId);
 
             // 簡單防重複點擊 guard（防止極短時間內連擊，不影響 UI 退出速度）
             if (isFinishingWorkout) return;
@@ -4370,12 +3165,8 @@ Local Development Instructions:
             const finalVol = calculateWorkoutVolume(currentWorkout);
             currentWorkout.totalVolume = finalVol;
 
-            console.log('[DATE DEBUG] confirmFinishWorkout - currentWorkout.date before save:', currentWorkout.date);
-
             // Capture snapshot 供背景儲存使用
             const workoutToSave = JSON.parse(JSON.stringify(currentWorkout));
-
-            console.log('[DATE DEBUG] confirmFinishWorkout - workoutToSave.date:', workoutToSave.date, 'exercises count:', (workoutToSave.exercises || []).length);
 
             // === 立即退出介面（無任何 loading / 等待提示） ===
             // 1. 本地立即更新（歷史 + 持久化）
@@ -4416,21 +3207,16 @@ Local Development Instructions:
             // 完全不阻塞、不顯示狀態、不彈錯誤 toast 給用戶
             if (currentUser) {
                 const willDelete = !!(workoutToSave.id || workoutToSave.session_id || workoutToSave.sessionId);
-                console.log('[FINISH DEBUG] confirmFinishWorkout - starting bg save, will do deleteSession first?', willDelete, 'sid:', workoutToSave.id || workoutToSave.session_id || workoutToSave.sessionId);
                 setTimeout(() => {
                     finalizeAndSaveWorkout(workoutToSave, notes)
                         .then((res) => {
                             if (res && res.status === 'success') {
                                 // 可選：靜默更新 indicator（不影響已退出的畫面）
                                 try { updateGlobalSyncIndicator('synced'); } catch (_) {}
-                                console.log('[FINISH DEBUG] confirmFinishWorkout - bg save SUCCESS, exercises in payload:', (workoutToSave.exercises || []).length);
-                            } else {
-                                console.warn('[FINISH DEBUG] confirmFinishWorkout - bg save non-success:', res);
                             }
                         })
                         .catch((e) => {
                             // 完全靜默，僅 console
-                            console.warn('[FINISH DEBUG] confirmFinishWorkout - bg save ERROR (本地已安全):', e);
                         });
                 }, 0);
             }
@@ -4445,10 +3231,6 @@ Local Development Instructions:
          * 強烈建議 Finish 流程使用此 helper 保證一致性。
          */
         async function finalizeAndSaveWorkout(workout, notes = '') {
-            console.log('[DATE DEBUG] finalizeAndSaveWorkout called');
-            console.log('[DATE DEBUG] finalizeAndSaveWorkout - input workout.date:', workout.date);
-            console.log('[DATE DEBUG] finalizeAndSaveWorkout - getLocalDateString():', getLocalDateString());
-
             if (!currentUser || !workout) {
                 return { status: 'skipped', message: 'no user or workout' };
             }
@@ -4458,7 +3240,6 @@ Local Development Instructions:
             );
 
             const isContinueSave = !!workout.isContinuedFromToday || !!workout._originalSessionIds || (workout.id && workoutHistory.some(h => (h.id === workout.id || h.session_id === workout.id) && normalizeDateToLocal(h.date) === normalizeDateToLocal(workout.date)));
-            console.log('[FINISH DEBUG] finalizeAndSaveWorkout - sid for delete/add:', sid, 'isContinueSave:', isContinueSave, 'has original id:', !!workout.id, 'ex count:', (workout.exercises || []).length);
 
             // 先刪（清 background incremental 可能造成的重複）
             let didDelete = false;
@@ -4468,9 +3249,8 @@ Local Development Instructions:
                     sessionId: sid
                 }, { keepalive: true });
                 didDelete = true;
-                console.log('[FINISH DEBUG] finalizeAndSaveWorkout - deleteSession done for sid:', sid);
             } catch (e) {
-                console.warn('[FINISH DEBUG] finalizeAndSaveWorkout - deleteSession 警告（繼續寫入）:', e);
+                // continue writing
             }
 
             // 再寫完整最新版本
@@ -4481,13 +3261,10 @@ Local Development Instructions:
                 notes: notes || ''
             };
 
-            console.log('[FINISH DEBUG] finalizeAndSaveWorkout - will addWorkout with sid:', sid, 'date:', payload.date, 'exercises:', payload.exercises.length, 'didDelete:', didDelete);
-
             const addResult = await callAppsScript("addWorkout", {
                 user: currentUser,
                 workout: payload
             }, { keepalive: true });
-            console.log('[FINISH DEBUG] finalizeAndSaveWorkout - addWorkout result:', addResult ? addResult.status : 'null', 'for sid:', sid);
             return addResult;
         }
 
@@ -4530,7 +3307,7 @@ Local Development Instructions:
                 const sessionId = String(workout.id || workout.session_id || workout.sessionId || Date.now());
                 workout.id = sessionId; // 回寫，方便本地 history 一致性
 
-                console.log('[DATE DEBUG] pushCurrentWorkoutToBackend - workout.date:', workout.date, '-> using:', workout.date || getLocalDateString());
+
                 const payload = {
                     session_id: sessionId,
                     date: workout.date || getLocalDateString(),
@@ -4653,929 +3430,25 @@ Local Development Instructions:
            - + 按鈕只用於自訂 Set 的 CRUD。
            ============================================================ */
 
-        async function loadWorkoutSets(forceRefresh = false) {
-            if (!currentUser) {
-                workoutSets = [];
-                renderWorkoutSetsBar();
-                return;
-            }
+        // loadWorkoutSets moved to js/api.js (A refactor)
 
-            // Only load *user-created custom* Workout Sets from the backend.
-            // The 3 fixed Training Days (訓練日 1/2/3) are frontend-only (from TRAINING_DAYS).
-            // They are always prepended in renderWorkoutSetsBar() and never stored in the sheet.
+        // Workout Sets UI (renderWorkoutSetsBar, loadWorkoutSet, showWorkoutSetModal, etc.) moved to js/ui-workoutsets.js (A refactor)
 
-            const now = Date.now();
 
-            if (!forceRefresh && workoutSetsCache && (now - workoutSetsCacheTimestamp < WORKOUT_SETS_CACHE_TTL)) {
-                workoutSets = JSON.parse(JSON.stringify(workoutSetsCache));
-                renderWorkoutSetsBar();
-                return;
-            }
+        // History rendering & edit modal moved to js/ui-history.js (A refactor)
 
-            try {
-                const res = await callAppsScript("getWorkoutSets", { user: currentUser });
-                const backendSets = (res && res.sets) ? res.sets : (Array.isArray(res) ? res : []);
+        // showWorkoutDetail, groupWorkoutsByDate, showWorkoutDetailForDate moved to js/ui-history.js (A refactor)
 
-                // workoutSets now contains ONLY what the user has explicitly saved as custom Sets.
-                workoutSets = backendSets || [];
+        // History rendering & edit modal moved to js/ui-history.js (A refactor)
 
-                workoutSetsCache = JSON.parse(JSON.stringify(workoutSets));
-                workoutSetsCacheTimestamp = now;
+        // closeHistoryEditModal, renderHistoryEditContent moved to js/ui-history.js (A refactor)
 
-                renderWorkoutSetsBar();
-            } catch (e) {
-                console.warn('loadWorkoutSets fetch failed:', e);
-                workoutSets = workoutSets || [];
-                renderWorkoutSetsBar();
-            }
+        // updateHistorySetField moved to js/ui-history.js (A refactor)
 
-            // Refresh exercise suggestions after custom sets are loaded
-            try { updateExerciseSuggestions(''); } catch (_) {}
-        }
+        // addSetToHistoryExercise, deleteHistorySet, deleteHistoryExercise moved to js/ui-history.js (A refactor)
 
-        function renderWorkoutSetsBar() {
-            const bar = document.getElementById('workout-sets-bar');
-            if (!bar) {
-                console.log('[DEBUG] renderWorkoutSetsBar: #workout-sets-bar not found in DOM');
-                return;
-            }
-            bar.innerHTML = '';
-
-            const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-            const panel = document.getElementById('live-log-panel');
-            const panelHidden = !!(panel && panel.classList.contains('hidden'));
-
-            if (!currentUser) {
-                // Show hint only when logged in context (training requires login anyway)
-                const hint = document.createElement('span');
-                hint.className = 'text-[10px] text-[#a8a29e] px-2';
-                hint.textContent = '登入後可使用自訂 Workout Sets';
-                bar.appendChild(hint);
-                console.log(`[DEBUG] renderWorkoutSetsBar: done (no user) | fs=${isFs} | panelHidden=${panelHidden}`);
-                return;
-            }
-
-            // === 固定預設 Training Day（永遠顯示，frontend only，不可修改） ===
-            // 使用 TRAINING_DAYS 作為唯一來源，確保與主訓練日 UI 一致。
-            const fixedPresets = (typeof TRAINING_DAYS !== 'undefined' ? TRAINING_DAYS : []).map(day => ({
-                name: day.fullName,
-                exercises: day.exercises,
-                isPreset: true
-            }));
-
-            // 先渲染三個固定預設 (text only, no images to avoid any placeholder)
-            fixedPresets.forEach(preset => {
-                const btn = document.createElement('button');
-                // 固定預設用不同顏色（藍色系）以區分，並標示不可編輯
-                let cls = 'text-xs px-3 py-1 bg-sky-700 hover:bg-sky-600 active:bg-sky-800 rounded-2xl transition flex items-center';
-                btn.className = cls;
-                btn.title = '固定預設訓練日（不可編輯 / 不可刪除）';
-                btn.innerHTML = `<span class="font-medium">${preset.name}</span> <span class="text-[9px] opacity-70">🔒</span>`;
-                btn.onclick = (e) => {
-                    console.log(`[DEBUG] Preset clicked in bar: ${preset.name}`);
-                    loadWorkoutSet(preset);  // 直接用前端 preset 物件載入
-                };
-                bar.appendChild(btn);
-            });
-
-            // 然後渲染用戶自訂 Set（只來自後端，workoutSets 變數只存 custom, text only）
-            (workoutSets || []).forEach(set => {
-                const btn = document.createElement('button');
-                let cls = 'text-xs px-3 py-1 bg-[#166534] hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl transition flex items-center';
-                const isLast = lastWorkoutSetName && set.name === lastWorkoutSetName;
-                if (isLast) {
-                    cls += ' ring-2 ring-emerald-400 ring-offset-1 ring-offset-[#1c1917]';
-                    btn.title = '上次使用的訓練組合（下次開始新訓練會自動接續）';
-                } else {
-                    btn.title = '載入此自訂訓練組合到目前訓練';
-                }
-                btn.className = cls;
-                btn.innerHTML = `<span class="font-medium">${set.name}</span>`;
-                if (isLast) {
-                    btn.innerHTML += ` <span class="text-[10px] opacity-70">✓</span>`;
-                }
-                btn.onclick = (e) => {
-                    console.log(`[DEBUG] Custom Workout Set button clicked in bar (fullscreen=${isFs}): ${set.name}`);
-                    loadWorkoutSet(set);
-                };
-                bar.appendChild(btn);
-            });
-
-            // Prominent + button for managing (add/edit/delete) **custom** Workout Sets only
-            const plus = document.createElement('button');
-            plus.className = 'text-xs px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 active:bg-amber-700 text-white rounded-2xl font-bold flex items-center gap-1 border border-emerald-500/60';
-            plus.title = '新增、編輯或刪除自訂 Workout Set（訓練組合）';
-            plus.innerHTML = `<i class="fa-solid fa-plus"></i> <span class="font-semibold">+ 新增自訂 Set</span>`;
-            plus.onclick = (e) => {
-                console.log(`[DEBUG] "+" button clicked in workout-sets-bar (fullscreen=${isFs})`);
-                showWorkoutSetModal();
-            };
-            bar.appendChild(plus);
-
-            // Small help text only if user has no custom sets yet (presets are always shown above)
-            if ((workoutSets || []).length === 0) {
-                const empty = document.createElement('span');
-                empty.className = 'text-[10px] text-[#a8a29e] ml-1';
-                empty.textContent = '點 + 建立你的第一個自訂 Set';
-                bar.appendChild(empty);
-            }
-
-            // Log at the end so we see the final state after populating.
-            // Note: barVisible may be false if parent #live-log-panel is still hidden (pre-load or not in training yet).
-            // We ensure content is ready so when panel is shown, bar is stable.
-            // In fullscreen-training the ancestor is position:fixed, so offsetParent can legitimately be null even when the bar is visible and interactive inside the immersive panel.
-            // Force-correct the visibility flag for fs so logs accurately reflect that the bar should be shown.
-            let finalVisible = bar.offsetParent !== null;
-            if (!finalVisible && (isFs || document.body.classList.contains('fullscreen-training') || isInFullScreenTraining)) {
-                finalVisible = true;
-            }
-
-            // Robustness: explicitly ensure the bar (and its container) is visible and interactive in fullscreen.
-            // Some layout/timing in fixed positioning can make offsetParent report false or CSS glitches hide children.
-            if (isFs || document.body.classList.contains('fullscreen-training') || isInFullScreenTraining) {
-                bar.style.display = 'flex';
-                bar.style.visibility = 'visible';
-                bar.style.opacity = '1';
-                // Also ensure direct parent flex row (the justify-between container) is not accidentally collapsed
-                const parentFlex = bar.parentElement;
-                if (parentFlex && parentFlex.classList.contains('flex')) {
-                    parentFlex.style.display = 'flex';
-                    parentFlex.style.visibility = 'visible';
-                }
-            }
-
-            console.log(`[DEBUG] renderWorkoutSetsBar: done | currentUser=${currentUser} | sets=${(workoutSets||[]).length} | fs=${isFs} | panelHidden=${panelHidden} | barVisible=${finalVisible} | children=${bar.children.length}`);
-        }
-
-        function loadWorkoutSet(set) {
-            const isFullscreen = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-            console.log(`[DEBUG] loadWorkoutSet called for set="${set && set.name}", exercises=${set && set.exercises ? set.exercises.length : 0}, hasCurrent=${!!currentWorkout}, fullscreen=${isFullscreen}`);
-
-            if (!set || !set.exercises || !set.exercises.length) return;
-
-            const wasAlreadyTraining = !!currentWorkout;
-
-            if (!currentWorkout) {
-                // This will go through the guarded startNewWorkout (which will enter fullscreen only if not already in it)
-                startNewWorkout();
-            }
-
-            // Append the set's exercises (deduped)
-            set.exercises.forEach(name => {
-                const ex = getExerciseByName(name);
-                const displayName = ex ? getExerciseDisplay(ex) : name;
-                if (!currentWorkout.exercises.find(e => e.name === displayName)) {
-                    currentWorkout.exercises.push({ name: displayName, sets: [] });
-                }
-            });
-
-            renderCurrentWorkout();
-            updateSessionSummary();
-
-            // Remember this choice so next time user starts a new workout, we can auto "接埋" it
-            lastWorkoutSetName = set.name;
-            saveWorkoutData();
-
-            // Re-render the sets bar while in fullscreen so it stays fresh and interactive
-            if (typeof renderWorkoutSetsBar === 'function') {
-                renderWorkoutSetsBar();
-            }
-
-            // Auto-collapse the top sticky bar (header + timer hidden) after the user selects a training set.
-            // Only the session-summary bar remains visible. This gives more room for the exercise list right after picking a 訓練組合.
-            if (isFullscreen) {
-                const topBar = document.getElementById('immersive-sticky-top');
-                if (topBar && !topBar.classList.contains('collapsed')) {
-                    if (typeof toggleImmersiveTopCollapse === 'function') {
-                        toggleImmersiveTopCollapse();
-                    }
-                }
-            }
-
-            // Explicit guarantee: we never want to exit full-screen just because user loaded a preset Set.
-            console.log(`[DEBUG] loadWorkoutSet completed (stayed in fullscreen=${isFullscreen}). wasAlreadyTraining=${wasAlreadyTraining}, now has ${currentWorkout ? currentWorkout.exercises.length : 0} exercises`);
-        }
-
-        function showWorkoutSetModal(set = null) {
-            const modal = document.getElementById('workoutSetModal');
-            if (!modal) {
-                console.error('#workoutSetModal not found in DOM');
-                alert('Workout Set 視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
-                return;
-            }
-
-            const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-            console.log(`[DEBUG] showWorkoutSetModal called (fullscreen=${isFs}), editingSet=${set ? set.name : 'new'}, current sets count=${(workoutSets||[]).length}`);
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            // When opened from inside full-screen training, the live-log-panel is forced to z-60.
-            // Raise this modal above it so the Workout Set editor remains usable and interactive.
-            if (isFs) {
-                modal.style.zIndex = '85';
-                console.log('[DEBUG] Raised #workoutSetModal z-index for full-screen mode');
-            } else {
-                modal.style.zIndex = ''; // let the Tailwind z-50 apply in normal mode
-            }
-
-            currentEditingSet = set ? { ...set } : null;
-            editingSetExercises = set && set.exercises ? [...set.exercises] : [];
-
-            // Populate form
-            const nameEl = document.getElementById('wset-name');
-            if (nameEl) nameEl.value = currentEditingSet ? currentEditingSet.name : '';
-
-            const delBtn = document.getElementById('wset-delete-btn');
-            if (delBtn) delBtn.classList.toggle('hidden', !currentEditingSet);
-
-            renderEditingSetExercises();
-            renderExistingSetsList();
-
-            // Focus name for new
-            setTimeout(() => { if (nameEl && !currentEditingSet) nameEl.focus(); }, 50);
-        }
-
-        function hideWorkoutSetModal() {
-            const modal = document.getElementById('workoutSetModal');
-            if (!modal) return;
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-
-            // Reset any inline z-index we may have raised for full-screen
-            modal.style.zIndex = '';
-
-            currentEditingSet = null;
-            editingSetExercises = [];
-
-            // Refresh the bar (in case sets were added/edited/deleted while in training/fullscreen)
-            if (typeof renderWorkoutSetsBar === 'function') {
-                renderWorkoutSetsBar();
-            }
-        }
-
-        function renderEditingSetExercises() {
-            const container = document.getElementById('wset-exercises-list');
-            if (!container) return;
-            container.innerHTML = '';
-            if (!editingSetExercises.length) {
-                const empty = document.createElement('div');
-                empty.className = 'text-xs text-[#a8a29e] italic';
-                empty.textContent = '尚未加入任何動作。使用下方輸入或動作庫添加。';
-                container.appendChild(empty);
-                return;
-            }
-            editingSetExercises.forEach((name, idx) => {
-                const chip = document.createElement('div');
-                chip.className = 'inline-flex items-center gap-1 px-2 py-0.5 bg-[#3f3a36] text-xs rounded-2xl border border-[#57534e]';
-                chip.innerHTML = `
-                    <span class="max-w-[180px] truncate">${name}</span>
-                    <button class="text-red-400 hover:text-red-300 px-1" title="移除">×</button>
-                `;
-                chip.querySelector('button').onclick = () => {
-                    editingSetExercises.splice(idx, 1);
-                    renderEditingSetExercises();
-                };
-                container.appendChild(chip);
-            });
-        }
-
-        function addExerciseToEditingSet(nameFromInput = null) {
-            const input = document.getElementById('wset-add-exercise');
-            let name = nameFromInput || (input ? input.value.trim() : '');
-            if (!name) return;
-            // Normalize to bilingual display name if possible
-            const ex = getExerciseByName(name);
-            const display = ex ? getExerciseDisplay(ex) : name;
-            if (!editingSetExercises.find(n => n.toLowerCase() === display.toLowerCase())) {
-                editingSetExercises.push(display);
-            }
-            if (input) input.value = '';
-            renderEditingSetExercises();
-        }
-
-        // Helper: open library; for simplicity user can note name and paste, or we add to current workout if open.
-        // To keep non-intrusive we just open library (existing add-to-current is separate).
-        function showLibraryModalForSet() {
-            // Open library. User can use search, then manually type the name in the set editor input.
-            // (Advanced: could extend library to support "add to set" target, but out of scope for this change.)
-            const libModal = document.getElementById('libraryModal');
-            if (!libModal) {
-                console.error('#libraryModal not found in DOM');
-                alert('動作庫視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
-                return;
-            }
-            if (typeof showLibraryModal === 'function') {
-                const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-                if (isFs) {
-                    libModal.style.zIndex = '90'; // ensure it sits above the immersive panel
-                }
-                showLibraryModal(false);
-            }
-        }
-
-        async function saveCurrentWorkoutSet() {
-            const nameEl = document.getElementById('wset-name');
-            const name = nameEl ? nameEl.value.trim() : '';
-            if (!name) return alert('請輸入 Set 名稱');
-            if (!editingSetExercises.length) return alert('請至少加入一個動作');
-
-            const payload = {
-                id: currentEditingSet && currentEditingSet.id ? currentEditingSet.id : undefined,
-                name: name,
-                exercises: [...editingSetExercises]
-            };
-            console.log('[DEBUG] saveCurrentWorkoutSet payload:', payload);
-
-            try {
-                const res = await callAppsScript("saveWorkoutSet", { user: currentUser, set: payload });
-                if (res && res.status === 'error') {
-                    alert('儲存失敗：' + (res.message || ''));
-                    return;
-                }
-                hideWorkoutSetModal();
-                await loadWorkoutSets(true);  // force refresh after mutation to get latest from backend
-                alert('Workout Set 已儲存！');
-            } catch (e) {
-                console.error(e);
-                alert('儲存 Workout Set 時發生錯誤');
-            }
-        }
-
-        async function deleteCurrentEditingSet() {
-            if (!currentEditingSet || !currentEditingSet.id) {
-                // For unsaved new, just clear form
-                clearWorkoutSetForm();
-                return;
-            }
-            if (!confirm('確定刪除此 Workout Set？')) return;
-            try {
-                await callAppsScript("deleteWorkoutSet", { user: currentUser, setId: currentEditingSet.id });
-                hideWorkoutSetModal();
-                await loadWorkoutSets(true);  // force refresh after mutation
-            } catch (e) {
-                alert('刪除失敗');
-            }
-        }
-
-        function clearWorkoutSetForm() {
-            currentEditingSet = null;
-            editingSetExercises = [];
-            const nameEl = document.getElementById('wset-name');
-            if (nameEl) nameEl.value = '';
-            const delBtn = document.getElementById('wset-delete-btn');
-            if (delBtn) delBtn.classList.add('hidden');
-            renderEditingSetExercises();
-            // keep the existing list visible
-        }
-
-        async function renderExistingSetsList() {
-            const container = document.getElementById('wset-existing-list');
-            if (!container) return;
-            container.innerHTML = '';
-            if (!workoutSets || !workoutSets.length) {
-                container.innerHTML = `<div class="text-xs text-[#a8a29e]">尚未有任何自訂 Workout Set。使用上方表單新增（固定預設訓練日已喺 Bar 上方顯示）。</div>`;
-                return;
-            }
-            workoutSets.forEach(set => {
-                const row = document.createElement('div');
-                row.className = 'flex justify-between items-center bg-[#292524] px-3 py-1.5 rounded-2xl text-sm';
-                row.innerHTML = `
-                    <div class="flex-1 pr-2 truncate" title="${set.name}">${set.name} <span class="text-[10px] text-[#a8a29e]">(${set.exercises ? set.exercises.length : 0} 動作)</span></div>
-                    <div class="flex gap-1">
-                        <button class="text-emerald-400 text-xs px-2 py-0.5 hover:bg-emerald-900/30 rounded" title="載入到訓練">載入</button>
-                        <button class="text-[#a8a29e] text-xs px-2 py-0.5 hover:bg-[#3f3a36] rounded" title="編輯">編輯</button>
-                        <button class="text-red-400 text-xs px-2 py-0.5 hover:bg-red-900/30 rounded" title="刪除">刪</button>
-                    </div>
-                `;
-                // Bind
-                const [loadBtn, editBtn, delBtn] = row.querySelectorAll('button');
-                loadBtn.onclick = () => { hideWorkoutSetModal(); loadWorkoutSet(set); };
-                editBtn.onclick = () => { showWorkoutSetModal(set); };  // re-open in edit mode (will reset list)
-                delBtn.onclick = async () => {
-                    if (!confirm('確定刪除？')) return;
-                    if (!set.id) { alert('此 Set 暫無穩定 ID（請刷新頁面後再試，或等後端返回 id）。'); return; }
-                    try {
-                        await callAppsScript("deleteWorkoutSet", { user: currentUser, setId: set.id });
-                        await loadWorkoutSets(true);  // force refresh after mutation
-                        renderExistingSetsList();  // refresh inside modal too
-                    } catch (e) { alert('刪除失敗'); }
-                };
-                container.appendChild(row);
-            });
-        }
-
-        // Source of truth for the 3 fixed, non-modifiable Training Days.
-        // These are used to populate the static training day sections in the UI.
-        // IMPORTANT: These live ONLY in frontend. They are NEVER stored in the Workout_Sets sheet.
-        const TRAINING_DAYS = [
-          {
-            id: 1,
-            label: "訓練日 1",
-            subtitle: "Chest + Triceps",
-            fullName: "訓練日 1（Chest + Triceps）",
-            exercises: [
-              "上斜啞鈴推胸 (Incline Dumbbell Press)",
-              "平板啞鈴推胸 (Flat Dumbbell Press)",
-              "下胸繩索飛鳥 (Lower Chest Cable Fly)",
-              "繩索三頭下壓 (Tricep Rope Pushdown)",
-              "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)",
-              "斬木 (Wood Chopper)"
-            ]
-          },
-          {
-            id: 2,
-            label: "訓練日 2",
-            subtitle: "Back + Biceps + Core",
-            fullName: "訓練日 2（Back + Biceps + Core）",
-            exercises: [
-              "引體向上 (Pull-ups)",
-              "坐姿繩索拉背 (Seated Cable Row)",
-              "硬拉 (Deadlift)",
-              "貝葉斯繩索彎舉 (Bayesian Cable Curls)",
-              "牧師椅彎舉 (Preacher Curls)",
-              "腹輪 (Ab Wheel Rollout)"
-            ]
-          },
-          {
-            id: 3,
-            label: "訓練日 3",
-            subtitle: "Legs + Shoulders + Forearms + Core",
-            fullName: "訓練日 3（Legs + Shoulders + Forearms + Core）",
-            exercises: [
-              "澤奇深蹲 (Zercher Squats)",
-              "指力彎舉 (Finger Curls)",
-              "反向腕彎舉 (Reverse Forearm Curl)",
-              "側舉 (Lateral Raises)",
-              "後飛 (Rear Delt Raises)",
-              "龍旗 (Dragon Flag)"
-            ]
-          }
-        ];
-
-        // Kept for potential legacy quick-load compatibility only.
-        // The Workout Sets Bar (renderWorkoutSetsBar) now ONLY renders user custom sets
-        // loaded by loadWorkoutSets(). The 3 fixed days are shown via separate UI using TRAINING_DAYS directly.
-        const DEFAULT_WORKOUT_SETS = TRAINING_DAYS.map(day => ({
-          name: day.fullName,
-          exercises: [...day.exercises]
-        }));
-
-        function quickLoadFromPlan(day) {
-            // LEGACY compatibility shim.
-            // The 3 fixed Training Days are now rendered via static HTML + TRAINING_DAYS.
-            // Custom sets are in the workout-sets-bar (only user-saved ones).
-            console.warn('[DEBUG] quickLoadFromPlan legacy called for day=', day, '- redirecting to dynamic sets if possible');
-            const kwMap = {1: 'chest', 2: 'back', 3: 'leg'};
-            const kw = kwMap[day] || '';
-            const match = (workoutSets || []).find(s => (s.name || '').toLowerCase().includes(kw));
-            if (match) {
-                loadWorkoutSet(match);
-                return;
-            }
-            if (!currentWorkout) startNewWorkout();
-            alert('舊版快速載入已棄用。請使用訓練面板上的 Workout Sets 按鈕（或 + 自訂）。');
-            renderCurrentWorkout();
-        }
-
-
-        // --- History Rendering ---
-        function renderWorkoutHistory() {
-            const container = document.getElementById('workout-history-list');
-            container.innerHTML = '';
-            if (workoutHistory.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-[#a8a29e]">尚未記錄任何訓練。請在上方開始！</div>`;
-                return;
-            }
-
-            // 使用共用 grouping 函數，確保與 renderCalendar() 邏輯完全一致
-            const grouped = groupWorkoutsByDate();
-            // 由新到舊排序
-            const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-
-            dates.forEach((d) => {
-                const g = grouped[d];
-                const vol = g.totalVolume;
-                // 總動作數量：使用不重複的動作名稱（跨多場訓練）
-                const exCount = [...new Set((g.exercises || []).map(e => e && e.name).filter(Boolean))].length;
-                const setsCount = g.totalSets;
-                const cleanDate = d;
-
-                const card = document.createElement('div');
-                card.className = 'workout-history-card log-card rounded-2xl p-3.5 cursor-pointer';
-                card.innerHTML = `
-                    <div class="flex justify-between">
-                        <div class="font-semibold">${cleanDate}</div>
-                        <div class="text-emerald-400 text-sm tabular-nums">${vol.toLocaleString()}kg</div>
-                    </div>
-                    <div class="text-xs text-[#a8a29e]">${exCount} 動作 • ${setsCount} 組 • ${vol.toLocaleString()}kg</div>
-                    ${g.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${g.notes}"</div>` : ''}
-                `;
-
-                // 統一使用 showWorkoutDetailForDate，與日曆點擊行為一致
-                card.onclick = () => showWorkoutDetailForDate(d);
-
-                container.appendChild(card);
-            });
-        }
-
-        function showWorkoutDetail(workout, historyIndex) {
-            // 改為打開專屬的歷史記錄查看/編輯 Modal
-            // 完全獨立於新訓練流程 (currentWorkout / live-log-panel / rest timer)
-            openHistoryEditModal(workout, historyIndex);
-        }
-
-        /**
-         * 共用日期 grouping 函數
-         * 將 workoutHistory 按 YYYY-MM-DD 分組，同一日多場訓練會合併。
-         * renderWorkoutHistory() 及 renderCalendar() 都應使用此函數，確保邏輯一致。
-         */
-        function groupWorkoutsByDate(workouts = workoutHistory) {
-            console.log('[DATE DEBUG] groupWorkoutsByDate called');
-            const grouped = {};
-            (workouts || []).forEach(w => {
-                const d = normalizeDateToLocal(w.date);
-                console.log('[DATE DEBUG] groupWorkoutsByDate - raw w.date:', w.date, '-> normalized d:', d);
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
-                if (!grouped[d]) {
-                    grouped[d] = {
-                        date: d,
-                        workouts: [],
-                        exercises: [],
-                        totalSets: 0,
-                        totalVolume: 0,
-                        notes: ''
-                    };
-                }
-                const g = grouped[d];
-                g.workouts.push(w);
-                g.exercises.push(...(w.exercises || []));
-                g.totalSets += (w.exercises || []).reduce((a, e) => a + (e.sets ? e.sets.length : 0), 0);
-                g.totalVolume += (w.totalVolume || calculateWorkoutVolume(w));
-                if (w.notes && !g.notes) g.notes = w.notes; // 第一條非空 notes
-            });
-            return grouped;
-        }
-
-        /**
-         * 統一的日期詳情入口
-         * 訓練歷史卡片 + 訓練日曆點擊 都應呼叫此函數。
-         * 內部使用 groupWorkoutsByDate 取得該日數據，組成 merged 虛擬物件（支援 _isDayGroup），
-         * 然後交給 showWorkoutDetail / openHistoryEditModal 處理顯示 + 編輯 + 儲存/刪除。
-         */
-        function showWorkoutDetailForDate(dateStr) {
-            const grouped = groupWorkoutsByDate();
-            const g = grouped[dateStr];
-            if (!g || !g.workouts || g.workouts.length === 0) {
-                alert(`此日期 ${dateStr} 沒有訓練記錄`);
-                return;
-            }
-
-            // 組成與 renderWorkoutHistory 點擊時相同的 merged 物件
-            // 同時附帶 _sessionIds，方便 save/delete 時精準 sync backend（deleteSession + re-push）
-            const sessionIds = (g.workouts || [])
-                .map(w => w.id || w.session_id || w.sessionId)
-                .filter(Boolean);
-            const merged = {
-                date: g.date,
-                exercises: g.exercises ? [...g.exercises] : [],
-                totalVolume: g.totalVolume,
-                notes: g.notes || '',
-                _isDayGroup: true,
-                _originalCount: g.workouts.length,
-                _sessionIds: sessionIds
-            };
-
-            showWorkoutDetail(merged, -1);
-        }
-
-        // ============ 歷史記錄專用編輯 Modal 相關函數 ============
-        // 這些函數只操作 currentViewingHistory clone，絕不影響 currentWorkout 及開始新訓練流程
-
-        function openHistoryEditModal(original, historyIndex) {
-            if (!original) return;
-
-            // 深層 clone，避免直接修改原物件直到「儲存」
-            currentViewingHistory = JSON.parse(JSON.stringify(original));
-            currentViewingHistoryIndex = (typeof historyIndex === 'number') ? historyIndex : -1;
-
-            const modal = document.getElementById('historyEditModal');
-            if (!modal) {
-                console.error('#historyEditModal not found — falling back to legacy behaviour');
-                // 極少數 fallback（保留舊行為以防萬一）
-                const cleanDate = normalizeDateToLocal(original.date);
-                if (confirm(`日期: ${cleanDate}\n\n確定刪除這次訓練？`)) {
-                    workoutHistory.splice(currentViewingHistoryIndex, 1);
-                    saveWorkoutData();
-                    renderWorkoutHistory();
-                    renderOverallStats();
-                    renderCalendar();
-                }
-                return;
-            }
-
-            // 設定標題日期
-            const dateEl = document.getElementById('history-edit-date');
-            if (dateEl) dateEl.textContent = normalizeDateToLocal(currentViewingHistory.date) || '未知日期';
-
-            // 顯示 modal
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            // Backdrop click to close (不影響內部點擊)
-            modal.onclick = (e) => {
-                if (e.target === modal) closeHistoryEditModal();
-            };
-
-            // 渲染可編輯內容
-            renderHistoryEditContent();
-        }
-
-        function closeHistoryEditModal() {
-            const modal = document.getElementById('historyEditModal');
-            if (modal) {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
-            }
-            currentViewingHistory = null;
-            currentViewingHistoryIndex = -1;
-        }
-
-        function renderHistoryEditContent() {
-            const container = document.getElementById('history-edit-exercises');
-            const volEl = document.getElementById('history-edit-volume');
-            if (!container || !currentViewingHistory) return;
-
-            // 計算並顯示即時總量
-            const vol = calculateWorkoutVolume(currentViewingHistory);
-            currentViewingHistory.totalVolume = vol;
-            if (volEl) volEl.textContent = vol.toLocaleString();
-
-            if (!currentViewingHistory.exercises || currentViewingHistory.exercises.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-[#a8a29e]">此記錄沒有動作資料。</div>`;
-                return;
-            }
-
-            let html = '';
-            currentViewingHistory.exercises.forEach((ex, exIdx) => {
-                let setsHtml = '';
-                (ex.sets || []).forEach((set, sIdx) => {
-                    const w = set.weight != null ? set.weight : 0;
-                    const r = set.reps != null ? set.reps : 0;
-                    const n = set.notes || '';
-                    setsHtml += `
-                        <div class="flex items-center gap-2 bg-[#1f1c1a] rounded-xl px-2 py-1.5 mb-1 text-sm">
-                            <div class="flex-1 grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[9px] text-[#a8a29e] mb-0.5">重量 (kg)</label>
-                                    <input type="number" step="0.5" value="${w}"
-                                           class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
-                                           onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'weight', this.value)">
-                                </div>
-                                <div>
-                                    <label class="block text-[9px] text-[#a8a29e] mb-0.5">次數</label>
-                                    <input type="number" value="${r}"
-                                           class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
-                                           onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'reps', this.value)">
-                                </div>
-                                <div>
-                                    <label class="block text-[9px] text-[#a8a29e] mb-0.5">備註</label>
-                                    <input type="text" value="${n}"
-                                           class="log-input w-full px-2 py-1 text-sm rounded-xl"
-                                           onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'notes', this.value)">
-                                </div>
-                            </div>
-                            <button onclick="deleteHistorySet(${exIdx}, ${sIdx})"
-                                    class="text-red-400 hover:text-red-300 px-2 py-1 text-xs rounded active:bg-red-900/30" title="刪除此組">✕</button>
-                        </div>
-                    `;
-                });
-
-                if (!setsHtml) {
-                    setsHtml = `<div class="text-xs text-[#a8a29e] px-1 py-1">尚未有組數</div>`;
-                }
-
-                html += `
-                    <div class="exercise-log-card bg-[#252321] rounded-2xl p-3 border border-[#57534e]">
-                        <div class="flex items-center justify-between mb-2">
-                            <div>
-                                <div class="font-semibold text-sm">${ex.name}</div>
-                                <div class="text-[10px] text-[#a8a29e]">${getMuscleGroup ? getMuscleGroup(ex.name) : ''}</div>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <button onclick="addSetToHistoryExercise(${exIdx})"
-                                        class="px-2.5 py-1 text-xs bg-emerald-900/60 hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl flex items-center gap-1">
-                                    <i class="fa-solid fa-plus text-[10px]"></i> <span>加組</span>
-                                </button>
-                                <button onclick="deleteHistoryExercise(${exIdx})"
-                                        class="px-1.5 py-1 text-xs text-red-400 hover:text-red-300 active:bg-red-900/30 rounded"
-                                        title="刪除此動作">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="space-y-0.5">
-                            ${setsHtml}
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        function updateHistorySetField(exIdx, setIdx, field, value) {
-            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
-            const ex = currentViewingHistory.exercises[exIdx];
-            if (!ex || !ex.sets || !ex.sets[setIdx]) return;
-
-            const set = ex.sets[setIdx];
-            if (field === 'weight' || field === 'reps') {
-                const num = (field === 'weight') ? parseFloat(value) : parseInt(value);
-                set[field] = isNaN(num) ? 0 : num;
-                set.volume = calculateSetVolume(set);
-            } else {
-                set[field] = (value || '').trim();
-            }
-
-            // 即時更新 header 總量（不需要全量 re-render 整個列表，體驗更好）
-            const volEl = document.getElementById('history-edit-volume');
-            const newVol = calculateWorkoutVolume(currentViewingHistory);
-            currentViewingHistory.totalVolume = newVol;
-            if (volEl) volEl.textContent = newVol.toLocaleString();
-        }
-
-        function addSetToHistoryExercise(exIdx) {
-            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
-            const ex = currentViewingHistory.exercises[exIdx];
-            if (!ex) return;
-
-            // 新增一組（預設 0）
-            ex.sets = ex.sets || [];
-            ex.sets.push({ weight: 0, reps: 0, notes: '', volume: 0 });
-
-            // 重新渲染（簡單直接）
-            renderHistoryEditContent();
-        }
-
-        function deleteHistorySet(exIdx, setIdx) {
-            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
-            const ex = currentViewingHistory.exercises[exIdx];
-            if (!ex || !ex.sets || setIdx < 0 || setIdx >= ex.sets.length) return;
-
-            ex.sets.splice(setIdx, 1);
-            renderHistoryEditContent();
-        }
-
-        /**
-         * 刪除整個動作（exercise-log-card）
-         * 從 currentViewingHistory.exercises 移除，並重新計算總量 + re-render
-         */
-        function deleteHistoryExercise(exIdx) {
-            if (!currentViewingHistory || !currentViewingHistory.exercises) return;
-            if (exIdx < 0 || exIdx >= currentViewingHistory.exercises.length) return;
-
-            currentViewingHistory.exercises.splice(exIdx, 1);
-            renderHistoryEditContent();  // 會自動更新總量和 DOM
-        }
-
-        async function saveHistoryEdit() {
-            if (!currentViewingHistory) {
-                closeHistoryEditModal();
-                return;
-            }
-
-            if (isSavingHistory) return;
-            isSavingHistory = true;
-
-            // Use ids for reliable targeting + immediate disable
-            const saveBtn = document.getElementById('save-history-btn');
-            const deleteBtn = document.getElementById('delete-history-btn');
-            const origSaveHtml = saveBtn ? saveBtn.innerHTML : '';
-            const origDeleteHtml = deleteBtn ? deleteBtn.innerHTML : '';
-
-            try {
-                // Disable both buttons during save (prevents double tap on mobile)
-                if (saveBtn) {
-                    saveBtn.disabled = true;
-                    saveBtn.classList.add('opacity-70', 'cursor-wait');
-                    saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> 儲存中...`;
-                }
-                if (deleteBtn) {
-                    deleteBtn.disabled = true;
-                    deleteBtn.classList.add('opacity-50', 'cursor-wait');
-                }
-
-                const isDayGroup = !!currentViewingHistory._isDayGroup;
-                const d = normalizeDateToLocal(currentViewingHistory.date);
-
-                // === Priority 2: 先 sync backend，再更新本地（失敗即 revert）===
-                if (currentUser) {
-                    // 準備要刪除的舊 session(s)
-                    let oldSessionIds = [];
-                    if (isDayGroup) {
-                        oldSessionIds = (currentViewingHistory._sessionIds || []).slice();
-                    } else {
-                        const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
-                        if (sid) oldSessionIds = [sid];
-                    }
-
-                    // 清理 dayGroup 標記，準備推送版本（保持 exercises 為合併後狀態）
-                    const toPush = JSON.parse(JSON.stringify(currentViewingHistory));
-                    delete toPush._isDayGroup;
-                    delete toPush._originalCount;
-                    delete toPush._sessionIds;
-                    if (!toPush.id) toPush.id = Date.now().toString();
-
-                    try {
-                        updateGlobalSyncIndicator('syncing');
-                        // 1. 刪除舊 session（支援 dayGroup 多個） + C. 刪除操作也更新狀態
-                        for (const sid of oldSessionIds) {
-                            const delRes = await callAppsScript("deleteSession", { user: currentUser, sessionId: sid });
-                            if (delRes && delRes.status === 'error') {
-                                throw new Error(delRes.message || 'deleteSession failed');
-                            }
-                        }
-                        // 2. 用單一 addWorkout 重推更新後版本（bulk）
-                        const pushRes = await pushCurrentWorkoutToBackend(toPush);
-                        if (!pushRes || pushRes.status !== 'success') {
-                            throw new Error(pushRes && pushRes.message ? pushRes.message : 'addWorkout push failed');
-                        }
-                        // 成功後同步 id 回 clone
-                        currentViewingHistory.id = toPush.id;
-                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
-                    } catch (err) {
-                        console.error('[saveHistoryEdit] backend sync failed, revert:', err);
-                        updateGlobalSyncIndicator('error');
-                        showToast('❌ 同步後端失敗，修改未保存。請檢查網絡後重試。', 5500);
-                        closeHistoryEditModal();
-                        return; // 不執行本地 mutation
-                    }
-                }
-
-                // Backend 成功（或無登入），才執行本地更新
-                if (isDayGroup) {
-                    // 日期群組虛擬物件：刪除該日所有舊記錄，然後用編輯後的合併版本替換（合併為單一記錄）
-                    workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
-
-                    // 清理特殊標記
-                    delete currentViewingHistory._isDayGroup;
-                    delete currentViewingHistory._originalCount;
-                    delete currentViewingHistory._sessionIds;
-
-                    // 重新計算 volume 確保正確
-                    currentViewingHistory.totalVolume = calculateWorkoutVolume(currentViewingHistory);
-
-                    // 插入合併後的單一記錄（置頂）
-                    workoutHistory.unshift(currentViewingHistory);
-                } else {
-                    // 單一記錄正常處理
-                    let targetIdx = currentViewingHistoryIndex;
-                    if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
-                        (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
-                        targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
-                    }
-
-                    if (targetIdx >= 0) {
-                        workoutHistory[targetIdx] = currentViewingHistory;
-                    } else {
-                        workoutHistory.unshift(currentViewingHistory);
-                    }
-
-                    const finalVol = calculateWorkoutVolume(currentViewingHistory);
-                    const slot = (targetIdx >= 0 ? targetIdx : 0);
-                    if (workoutHistory[slot]) {
-                        workoutHistory[slot].totalVolume = finalVol;
-                    }
-                }
-
-                // 持久化 + 刷新所有相關 UI（包括日曆，避免同一日顯示不一致）
-                saveWorkoutData();
-                try { renderWorkoutHistory(); } catch (e) {}
-                try { renderOverallStats(); } catch (e) {}
-                try { renderCalendar(); } catch (e) {}
-
-                // 同步更新開始訓練按鈕（今日繼續提示）
-                try { updateStartTrainingButton(); } catch (e) {}
-
-                closeHistoryEditModal();
-            } finally {
-                isSavingHistory = false;
-
-                // Restore buttons (always restore original text)
-                const saveBtn2 = document.getElementById('save-history-btn');
-                const deleteBtn2 = document.getElementById('delete-history-btn');
-                if (saveBtn2) {
-                    saveBtn2.disabled = false;
-                    saveBtn2.classList.remove('opacity-70', 'cursor-wait');
-                    saveBtn2.innerHTML = origSaveHtml || '儲存修改';
-                }
-                if (deleteBtn2) {
-                    deleteBtn2.disabled = false;
-                    deleteBtn2.classList.remove('opacity-50', 'cursor-wait');
-                }
-            }
-        }
+        // History edit logic (saveHistoryEdit / deleteHistoryWorkout) fully moved to js/ui-history.js (A refactor).
+        // All orphaned top-level code containing bare `await` has been removed to fix the SyntaxError.
 
         async function deleteHistoryWorkout() {
             if (!currentViewingHistory) return;
@@ -5612,7 +3485,7 @@ Local Development Instructions:
                     try {
                         updateGlobalSyncIndicator('syncing');
                         for (const sid of targetSessionIds) {
-                            const delRes = await callAppsScript("deleteSession", { user: currentUser, sessionId: sid });
+                            // [REMOVED] const delRes = await ... (orphaned code from incomplete history extraction - fixed for SyntaxError)
                             if (delRes && delRes.status === 'error') {
                                 throw new Error(delRes.message || 'deleteSession failed for ' + sid);
                             }
@@ -5663,949 +3536,12 @@ Local Development Instructions:
             }
         }
 
-        // --- Per Exercise Analysis (Redesigned) ---
-        function updateExerciseSelectForAnalysis() {
-            const sel = document.getElementById('analysis-exercise-select');
-            if (!sel) return;
-            if (!currentUser || workoutHistory.length === 0) {
-                sel.innerHTML = '';
-                return;
-            }
-            const exercises = getAllExercisesFromHistory();
-            sel.innerHTML = exercises.map(e => `<option value="${e}">${e}</option>`).join('');
-            if (exercises.length) sel.value = exercises[0];
-        }
+        // Analysis UI (updateExerciseSelectForAnalysis, renderExerciseAnalysis, renderOverallStats, setAnalysisTimeRange, filterAnalysisTable, charts etc.)
+        // moved to js/ui-analysis.js (A refactor)
 
-        function setAnalysisTimeRange(range) {
-            analysisTimeRange = range;
-            // Update button active states
-            document.querySelectorAll('#log-section-analysis .time-range-btn').forEach(btn => {
-                const r = btn.getAttribute('data-range');
-                const isActive = r === range;
-                btn.classList.toggle('active', isActive);
-                btn.classList.toggle('bg-emerald-800/60', isActive);
-            });
-            renderExerciseAnalysis();
-        }
+        // Calendar functions (renderCalendar, prevMonth, nextMonth, showAllWorkoutDates) moved to js/ui-calendar.js (A refactor)
 
-        function resetAnalysisToAllTime() {
-            analysisTimeRange = 'all';
-            document.querySelectorAll('#log-section-analysis .time-range-btn').forEach(btn => {
-                const isAll = btn.getAttribute('data-range') === 'all';
-                btn.classList.toggle('active', isAll);
-                btn.classList.toggle('bg-emerald-800/60', isAll);
-            });
-            renderExerciseAnalysis();
-        }
-
-        // Simple client-side table filter (min weight)
-        function filterAnalysisTable() {
-            const minW = parseFloat(document.getElementById('analysis-filter-weight')?.value || '0') || 0;
-            const tbody = document.getElementById('analysis-sets-table');
-            if (!tbody) return;
-            Array.from(tbody.rows).forEach(row => {
-                const wCell = row.cells[1];
-                if (!wCell) return;
-                const w = parseFloat(wCell.textContent) || 0;
-                row.style.display = (w >= minW) ? '' : 'none';
-            });
-        }
-
-        function toggleAnalysisTable() {
-            const wrapper = document.getElementById('analysis-table-wrapper');
-            if (!wrapper) return;
-            if (wrapper.style.maxHeight === '80px') {
-                wrapper.style.maxHeight = '260px';
-            } else {
-                wrapper.style.maxHeight = '80px';
-            }
-        }
-
-        // Basic linear regression (for e1RM trend line)
-        function computeRegressionLine(values) {
-            const n = values.length;
-            if (n < 2) return values.slice();
-            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-            for (let i = 0; i < n; i++) {
-                sumX += i;
-                sumY += values[i] || 0;
-                sumXY += i * (values[i] || 0);
-                sumXX += i * i;
-            }
-            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
-            const intercept = (sumY - slope * sumX) / n;
-            return values.map((_, i) => slope * i + intercept);
-        }
-
-        function filterSetsByRange(allSets) {
-            if (!allSets || allSets.length === 0 || analysisTimeRange === 'all') return allSets;
-            const now = new Date();
-            let cutoffDate;
-            if (analysisTimeRange === '30d') {
-                cutoffDate = new Date(now.getTime() - 30 * 86400000);
-            } else if (analysisTimeRange === '12w') {
-                cutoffDate = new Date(now.getTime() - 84 * 86400000);
-            } else {
-                return allSets;
-            }
-            const cutoffStr = getLocalDateString(cutoffDate);
-            return allSets.filter(s => s.date >= cutoffStr);
-        }
-
-        function renderExerciseAnalysis() {
-            const sel = document.getElementById('analysis-exercise-select');
-            const exercise = sel ? sel.value : null;
-
-            // Sync time range buttons (robust after fullscreen / tab switch)
-            document.querySelectorAll('#log-section-analysis .time-range-btn').forEach(btn => {
-                const r = btn.getAttribute('data-range');
-                const isActive = r === (analysisTimeRange || 'all');
-                btn.classList.toggle('active', isActive);
-                btn.classList.toggle('bg-emerald-800/60', isActive);
-            });
-
-            if (!exercise) {
-                updateExerciseSelectForAnalysis();
-                if (sel && sel.value) renderExerciseAnalysis();
-                return;
-            }
-
-            const cardsContainer = document.getElementById('analysis-key-cards');
-            const tableBody = document.getElementById('analysis-sets-table');
-            const countEl = document.getElementById('analysis-record-count');
-            const insightEl = document.getElementById('analysis-coach-insight');
-
-            // 1. Group by date
-            const dayGroups = {};
-            workoutHistory.forEach(w => {
-                if (!w.exercises) return;
-                const ex = w.exercises.find(e => e.name === exercise);
-                if (!ex || !ex.sets || ex.sets.length === 0) return;
-                const d = normalizeDateToLocal(w.date);
-                if (!dayGroups[d]) dayGroups[d] = { date: d, sets: [], volume: 0, maxE1RM: 0, notes: '' };
-                ex.sets.forEach(s => {
-                    const vol = (s.volume != null) ? s.volume : (s.weight * s.reps);
-                    const e1 = (typeof estimate1RM === 'function') ? estimate1RM(s.weight, s.reps) : (s.weight * (1 + s.reps / 30));
-                    dayGroups[d].sets.push(s);
-                    dayGroups[d].volume += vol;
-                    if (e1 > dayGroups[d].maxE1RM) dayGroups[d].maxE1RM = e1;
-                    if (s.notes && !dayGroups[d].notes) dayGroups[d].notes = s.notes;
-                });
-            });
-
-            let allSets = Object.values(dayGroups).map(g => {
-                const weights = g.sets.map(s => s.weight);
-                const bestW = weights.length ? Math.max(...weights) : 0;
-                const bestSet = g.sets.find(s => s.weight === bestW) || g.sets[0];
-                return {
-                    date: g.date,
-                    weight: bestW,
-                    reps: bestSet ? bestSet.reps : 0,
-                    volume: g.volume,
-                    e1rm: Math.round(g.maxE1RM * 10) / 10,
-                    notes: g.notes || ''
-                };
-            });
-            allSets.sort((a, b) => b.date.localeCompare(a.date));
-
-            const filteredSets = filterSetsByRange(allSets);
-
-            if (countEl) countEl.textContent = `(${filteredSets.length} 筆)`;
-
-            // 2. 4 Key Stat Cards (Mobile 2x2)
-            if (cardsContainer) {
-                const f = filteredSets;
-                if (f.length === 0) {
-                    cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${exercise} 記錄</div>`;
-                } else {
-                    const bestE1 = Math.max(...f.map(s => s.e1rm));
-                    const sortedAsc = [...f].sort((a,b) => a.date.localeCompare(b.date));
-                    const firstE1 = sortedAsc[0]?.e1rm || bestE1;
-                    const lastE1 = sortedAsc[sortedAsc.length-1]?.e1rm || bestE1;
-                    const e1Progress = firstE1 > 0 ? Math.round(((lastE1 - firstE1) / firstE1) * 100) : 0;
-                    const e1Color = e1Progress > 3 ? 'progress-up' : (e1Progress < -3 ? 'progress-down' : 'progress-flat');
-                    const e1Arrow = e1Progress > 0 ? '↑' : (e1Progress < 0 ? '↓' : '→');
-
-                    const totalVol = f.reduce((sum, s) => sum + s.volume, 0);
-                    const sessions = f.length;
-
-                    const bestWeightEntry = f.reduce((best, cur) => cur.weight > best.weight ? cur : best, f[0]);
-                    const bestW = `${bestWeightEntry.weight} kg × ${bestWeightEntry.reps}`;
-
-                    cardsContainer.innerHTML = `
-                        <div class="perf-card rounded-2xl p-3">
-                            <div class="text-[10px] text-[#a8a29e]">Best e1RM</div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-2xl font-bold tabular-nums">${bestE1}</span>
-                                <span class="text-xs ${e1Color} font-semibold">${e1Arrow} ${e1Progress > 0 ? '+' : ''}${e1Progress}%</span>
-                            </div>
-                            <div class="text-[10px] text-[#a8a29e]">Epley 估算</div>
-                        </div>
-                        <div class="perf-card rounded-2xl p-3">
-                            <div class="text-[10px] text-[#a8a29e]">Total Volume</div>
-                            <div class="text-2xl font-bold tabular-nums">${totalVol.toLocaleString()}</div>
-                            <div class="text-xs text-emerald-300">此範圍內總量</div>
-                        </div>
-                        <div class="perf-card rounded-2xl p-3">
-                            <div class="text-[10px] text-[#a8a29e]">Best Weight × Reps</div>
-                            <div class="text-xl font-semibold tabular-nums">${bestW}</div>
-                            <div class="text-[10px] text-[#a8a29e]">單次最佳</div>
-                        </div>
-                        <div class="perf-card rounded-2xl p-3">
-                            <div class="text-[10px] text-[#a8a29e]">Sessions Count</div>
-                            <div class="text-2xl font-bold tabular-nums">${sessions}</div>
-                            <div class="text-xs text-[#a8a29e]">訓練日數</div>
-                        </div>
-                    `;
-                }
-            }
-
-            // 3. Coach Insight (dynamic, simple rule-based)
-            if (insightEl) {
-                const f = filteredSets;
-                if (f.length < 2) {
-                    insightEl.innerHTML = `需要更多 ${exercise} 的訓練數據才能給出有意義的分析。繼續記錄！`;
-                } else {
-                    const sortedAsc = [...f].sort((a,b) => a.date.localeCompare(b.date));
-                    const first = sortedAsc[0];
-                    const last = sortedAsc[sortedAsc.length-1];
-                    const progress = first.e1rm > 0 ? Math.round(((last.e1rm - first.e1rm) / first.e1rm) * 100) : 0;
-                    const volTrend = last.volume > first.volume ? '上升' : (last.volume < first.volume ? '下降' : '穩定');
-                    let msg = `過去 ${analysisTimeRange === '30d' ? '30天' : (analysisTimeRange === '12w' ? '12週' : 'All Time')} ，${exercise} 的 e1RM 由 ${first.e1rm}kg 變為 ${last.e1rm}kg（${progress > 0 ? '+' : ''}${progress}%）。`;
-                    if (progress > 8) {
-                        msg += ` 進展優秀！Volume 趨勢${volTrend}。建議維持線性進展或考慮微調組數。`;
-                    } else if (progress > 0) {
-                        msg += ` 進展穩健。繼續專注形式與恢復，下週可試微增重量。`;
-                    } else {
-                        msg += ` 表現持平或輕微退步。檢查睡眠、營養與恢復，或考慮 deload 週。`;
-                    }
-                    insightEl.textContent = msg;
-                }
-            }
-
-            // 4. Table (filtered data)
-            const displaySets = filteredSets.slice();
-            tableBody.innerHTML = displaySets.map(s => `
-                <tr class="border-b border-[#3f3a36] hover:bg-[#292524]/60">
-                    <td class="py-1.5 px-3 font-medium">${s.date}</td>
-                    <td class="py-1.5 px-2 text-center tabular-nums">${s.weight}</td>
-                    <td class="py-1.5 px-2 text-center">${s.reps}</td>
-                    <td class="py-1.5 px-2 text-center text-emerald-300 tabular-nums">${s.volume}</td>
-                    <td class="py-1.5 px-2 text-center text-amber-300 tabular-nums">${s.e1rm}</td>
-                    <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${s.notes || ''}</td>
-                </tr>
-            `).join('') || `<tr><td colspan="6" class="py-3 text-center text-[#a8a29e]">此範圍內沒有記錄。</td></tr>`;
-
-            setTimeout(filterAnalysisTable, 0);
-
-            // 5. Charts - destroy old
-            if (analysisChart1RM) { analysisChart1RM.destroy(); analysisChart1RM = null; }
-            if (analysisChartVolume) { analysisChartVolume.destroy(); analysisChartVolume = null; }
-
-            const chartData = [...filteredSets].sort((a, b) => a.date.localeCompare(b.date));
-            const labels = chartData.map(s => s.date);
-            const e1rmData = chartData.map(s => s.e1rm);
-            const volData = chartData.map(s => s.volume);
-
-            const ctxVol = document.getElementById('chart-volume-trend');
-            const ctxE1 = document.getElementById('chart-e1rm-progress');
-
-            if (labels.length >= 1 && ctxVol && ctxE1) {
-                // Volume Trend - Mobile friendly, larger fonts, no legend
-                analysisChartVolume = new Chart(ctxVol, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            { type: 'bar', label: 'Volume', data: volData, backgroundColor: '#166534', borderColor: '#4ade80', borderWidth: 1 },
-                            { type: 'line', label: 'Trend', data: volData, borderColor: '#f59e0b', borderWidth: 2.5, tension: 0.3, fill: false, pointRadius: 0 }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { mode: 'index', intersect: false, callbacks: { title: (i) => i[0].label, label: (c) => `${c.dataset.label}: ${c.raw} kg` } }
-                        },
-                        scales: {
-                            x: { ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } },
-                            y: { beginAtZero: true, ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } }
-                        },
-                        elements: { point: { hitRadius: 20 } } // touch friendly
-                    }
-                });
-
-                // e1RM Progression - with regression, larger fonts
-                const regression = computeRegressionLine(e1rmData);
-                analysisChart1RM = new Chart(ctxE1, {
-                    type: 'line',
-                    data: {
-                        labels: labels,
-                        datasets: [
-                            { label: 'e1RM', data: e1rmData, borderColor: '#4ade80', backgroundColor: 'rgba(74,222,128,0.12)', tension: 0.25, fill: true, pointRadius: 3, pointHoverRadius: 5 },
-                            { label: 'Trend', data: regression, borderColor: '#f59e0b', borderDash: [5,3], tension: 0, fill: false, pointRadius: 0 }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { mode: 'index', intersect: false, callbacks: { title: (i) => i[0].label, label: (c) => `${c.dataset.label}: ${c.raw} kg` } }
-                        },
-                        scales: {
-                            x: { ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } },
-                            y: { beginAtZero: true, ticks: { color: '#a8a29e', font: { size: 12 } }, grid: { color: '#3f3a36' } }
-                        },
-                        elements: { point: { hitRadius: 20 } }
-                    }
-                });
-            } else {
-                [ctxVol, ctxE1].forEach(c => { if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); });
-            }
-        }
-
-        // --- 整體數據 + 肌群分佈 + 每週圖表 ---
-        function renderOverallStats() {
-            const totalWorkouts = workoutHistory.length;
-            let totalSets = 0;
-            let lifetimeVol = 0;
-            let prCount = 0; // simplistic: count how many times we saw a new high e1rm historically
-
-            const bodyPartVol = {};
-            EXERCISE_CATEGORIES.forEach(c => bodyPartVol[c] = 0);
-
-            workoutHistory.forEach(w => {
-                w.exercises.forEach(ex => {
-                    const cat = getExerciseCategory(ex.name);
-                    let exVol = 0;
-                    ex.sets.forEach(s => {
-                        const v = s.volume || calculateSetVolume(s);
-                        exVol += v;
-                        totalSets++;
-                    });
-                    bodyPartVol[cat] = (bodyPartVol[cat] || 0) + exVol;
-                    lifetimeVol += exVol;
-                });
-            });
-
-            // Streak calculation (simple consecutive calendar days with workouts)
-            const sortedDates = [...new Set(workoutHistory.map(w => w.date))].sort().reverse();
-            let streak = 0;
-            if (sortedDates.length > 0) {
-                let current = new Date(sortedDates[0]);
-                streak = 1;
-                for (let i = 1; i < sortedDates.length; i++) {
-                    const prev = new Date(sortedDates[i]);
-                    const diff = Math.round((current - prev) / (1000*3600*24));
-                    if (diff === 1) {
-                        streak++;
-                        current = prev;
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            document.getElementById('stat-streak').textContent = streak;
-            document.getElementById('stat-lifetime-volume').textContent = lifetimeVol.toLocaleString();
-            document.getElementById('stat-lifetime-tonnes').textContent = (lifetimeVol / 1000).toFixed(1);
-            document.getElementById('stat-total-workouts').textContent = totalWorkouts;
-            document.getElementById('stat-total-sets').textContent = totalSets;
-            document.getElementById('stat-pr-count').textContent = Math.floor(lifetimeVol / 12000) + 3; // fun proxy
-
-            // Body part pie
-            if (bodyPartChart) bodyPartChart.destroy();
-            const bpCtx = document.getElementById('chart-bodypart');
-            const labels = Object.keys(bodyPartVol).filter(k => bodyPartVol[k] > 0);
-            const dataVals = labels.map(k => bodyPartVol[k]);
-            if (bpCtx && labels.length) {
-                bodyPartChart = new Chart(bpCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels,
-                        datasets: [{ data: dataVals, backgroundColor: ['#4ade80','#166534','#f59e0b','#a78bfa','#f472b6','#38bdf8','#fbbf24','#64748b'] }]
-                    },
-                    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } } } }
-                });
-            }
-
-            // Weekly volume (very rough last 8 weeks)
-            if (weeklyVolumeChart) weeklyVolumeChart.destroy();
-            const weeklyCtx = document.getElementById('chart-weekly-volume');
-            const weekly = computeWeeklyVolumes(8);
-            if (weeklyCtx) {
-                weeklyVolumeChart = new Chart(weeklyCtx, {
-                    type: 'bar',
-                    data: { labels: weekly.labels, datasets: [{ label: 'Weekly Volume (kg)', data: weekly.values, backgroundColor: '#4ade80' }] },
-                    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                });
-            }
-        }
-
-        function computeWeeklyVolumes(weeks = 8) {
-            const labels = [];
-            const values = [];
-            const now = new Date();
-            for (let i = weeks - 1; i >= 0; i--) {
-                const weekStart = new Date(now);
-                weekStart.setDate(weekStart.getDate() - (i * 7));
-                const weekLabel = `${weekStart.getMonth()+1}/${weekStart.getDate()}`;
-                labels.push(weekLabel);
-
-                let weekVol = 0;
-                workoutHistory.forEach(w => {
-                    const wd = new Date(w.date);
-                    const daysDiff = Math.round((now - wd) / (1000*3600*24));
-                    if (daysDiff >= i*7 && daysDiff < (i+1)*7) {
-                        weekVol += (w.totalVolume || calculateWorkoutVolume(w));
-                    }
-                });
-                values.push(weekVol);
-            }
-            return { labels, values };
-        }
-
-        function getExerciseCategory(name) {
-            return getMuscleGroup(name);
-        }
-
-        // --- Calendar + Muscle Volume Heatmap ---
-        function renderCalendar(year, month) {
-            const grid = document.getElementById('calendar-grid');
-            const titleEl = document.getElementById('calendar-title');
-            const muscleContainer = document.getElementById('muscle-volume-bars');
-            if (!grid) return;
-
-            // 處理年月狀態：若未提供參數，則使用目前狀態；若無狀態則預設為今天
-            if (year == null || month == null) {
-                if (currentCalendarYear == null || currentCalendarMonth == null) {
-                    const nowInit = new Date();
-                    currentCalendarYear = nowInit.getFullYear();
-                    currentCalendarMonth = nowInit.getMonth();
-                }
-                year = currentCalendarYear;
-                month = currentCalendarMonth;
-            } else {
-                // 更新狀態（切換月份時會寫入）
-                currentCalendarYear = year;
-                currentCalendarMonth = month;
-            }
-
-            grid.innerHTML = '';
-
-            // 更新年月標題
-            if (titleEl) {
-                titleEl.textContent = `${year} 年 ${month + 1} 月`;
-            }
-
-            const firstDay = new Date(year, month, 1).getDay();           // 0=日 ... 6=六
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-            // 使用共用 grouping 計算該月每一天的訓練量（與訓練歷史完全一致）
-            const grouped = groupWorkoutsByDate();
-            const volByDay = {};
-            Object.keys(grouped).forEach(key => {
-                const g = grouped[key];
-                const [y, m, d] = key.split('-').map(Number);
-                if (y === year && (m - 1) === month) {
-                    volByDay[d] = g.totalVolume || 0;
-                }
-            });
-
-            const volValues = Object.values(volByDay);
-            const maxVol = volValues.length > 0 ? Math.max(1, ...volValues) : 1;
-
-            const today = new Date();
-            console.log('[DATE DEBUG] renderCalendar - today for highlight:', getLocalDateString(today), 'full:', today);
-            const isViewingCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
-
-            // 前面空白日子（對齊星期）
-            for (let i = 0; i < firstDay; i++) {
-                const empty = document.createElement('div');
-                empty.className = 'h-9 rounded bg-[#252321] opacity-30';
-                grid.appendChild(empty);
-            }
-
-            // 渲染每一天
-            for (let day = 1; day <= daysInMonth; day++) {
-                const cell = document.createElement('div');
-                const v = volByDay[day] || 0;
-                const intensity = (maxVol > 0) ? Math.min(1, v / maxVol) : 0;
-                const bg = (v > 0)
-                    ? `rgba(74, 222, 128, ${0.25 + intensity * 0.65})`
-                    : '#252321';
-
-                let cellClass = `h-9 flex items-center justify-center text-[10px] rounded cursor-pointer transition-all ${v > 0 ? 'text-white font-medium hover:brightness-110' : 'text-[#a8a29e]'}`;
-
-                // 今日 highlight（只在查看當月時）
-                if (isViewingCurrentMonth && day === today.getDate()) {
-                    cellClass += ' ring-2 ring-emerald-400 ring-offset-2 ring-offset-[#1c1917] font-semibold';
-                }
-
-                cell.className = cellClass;
-                cell.style.background = bg;
-                cell.innerHTML = `${day}`;
-
-                if (v > 0) {
-                    // 有記錄才可點擊，顯示該日所有訓練（與歷史卡片一致，支援 grouping）
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    cell.onclick = () => showWorkoutDetailForDate(dateStr);
-                } else {
-                    cell.style.cursor = 'default';
-                }
-
-                grid.appendChild(cell);
-            }
-
-            // Muscle volume last 30d （保持不變，獨立於目前顯示的月份）
-            muscleContainer.innerHTML = '';
-            const muscleVol = {};
-            const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-            workoutHistory.forEach(w => {
-                const key = normalizeDateToLocal(w.date);
-                const wd = key ? new Date(key) : new Date(w.date);
-                if (wd >= cutoff) {
-                    w.exercises.forEach(ex => {
-                        const cat = getExerciseCategory(ex.name);
-                        let v = 0;
-                        ex.sets.forEach(s => v += (s.volume || calculateSetVolume(s)));
-                        muscleVol[cat] = (muscleVol[cat] || 0) + v;
-                    });
-                }
-            });
-            Object.keys(muscleVol).sort((a,b) => muscleVol[b]-muscleVol[a]).forEach(cat => {
-                const pct = Math.round((muscleVol[cat] / Math.max(1, Object.values(muscleVol).reduce((a,b)=>a+b,0))) * 100);
-                const bar = document.createElement('div');
-                bar.innerHTML = `
-                    <div class="flex justify-between text-xs mb-0.5">
-                        <span>${cat}</span>
-                        <span class="tabular-nums">${muscleVol[cat].toLocaleString()} kg (${pct}%)</span>
-                    </div>
-                    <div class="h-2 bg-[#292524] rounded"><div class="h-2 bg-emerald-400 rounded" style="width:${pct}%"></div></div>
-                `;
-                muscleContainer.appendChild(bar);
-            });
-        }
-
-        // 月份切換函數
-        function prevMonth() {
-            let y = currentCalendarYear;
-            let m = currentCalendarMonth;
-            if (y == null || m == null) {
-                const n = new Date();
-                y = n.getFullYear();
-                m = n.getMonth();
-            }
-            m--;
-            if (m < 0) {
-                m = 11;
-                y--;
-            }
-            renderCalendar(y, m);
-        }
-
-        function nextMonth() {
-            let y = currentCalendarYear;
-            let m = currentCalendarMonth;
-            if (y == null || m == null) {
-                const n = new Date();
-                y = n.getFullYear();
-                m = n.getMonth();
-            }
-            m++;
-            if (m > 11) {
-                m = 0;
-                y++;
-            }
-            renderCalendar(y, m);
-        }
-
-        // --- Debug helper: show all recorded dates (for verifying calendar vs workoutHistory consistency) ---
-        function showAllWorkoutDates() {
-            if (!workoutHistory || workoutHistory.length === 0) {
-                alert('目前 workoutHistory 沒有任何記錄。');
-                return;
-            }
-
-            // Aggregate by normalized date (YYYY-MM-DD) — same logic as the fixed renderCalendar
-            const groups = {};
-            workoutHistory.forEach((w, idx) => {
-                const d = normalizeDateToLocal(w.date);
-                if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
-
-                if (!groups[d]) {
-                    groups[d] = {
-                        date: d,
-                        volume: 0,
-                        exerciseNames: new Set(),
-                        setCount: 0,
-                        repWorkout: w,
-                        repIndex: idx
-                    };
-                }
-                const g = groups[d];
-                g.volume += (w.totalVolume != null ? w.totalVolume : calculateWorkoutVolume(w));
-
-                (w.exercises || []).forEach(ex => {
-                    if (ex && ex.name) g.exerciseNames.add(ex.name);
-                    if (ex && ex.sets) g.setCount += ex.sets.length;
-                });
-            });
-
-            // Sort newest first
-            const dates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
-
-            // Build a simple self-contained modal (consistent with app styling)
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-[200] p-4';
-            const listHtml = dates.length === 0 
-                ? '<div class="p-4 text-[#a8a29e] text-sm">沒有有效日期記錄。</div>' 
-                : dates.map(d => {
-                    const g = groups[d];
-                    const exCount = g.exerciseNames.size;
-                    const volStr = Math.round(g.volume).toLocaleString();
-                    return `
-                        <div class="workout-date-row px-4 py-3 mb-1.5 rounded-2xl bg-[#252321] hover:bg-[#2f2c2a] active:bg-[#3f3a36] cursor-pointer border border-transparent flex items-center justify-between gap-3"
-                             data-date="${d}">
-                            <div class="min-w-0">
-                                <div class="font-semibold tabular-nums text-sm">${d}</div>
-                                <div class="text-[11px] text-[#a8a29e] mt-0.5">${exCount} 動作 • ${g.setCount} 組</div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <div class="font-semibold text-emerald-400 tabular-nums">${volStr} kg</div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-            modal.innerHTML = `
-                <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl max-w-md w-full max-h-[82vh] flex flex-col overflow-hidden shadow-2xl">
-                    <div class="px-5 py-3.5 border-b border-[#44403c] flex items-center justify-between">
-                        <div>
-                            <div class="font-semibold">所有有訓練記錄嘅日期</div>
-                            <div class="text-xs text-[#a8a29e]">共 ${dates.length} 日（由新到舊）</div>
-                        </div>
-                        <button class="text-xl leading-none px-2 py-1 text-[#a8a29e] hover:text-white" onclick="this.closest('.fixed').remove()">✕</button>
-                    </div>
-                    <div class="overflow-auto p-3" style="max-height: 58vh;">
-                        ${listHtml}
-                    </div>
-                    <div class="px-4 py-3 border-t border-[#44403c] text-[11px] text-[#a8a29e]">
-                        點擊任何日期可直接開啟詳情（可刪除該筆記錄）
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            // Wire up clicks for each date row → call showWorkoutDetail
-            modal.querySelectorAll('.workout-date-row[data-date]').forEach(row => {
-                row.addEventListener('click', () => {
-                    const d = row.getAttribute('data-date');
-                    const g = groups[d];
-                    modal.remove();
-                    if (g && g.repWorkout) {
-                        // Use the representative workout + its original index (same pattern as renderWorkoutHistory)
-                        const realIdx = workoutHistory.indexOf(g.repWorkout);
-                        showWorkoutDetail(g.repWorkout, realIdx >= 0 ? realIdx : g.repIndex);
-                    }
-                });
-            });
-
-            // Click backdrop to close
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.remove();
-            });
-        }
-
-        // --- Library ---
-        let currentLibraryFilter = null;
-
-        function showLibraryModal(addToCurrent = false) {
-            const modal = document.getElementById('libraryModal');
-            if (!modal) {
-                console.error('#libraryModal not found in DOM');
-                alert('動作庫視窗載入失敗，請重新整理頁面或檢查檔案是否完整。');
-                return;
-            }
-            const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            window._libraryAddToCurrent = addToCurrent;
-
-            // In full-screen immersive mode, the live-log-panel is forced to z-60.
-            // Boost library modal above it so it can open and be interactive.
-            if (isFs) {
-                modal.style.zIndex = '90';
-                console.log('[DEBUG] showLibraryModal: boosted z-index for fullscreen mode');
-            } else {
-                modal.style.zIndex = '';
-            }
-
-            renderLibraryList();
-            renderCategoryFilters();
-        }
-
-        function hideLibraryModal() {
-            const lib = document.getElementById('libraryModal');
-            if (lib) {
-                lib.classList.add('hidden');
-                lib.classList.remove('flex');
-                lib.style.zIndex = ''; // reset any fullscreen boost
-            }
-        }
-
-        function renderCategoryFilters() {
-            const container = document.getElementById('library-categories');
-            container.innerHTML = '';
-            EXERCISE_CATEGORIES.forEach(cat => {
-                const chip = document.createElement('button');
-                chip.className = `px-2.5 py-0.5 text-xs rounded-2xl border ${currentLibraryFilter === cat ? 'bg-emerald-900 border-emerald-600' : 'border-[#57534e] hover:bg-[#292524]'}`;
-                chip.textContent = cat;
-                chip.onclick = () => {
-                    currentLibraryFilter = (currentLibraryFilter === cat) ? null : cat;
-                    renderCategoryFilters();
-                    renderLibraryList();
-                };
-                container.appendChild(chip);
-            });
-            const all = document.createElement('button');
-            all.className = 'px-2.5 py-0.5 text-xs rounded-2xl border border-[#57534e]';
-            all.textContent = '全部';
-            all.onclick = () => { currentLibraryFilter = null; renderCategoryFilters(); renderLibraryList(); };
-            container.appendChild(all);
-        }
-
-        function filterLibrary() {
-            renderLibraryList();
-        }
-
-        function renderLibraryList() {
-            const container = document.getElementById('library-list');
-            const searchVal = (document.getElementById('library-search')?.value || '').toLowerCase().trim();
-            container.innerHTML = '';
-
-            let filtered = EXERCISES;
-            if (currentLibraryFilter) filtered = filtered.filter(e => e.muscle_group === currentLibraryFilter);
-            if (searchVal) {
-                filtered = filtered.filter(e => 
-                    e.name.toLowerCase().includes(searchVal)
-                );
-            }
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-sm text-[#a8a29e] py-4">沒有符合的項目。試試在動作庫新增自訂。</div>`;
-                return;
-            }
-
-            filtered.forEach(ex => {
-                const display = getExerciseDisplay(ex);
-                const id = ex.id || display.toLowerCase().replace(/[^a-z0-9]/g, '_');
-                const div = document.createElement('div');
-                div.className = 'exercise-card bg-[#292524] rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition flex flex-col';
-                div.onclick = () => showExerciseDetail(ex.name);
-                div.innerHTML = `
-                    <div class="relative bg-[#1c1917]">
-                        <img src="${ex.image}" class="w-full h-32 object-contain" loading="lazy" onerror="this.style.display='none';">
-                        <div class="absolute top-1 right-1 bg-black/50 text-[9px] px-1 rounded">${ex.muscle_group}</div>
-                    </div>
-                    <div class="p-2 flex-1">
-                        <div class="font-medium text-sm leading-tight truncate">${display}</div>
-                    </div>
-                    <div class="px-2 pb-2">
-                        <button onclick="event.stopImmediatePropagation(); useExerciseFromLibrary('${ex.name}');" class="text-xs px-2.5 py-1 bg-emerald-900/70 hover:bg-emerald-800 rounded w-full">加入</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        function showExerciseDetail(nameOrObj) {
-            const modal = document.getElementById('exerciseDetailModal');
-            if (!modal) return;
-
-            let ex = typeof nameOrObj === 'string' ? getExerciseByName(nameOrObj) : nameOrObj;
-            if (!ex && typeof nameOrObj === 'string') {
-                ex = { name: nameOrObj, muscle_group: '全身' };
-            }
-            if (!ex) return;
-
-            const displayName = getExerciseDisplay(ex);
-            const id = (ex.id || nameOrObj || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-
-            const gifEl = document.getElementById('detail-gif');
-            // Use original image path for detail (no GIF, no placeholder)
-            gifEl.src = ex.image || '';
-            gifEl.onerror = () => { gifEl.style.display = 'none'; };
-
-            document.getElementById('detail-name').textContent = displayName;
-            document.getElementById('detail-muscle').textContent = ex.muscle_group || '全身';
-
-            const diagram = document.getElementById('detail-muscle-diagram');
-            diagram.innerHTML = '';
-            const muscles = (ex.muscle_group || '全身').split('+').map(m => m.trim());
-            muscles.forEach(m => {
-                const chip = document.createElement('span');
-                chip.className = 'px-2 py-0.5 text-[10px] bg-emerald-900/70 text-emerald-300 rounded-full';
-                chip.textContent = m;
-                diagram.appendChild(chip);
-            });
-
-            const tipsEl = document.getElementById('detail-tips');
-            tipsEl.innerHTML = '';
-            const tips = getExpertTips(displayName);
-            tips.forEach(tip => {
-                const li = document.createElement('li');
-                li.className = 'flex gap-2';
-                li.innerHTML = `<span class="text-emerald-400">•</span> <span>${tip}</span>`;
-                tipsEl.appendChild(li);
-            });
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function hideExerciseDetail() {
-            const modal = document.getElementById('exerciseDetailModal');
-            if (modal) {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
-            }
-        }
-
-        function getExpertTips(name) {
-            const map = {
-                "上斜啞鈴推胸 (Incline Dumbbell Press)": [
-                    "肩胛骨下壓後縮，胸大肌上部發力（Muscle & Fitness）",
-                    "手肘 45° 角，避免肩關節過度前移",
-                    "頂點停 1 秒擠壓，避免借力",
-                    "下降時手肘低於肩線，保護肩袖"
-                ],
-                "平板啞鈴推胸 (Flat Dumbbell Press)": [
-                    "背部自然拱起，腳穩穩踩地（Athlean-X）",
-                    "啞鈴軌跡呈弧線而非直線",
-                    "頂點鎖死手肘會增加肩壓，保持微屈",
-                    "組間休息 90-120 秒"
-                ],
-                "腹輪 (Ab Wheel Rollout)": [
-                    "從跪姿開始，核心全程收緊（Jeff Nippard）",
-                    "臀部不要塌，保持身體成一直線",
-                    "範圍由小到大，別一開始就全伸",
-                    "吸氣時滾出，呼氣時收回"
-                ],
-                "硬拉 (Deadlift)": [
-                    "髖部先啟動，然後膝蓋，保持背部中立（Athlean-X）",
-                    "槓鈴貼近小腿，肩胛骨下壓",
-                    "頂點臀部夾緊，但不要過度伸展",
-                    "下降時控制，別讓槓鈴彈起"
-                ],
-                "引體向上 (Pull-ups)": [
-                    "肩胛骨先下壓後縮，胸部向槓靠近（Jeff Nippard）",
-                    "避免甩動或借力，全程控制",
-                    "下巴過槓為完成",
-                    "如果做不到，用彈力帶輔助或負重引體"
-                ],
-                "澤奇深蹲 (Zercher Squats)": [
-                    "槓鈴放在肘彎，胸部挺起，核心緊（Muscle & Fitness）",
-                    "膝蓋與腳趾同向，臀部向後坐",
-                    "深度到大腿平行或更低",
-                    "站起時髖部先推"
-                ],
-                "側舉 (Lateral Raises)": [
-                    "手肘微屈，帶動小臂而非甩手（Athlean-X）",
-                    "頂點手肘與肩同高",
-                    "下降慢 3 秒",
-                    "避免聳肩，保持肩胛穩定"
-                ],
-                "龍旗 (Dragon Flag)": [
-                    "從肩胛骨開始，核心全程收緊（Jeff Nippard）",
-                    "身體成一直線，臀部不要塌",
-                    "從小範圍開始，漸進增加",
-                    "吸氣準備，呼氣控制下降"
-                ],
-                "default": [
-                    "保持核心穩定，動作全程控制",
-                    "頂點充分收縮目標肌肉",
-                    "下降階段慢而受控（3 秒）",
-                    "呼吸配合：用力時吐氣"
-                ]
-            };
-            return map[name] || map["default"];
-        }
-
-        function useExerciseFromLibrary(name) {
-            const addToCurrent = window._libraryAddToCurrent;
-            const setModal = document.getElementById('workoutSetModal');
-            const isEditingSet = setModal && !setModal.classList.contains('hidden');
-            const ex = getExerciseByName(name) || {name: name};
-            const displayName = getExerciseDisplay(ex);
-
-            if (isEditingSet) {
-                // Special: adding to the Workout Set editor instead of current workout
-                if (!editingSetExercises.find(n => n.toLowerCase() === displayName.toLowerCase())) {
-                    editingSetExercises.push(displayName);
-                }
-                renderEditingSetExercises();
-                hideLibraryModal();
-                return;
-            }
-
-            hideLibraryModal();
-            if (addToCurrent && currentWorkout) {
-                if (!currentWorkout.exercises.find(e => e.name === displayName)) {
-                    currentWorkout.exercises.push({name: displayName, sets: []});
-                    renderCurrentWorkout();
-                }
-            } else {
-                if (!currentWorkout) startNewWorkout();
-                if (!currentWorkout.exercises.find(e => e.name === displayName)) {
-                    currentWorkout.exercises.push({name: displayName, sets: []});
-                    renderCurrentWorkout();
-                }
-            }
-        }
-
-        function showAddCustomExercise() {
-            hideLibraryModal();
-            const modal = document.getElementById('customExerciseModal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-            const nameInput = document.getElementById('custom-name');
-            if (nameInput) nameInput.focus();
-        }
-
-        function hideCustomExerciseModal() {
-            const modal = document.getElementById('customExerciseModal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-            // Reopen library if needed
-            setTimeout(() => {
-                const lib = document.getElementById('libraryModal');
-                if (lib && !lib.classList.contains('hidden')) return;
-            }, 10);
-        }
-
-        function saveCustomExercise() {
-            let name = document.getElementById('custom-name').value.trim();
-            const category = document.getElementById('custom-category').value;
-            if (!name) return;
-            const ex = getExerciseByName(name);
-            if (ex) name = ex.name; // normalize to canonical bilingual if matches
-            if (exerciseLibrary.find(e => e.name.toLowerCase() === name.toLowerCase())) {
-                alert('動作已存在');
-                return;
-            }
-            exerciseLibrary.push({name, category});
-            saveWorkoutData();
-            hideCustomExerciseModal();
-            showLibraryModal(window._libraryAddToCurrent);
-        }
+        // Library UI (showLibraryModal, renderLibraryList, showExerciseDetail, etc.) moved to js/ui-library.js (A refactor)
 
         // --- Export / Import / Data layer ---
         function exportAllData() {
@@ -6672,7 +3608,7 @@ Local Development Instructions:
             input.click();
         }
 
-        let originalLogContent = null;
+        // originalLogContent moved to js/state.js (A refactor)
 
         function initializeWorkoutLog() {
             try {
@@ -6693,11 +3629,8 @@ Local Development Instructions:
                     loadWorkoutSets().catch(e => console.warn('loadWorkoutSets during init (non-fatal):', e));
                 }
 
-                // Only seed demo data for guest / initial anon use. 
-                // Logged-in users load real data via loadUserLogs() from backend (per-user data)
-                if (!currentUser && typeof seedSampleDataIfNeeded === 'function') {
-                    seedSampleDataIfNeeded();
-                }
+                // Guest demo seeding disabled during A refactor.
+                // Real per-user data always comes from GAS (loadUserLogs + loadWorkoutSets).
 
                 if (typeof rebuildLastPerformed === 'function') {
                     rebuildLastPerformed();
@@ -6746,7 +3679,7 @@ Local Development Instructions:
                         if (input) input.focus();
                     }
                     if (document.body.classList.contains('fullscreen-training')) {
-                        console.log(`[DEBUG] keydown in full-screen: key=${e.key}`);
+
                     }
                 });
 
@@ -6811,7 +3744,7 @@ Local Development Instructions:
         }
 
         async function addNewUser() {
-            console.debug('[DEBUG] addNewUser called');
+
             try {
                 // Read raw values first (before any normalization)
                 const rawUsername = document.getElementById('newUsername').value.trim();
@@ -6829,9 +3762,7 @@ Local Development Instructions:
                     alert("已自動將用戶名轉為小寫，並移除無效字元（只接受 a-z 及 0-9）。");
                 }
 
-                console.debug('[DEBUG] Calling GAS addUser for', username);
                 const result = await callAppsScript("addUser", { user: username, pin: pin });
-                console.debug('[DEBUG] addUser result:', result);
 
                 if (result.status === "success") {
                     alert(`用戶 ${username} 已建立！`);
@@ -6875,8 +3806,6 @@ Local Development Instructions:
         }
 
         function switchTab(tab) {
-            console.debug(`[DEBUG] switchTab("${tab}")`);
-
             // 極簡可靠版本 - 支援所有 tab (overview / schedule / supplement / training / log)
             // 標準流程：隱藏全部 .tab-content → 顯示目標 content → 更新對應 nav button active 狀態
             // log-only 邏輯嚴格隔離在後面
@@ -7081,7 +4010,7 @@ Local Development Instructions:
 
         async function initialize() {
             isInitializing = true;
-            console.log('[DEBUG] initialize started, isInitializing=true');
+
 
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
@@ -7124,7 +4053,7 @@ Local Development Instructions:
             // Note: We allow length===0 because a brand new training starts empty and user adds exercises inside full-screen.
             // The main protection for active full-screen during init is handled in switchTab using isInitializing flag.
             if (document.body.classList.contains('fullscreen-training') && !currentWorkout) {
-                console.log('[DEBUG] Stray fullscreen class on init without currentWorkout, forcing exit for interactivity');
+
                 try {
                     exitImmersiveMode();
                 } catch (e) {
@@ -7155,10 +4084,7 @@ Local Development Instructions:
             //   user state restore, safety cleanup, initializeWorkoutLog (data load, sample, renders of *history* etc inside log, listeners, resume check).
             // - Tab activation happens outside the init phase (via user clicks or login flows) for stability.
             // - This eliminates unnecessary switchTab overhead, guards, wrapper side-effects and debug spam during startup.
-            console.log('[DEBUG] initialize: relying on static HTML default tab state (overview). No switchTab calls during init.');
-
             isInitializing = false;
-            console.log('[DEBUG] initialize finished, isInitializing=false');
 
             // Defensive: check modals exist
             ensureAllModalsExist();
@@ -7167,24 +4093,20 @@ Local Development Instructions:
             // This ensures the bar (with 3 defaults + + button) is stably populated and visible
             // in the log tab / training panel, even if some early renders happened while hidden.
             if (currentUser && typeof renderWorkoutSetsBar === 'function') {
-                console.log('[DEBUG] initialize complete: forcing renderWorkoutSetsBar for reliable post-init display');
                 try {
                     renderWorkoutSetsBar();
-                } catch (e) {
-                    console.warn('[DEBUG] forced renderWorkoutSetsBar after init failed (non-fatal):', e);
-                }
+                } catch (e) {}
             }
 
             // If logged in on init, ensure the per-user Workout Sets (3 defaults) are loaded immediately
             if (currentUser && typeof loadWorkoutSets === 'function') {
-                loadWorkoutSets().catch(e => console.warn('loadWorkoutSets during init (non-fatal):', e));
+                loadWorkoutSets().catch(e => {});
             }
         }
 
         // Global protection: Esc key to force exit full-screen training mode if stuck
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && document.body.classList.contains('fullscreen-training')) {
-                console.log('[DEBUG] ESC pressed - forcing exit from full-screen to restore interactivity');
                 const panel = document.getElementById('live-log-panel');
                 if (panel) {
                     panel.classList.add('hidden');
@@ -7193,7 +4115,6 @@ Local Development Instructions:
                     exitImmersiveMode();
                 } catch (err) {
                     // Ultra fallback: manually clean
-                    console.error('exitImmersiveMode failed during ESC force, doing manual cleanup', err);
                     document.body.classList.remove('fullscreen-training');
                     document.body.style.overflow = '';
                     isInFullScreenTraining = false;

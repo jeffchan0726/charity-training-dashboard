@@ -1,0 +1,13 @@
+/* 
+  PRODUCTION TAILWIND CSS (placeholder)
+
+  IMPORTANT:
+  Run the following command from the recomp-challenge folder to generate the real minified file:
+
+    npx tailwindcss -i ./css/input.css -o ./css/tailwind.css --minify
+
+  This will scan index.html, remove unused classes, and produce a small optimized CSS.
+  After the build, the <link rel="stylesheet" href="css/tailwind.css"> in index.html will work perfectly.
+
+  Current file is just a placeholder so the project structure is complete.
+*/

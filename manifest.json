@@ -1,0 +1,19 @@
+{
+  "name": "Jeff 減脂 Recomp 慈善賽訓練中心",
+  "short_name": "Recomp Charity",
+  "description": "慈善賽訓練追蹤器 - 記錄訓練、分析進度、支援 Google Apps Script 雲端同步。支持朋友監督計劃。",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1c1917",
+  "theme_color": "#166534",
+  "orientation": "portrait-primary",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "images/zercher_squats.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
