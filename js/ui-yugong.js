@@ -9,7 +9,6 @@ const YUGONG_ZOOM_STEPS = [
         image: 'images/可愛山圖1.png',
         zoomLabel: '最細',
         viewLabel: '遠眺成座山',
-        scale: 0.55,
         caption: '最細倍率 — 成座山仲好遠，逐噸逐噸嚟！',
         speech: ''
     },
@@ -18,7 +17,6 @@ const YUGONG_ZOOM_STEPS = [
         image: 'images/可愛山圖2.png',
         zoomLabel: '放大',
         viewLabel: '山坡碎石',
-        scale: 0.72,
         caption: '再放啲 — 見到山坡同碎石喇！',
         speech: ''
     },
@@ -27,7 +25,6 @@ const YUGONG_ZOOM_STEPS = [
         image: 'images/可愛山圖3.png',
         zoomLabel: '再放大',
         viewLabel: '一齊挖山',
-        scale: 0.88,
         caption: '愈嚟愈大 — 兩個小人一齊掘，唔使怕！',
         speech: ''
     },
@@ -36,7 +33,6 @@ const YUGONG_ZOOM_STEPS = [
         image: 'images/可愛山圖4.png',
         zoomLabel: '最大',
         viewLabel: 'Jeff 特寫',
-        scale: 1,
         caption: '最大倍率 — 放到最近，聽下 Jeff 講咩！',
         speech: '頂呀！繼續搬！慈善噸數就靠你哋啦！💪'
     }
@@ -78,8 +74,28 @@ function getYugongZoomConfig(zoomStep) {
 }
 
 function cycleYugongZoom() {
-    yugongViewZoom = yugongViewZoom >= YUGONG_ZOOM_MAX ? 1 : yugongViewZoom + 1;
-    renderYugongTab({ animate: true, fromMagnifier: true });
+    setYugongZoom(yugongViewZoom >= YUGONG_ZOOM_MAX ? 1 : yugongViewZoom + 1, true);
+}
+
+function setYugongZoom(step, animate) {
+    const next = Math.max(1, Math.min(YUGONG_ZOOM_MAX, parseInt(step, 10) || 1));
+    if (next === yugongViewZoom && animate) {
+        renderYugongTab({ animate: true, fromMagnifier: true });
+        return;
+    }
+    yugongViewZoom = next;
+    renderYugongTab({ animate: !!animate, fromMagnifier: true });
+}
+
+function renderYugongZoomDots() {
+    const container = document.getElementById('yugong-zoom-dots');
+    if (!container) return;
+    container.innerHTML = YUGONG_ZOOM_STEPS.map(step => `
+        <button type="button"
+            class="yugong-zoom-dot${step.zoomStep === yugongViewZoom ? ' active' : ''}"
+            aria-label="放大第 ${step.zoomStep} 格：${step.zoomLabel}"
+            onclick="event.stopPropagation(); setYugongZoom(${step.zoomStep}, true)"></button>
+    `).join('');
 }
 
 function renderYugongTab(opts = {}) {
@@ -119,26 +135,25 @@ function renderYugongTab(opts = {}) {
     if (hintEl) {
         hintEl.textContent = progressPct >= 100
             ? '搬晒座山喇 — 繼續操，保持習慣呀！'
-            : '撳 Q→Q 由最細放到最大，四格放大任睇';
+            : '撳圖或者 Q→Q 由最細放到最大，四格任睇';
     }
     if (captionEl) captionEl.textContent = zoomCfg.caption;
 
     if (imgEl && innerEl) {
-        const applyZoom = () => {
+        const applyImage = () => {
             imgEl.src = zoomCfg.image;
             imgEl.alt = '愚公移山 — 放大' + zoomCfg.zoomLabel + '（' + zoomCfg.viewLabel + '）';
-            innerEl.style.setProperty('--yugong-scale', String(zoomCfg.scale));
         };
         if (opts.animate) {
             innerEl.classList.add('yugong-zoom-out');
             setTimeout(() => {
-                applyZoom();
+                applyImage();
                 innerEl.classList.remove('yugong-zoom-out');
                 innerEl.classList.add('yugong-zoom-in');
-                setTimeout(() => innerEl.classList.remove('yugong-zoom-in'), 420);
-            }, 180);
+                setTimeout(() => innerEl.classList.remove('yugong-zoom-in'), 380);
+            }, 160);
         } else {
-            applyZoom();
+            applyImage();
         }
     }
 
@@ -156,6 +171,7 @@ function renderYugongTab(opts = {}) {
         setTimeout(() => sceneEl.classList.remove('yugong-scene-celebrate'), 900);
     }
 
+    renderYugongZoomDots();
     renderYugongSuggestions(stats);
 }
 
