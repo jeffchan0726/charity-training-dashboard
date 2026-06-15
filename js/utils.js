@@ -248,6 +248,18 @@ function formatWorkoutVolumeDisplay(workout) {
     };
 }
 
+function getLifetimeWeightKg() {
+    let total = 0;
+    (workoutHistory || []).forEach(w => {
+        total += calculateWorkoutTotals(w).weightKg;
+    });
+    return total;
+}
+
+function getLifetimeTonnes() {
+    return getLifetimeWeightKg() / 1000;
+}
+
 function formatSetDisplay(exName, set) {
     if (!set) return '';
     if (typeof isTreadmillExercise === 'function' && isTreadmillExercise(exName)) {

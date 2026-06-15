@@ -142,6 +142,261 @@ Local Development Instructions:
             word-break: break-word;
         }
 
+        /* 愚公移山 — Q→Q 放大鏡 + 漫畫箭咀（深色主題配色） */
+        .yugong-magnifier-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.15rem;
+            padding: 0.45rem 0.65rem;
+            border: 2px solid #57534e;
+            border-radius: 9999px;
+            background: #292524;
+            color: #e7e5e4;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+            min-height: 44px;
+            min-width: 44px;
+        }
+        .yugong-magnifier-btn:hover,
+        .yugong-magnifier-btn:active {
+            transform: scale(1.06);
+            border-color: #4ade80;
+            background: #1a2e22;
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.25);
+        }
+        .yugong-qq {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.35rem;
+            height: 1.35rem;
+            border: 2px solid #a8a29e;
+            border-radius: 50%;
+            font-size: 0.65rem;
+            font-weight: 800;
+            font-family: Georgia, serif;
+            line-height: 1;
+            color: #e7e5e4;
+        }
+        .yugong-qq-arrow {
+            font-size: 0.75rem;
+            color: #4ade80;
+            font-weight: 700;
+        }
+        .yugong-comic-flow {
+            position: relative;
+        }
+        .yugong-bubble {
+            background: #292524;
+            color: #e7e5e4;
+            border: 1px solid #57534e;
+            border-radius: 1rem;
+            padding: 0.65rem 0.85rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+            position: relative;
+        }
+        .yugong-bubble::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+        }
+        .yugong-bubble-moved::after {
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left-color: #57534e;
+        }
+        .yugong-bubble-remaining::after {
+            left: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-right-color: #57534e;
+        }
+        .yugong-bubble-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: #a8a29e;
+        }
+        .yugong-bubble-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #4ade80;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+        .yugong-bubble-sub {
+            font-size: 0.65rem;
+            color: #78716c;
+            margin-top: 0.1rem;
+        }
+        .yugong-arrow {
+            font-size: 1.5rem;
+            color: #4ade80;
+            font-weight: 900;
+            text-align: center;
+            animation: yugong-arrow-pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes yugong-arrow-pulse {
+            0%, 100% { opacity: 0.55; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(3px); }
+        }
+        .yugong-scene {
+            background: #f5f5f4;
+            border: 1px solid #57534e;
+            border-radius: 1rem;
+            padding: 0.5rem;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 4px 14px rgba(0, 0, 0, 0.4);
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .yugong-scene-inner {
+            --yugong-scale: 0.58;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.38s cubic-bezier(0.34, 1.2, 0.64, 1);
+            transform: scale(var(--yugong-scale));
+            transform-origin: center center;
+            position: relative;
+        }
+        .yugong-scene-inner.yugong-zoom-out {
+            transform: scale(calc(var(--yugong-scale) * 0.82));
+            opacity: 0.35;
+        }
+        .yugong-scene-inner.yugong-zoom-in {
+            animation: yugong-zoom-pop 0.42s cubic-bezier(0.34, 1.4, 0.64, 1);
+        }
+        @keyframes yugong-zoom-pop {
+            0% { transform: scale(calc(var(--yugong-scale) * 0.75)); opacity: 0.5; }
+            70% { transform: scale(calc(var(--yugong-scale) * 1.06)); }
+            100% { transform: scale(var(--yugong-scale)); opacity: 1; }
+        }
+        #yugong-mountain-img {
+            width: 100%;
+            max-height: 240px;
+            object-fit: contain;
+            display: block;
+        }
+        .yugong-progress-pct {
+            margin-top: 0.35rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #4ade80;
+            background: rgba(22, 101, 52, 0.35);
+            border: 1px solid #166534;
+            border-radius: 9999px;
+            padding: 0.2rem 0.75rem;
+        }
+        .yugong-progress-bar-wrap {
+            height: 0.65rem;
+            background: #292524;
+            border: 2px solid #44403c;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .yugong-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #166534, #4ade80);
+            border-radius: 9999px;
+            transition: width 0.6s ease;
+            min-width: 0;
+        }
+        .yugong-zoom-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            border: 2px solid #44403c;
+            background: #292524;
+            color: #e7e5e4;
+        }
+        .yugong-zoom-badge.yugong-zoom-milestone {
+            animation: yugong-badge-pop 0.85s ease;
+            border-color: #4ade80;
+            color: #4ade80;
+            background: rgba(22, 101, 52, 0.3);
+        }
+        .yugong-zoom-scale-label {
+            font-size: 0.65rem;
+            color: #a8a29e;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.75rem;
+        }
+        @keyframes yugong-badge-pop {
+            0%, 100% { transform: scale(1); }
+            40% { transform: scale(1.12); }
+        }
+        .yugong-scene-celebrate {
+            animation: yugong-scene-shake 0.85s ease;
+        }
+        @keyframes yugong-scene-shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-0.6deg); }
+            75% { transform: rotate(0.6deg); }
+        }
+        .yugong-speech {
+            position: absolute;
+            bottom: 0.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1c1917;
+            color: #e7e5e4;
+            border: 1px solid #4ade80;
+            border-radius: 1rem 1rem 1rem 0.25rem;
+            padding: 0.4rem 0.65rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            max-width: 92%;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+            z-index: 3;
+            line-height: 1.35;
+        }
+        .yugong-mobile-arrow {
+            text-align: center;
+            color: #4ade80;
+            font-size: 1.25rem;
+            font-weight: 900;
+            padding: 0.15rem 0;
+        }
+        .yugong-tip-item {
+            background: #292524;
+            border: 1px solid #44403c;
+        }
+        .yugong-tip-title {
+            color: #6ee7b7;
+        }
+        .yugong-tip-text {
+            color: #a8a29e;
+        }
+        .yugong-tip-dynamic {
+            color: #fbbf24;
+        }
+        @media (max-width: 640px) {
+            .yugong-bubble-value {
+                font-size: 1.05rem;
+            }
+            .yugong-scene {
+                min-height: 180px;
+            }
+            #yugong-mountain-img {
+                max-height: 200px;
+            }
+            .yugong-bubble-moved::after,
+            .yugong-bubble-remaining::after {
+                display: none;
+            }
+        }
+
         /* Modal full width tweak on very small screens */
         @media (max-width: 420px) {
             .max-w-md {
@@ -972,6 +1227,79 @@ Local Development Instructions:
         <div class="mt-5 text-xs text-[#a8a29e] px-1">* 記得每次訓練前做 10 分鐘動態暖身，訓練後做伸展。使用 Workout Log 記錄你的進度。</div>
     </div>
 
+    <!-- 愚公移山 -->
+    <div id="content-yugong" class="tab-content hidden">
+        <div class="section-card rounded-3xl p-4 sm:p-6 overflow-hidden">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-emerald-400">愚公移山</h2>
+                    <p class="text-xs sm:text-sm text-[#a8a29e]">慈善訓練噸數 · 逐噸逐噸移走座大山</p>
+                </div>
+                <button id="yugong-magnifier-btn" type="button" onclick="cycleYugongZoom()"
+                    class="yugong-magnifier-btn flex-shrink-0 touch-target" title="Q→Q 放大鏡 — 撳嚟由最細放到最大"
+                    aria-label="放大鏡由最細放到最大">
+                    <span class="yugong-qq left-q">Q</span>
+                    <span class="yugong-qq-arrow">→</span>
+                    <span class="yugong-qq right-q">Q</span>
+                </button>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span id="yugong-zoom-badge" class="yugong-zoom-badge">放大：最細 · 遠眺成座山</span>
+                <span id="yugong-earned-hint" class="text-[10px] sm:text-xs text-[#a8a29e]"></span>
+            </div>
+            <p id="yugong-zoom-scale-label" class="yugong-zoom-scale-label">最細 ━ 最細 ━ 最大（1/4）</p>
+            <p id="yugong-level-caption" class="text-xs text-emerald-300/90 mb-3 italic">最細倍率 — 成座山仲好遠，逐噸逐噸嚟！</p>
+
+            <div class="yugong-comic-flow grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1.5fr)_auto_minmax(0,1fr)] gap-2 sm:gap-3 items-stretch mb-3">
+                <div class="yugong-bubble yugong-bubble-moved">
+                    <div class="yugong-bubble-label">已經搬咗</div>
+                    <div id="yugong-moved-tonnes" class="yugong-bubble-value">0.00 噸</div>
+                    <div class="yugong-bubble-sub">累積慈善噸數</div>
+                </div>
+
+                <div class="yugong-arrow hidden md:flex items-center justify-center px-1">→</div>
+                <div class="yugong-mobile-arrow md:hidden">↓</div>
+
+                <div id="yugong-scene" class="yugong-scene relative row-span-1">
+                    <div id="yugong-scene-inner" class="yugong-scene-inner">
+                        <img id="yugong-mountain-img" src="images/可愛山圖1.png" alt="愚公移山 — 放大最細（遠眺成座山）" loading="lazy">
+                        <div id="yugong-speech" class="yugong-speech hidden"></div>
+                    </div>
+                    <div id="yugong-progress-pct" class="yugong-progress-pct">移山進度 0.0%</div>
+                </div>
+
+                <div class="yugong-mobile-arrow md:hidden">↓</div>
+                <div class="yugong-arrow hidden md:flex items-center justify-center px-1">→</div>
+
+                <div class="yugong-bubble yugong-bubble-remaining">
+                    <div class="yugong-bubble-label">仲剩幾多</div>
+                    <div id="yugong-remaining-tonnes" class="yugong-bubble-value">100.00 噸</div>
+                    <div class="yugong-bubble-sub">未搬嘅山</div>
+                </div>
+            </div>
+
+            <div class="yugong-progress-bar-wrap mb-4" title="慈善移山總進度">
+                <div id="yugong-progress-bar" class="yugong-progress-bar" style="width: 0%"></div>
+            </div>
+
+            <div class="border-t border-[#44403c] pt-4">
+                <h3 class="text-sm font-bold mb-2.5 flex items-center gap-1.5">
+                    <span>💡</span> 移山貼士
+                </h3>
+                <ul id="yugong-suggestions" class="space-y-2"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日行千里 -->
+    <div id="content-rixing" class="tab-content hidden">
+        <div class="section-card rounded-3xl p-5 sm:p-8">
+            <h2 class="text-xl sm:text-2xl font-bold mb-2">日行千里</h2>
+            <p class="text-sm text-[#a8a29e]">每日有氧與里程追蹤，穩步前進。</p>
+        </div>
+    </div>
+
     <!-- Workout Log - Professional Grade (Mobile-First) -->
     <div id="content-log" class="tab-content hidden">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
@@ -979,6 +1307,7 @@ Local Development Instructions:
                 <h3 class="font-bold text-lg sm:text-xl">訓練日誌 <span id="logUserName" class="text-[#4ade80]"></span></h3>
                 <p class="text-[10px] sm:text-xs text-[#a8a29e]">快速記錄 • 慈善噸數追蹤</p>
             </div>
+        </div>
 
         <!-- Loading state inside Workout Log (requirement 1) -->
         <div id="log-loading-state" class="hidden mb-6">
@@ -1312,22 +1641,6 @@ Local Development Instructions:
         <div class="mt-4 text-[10px] text-[#a8a29e] px-1 flex items-center gap-x-3">
             <span>數據儲存在本機 + 盡可能同步到你的帳號。</span>
             <button onclick="importDataPrompt()" class="underline hover:no-underline">匯入 JSON 備份</button>
-        </div>
-    </div>
-
-    <!-- 愚公移山 -->
-    <div id="content-yugong" class="tab-content hidden">
-        <div class="section-card rounded-3xl p-5 sm:p-8">
-            <h2 class="text-xl sm:text-2xl font-bold mb-2">愚公移山</h2>
-            <p class="text-sm text-[#a8a29e]">持之以恆，累積訓練量，向慈善目標邁進。</p>
-        </div>
-    </div>
-
-    <!-- 日行千里 -->
-    <div id="content-rixing" class="tab-content hidden">
-        <div class="section-card rounded-3xl p-5 sm:p-8">
-            <h2 class="text-xl sm:text-2xl font-bold mb-2">日行千里</h2>
-            <p class="text-sm text-[#a8a29e]">每日有氧與里程追蹤，穩步前進。</p>
         </div>
     </div>
 
@@ -1720,7 +2033,7 @@ Local Development Instructions:
 
     <!-- Extracted data for architecture refactor (Option A) -->
     <script src="js/data.js?v=2.3.6"></script>
-    <script src="js/utils.js?v=2.3.11"></script>
+    <script src="js/utils.js?v=2.3.12"></script>
     <script src="js/state.js?v=2.3.11"></script>
     <script src="js/api.js?v=2.3.11"></script>
     <script src="js/fullscreen.js?v=2.3.6"></script>
@@ -1731,6 +2044,7 @@ Local Development Instructions:
     <script src="js/ui-workoutsets.js?v=2.3.6"></script>
     <script src="js/ui-library.js?v=2.3.8"></script>
     <script src="js/ui-analysis.js?v=2.3.6"></script>
+    <script src="js/ui-yugong.js?v=2.3.14"></script>
 
     <script>
         /*
@@ -3802,6 +4116,10 @@ Local Development Instructions:
 
                 if (tab === 'log') {
                     ensureAllModalsExist();
+                }
+
+                if (tab === 'yugong' && typeof initYugongTab === 'function') {
+                    initYugongTab();
                 }
 
                 // ==================== 以下全部係 log tab 專用邏輯（嚴格隔離） ====================

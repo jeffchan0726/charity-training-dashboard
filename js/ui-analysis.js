@@ -1116,6 +1116,8 @@ function renderOverallStats() {
             }
         });
     }
+
+    if (typeof refreshYugongIfVisible === 'function') refreshYugongIfVisible();
 }
 
 function countLifetimePRs() {
