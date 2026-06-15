@@ -1,6 +1,6 @@
 // Basic Service Worker for Recomp Charity PWA (web.dev + Google HTML Service friendly)
 // Caches core shell + assets for offline use. Images are best-effort.
-const CACHE_NAME = 'recomp-charity-v2.3.19';
+const CACHE_NAME = 'recomp-charity-v2.3.20';
 const CORE_ASSETS = [
   'index.html',
   './',

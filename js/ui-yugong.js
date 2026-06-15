@@ -61,12 +61,45 @@ const YUGONG_SUGGESTIONS = [
 let yugongViewZoom = 1;
 let yugongLastProgressPct = 0;
 let yugongLeaderboardCache = null;
+let yugongCommunityTotalTonnes = null;
 let yugongLeaderboardLoading = false;
+let yugongLeaderboardFetchPromise = null;
+let yugongTabDataLoaded = false;
 
 const YUGONG_RANK_MEDALS = ['🥇', '🥈', '🥉'];
 
+function sumLeaderboardTonnes(entries) {
+    if (!Array.isArray(entries) || entries.length === 0) return 0;
+    const totalKg = entries.reduce((sum, entry) => sum + (Number(entry.weightKg) || 0), 0);
+    return totalKg / 1000;
+}
+
+function getCommunityMovedTonnes() {
+    if (yugongCommunityTotalTonnes != null) return yugongCommunityTotalTonnes;
+    if (yugongLeaderboardCache) return sumLeaderboardTonnes(yugongLeaderboardCache);
+    return 0;
+}
+
+function setYugongCommunityTotals(entries, totalTonnes) {
+    if (totalTonnes != null && !Number.isNaN(Number(totalTonnes))) {
+        yugongCommunityTotalTonnes = Number(totalTonnes);
+        return;
+    }
+    yugongCommunityTotalTonnes = sumLeaderboardTonnes(entries);
+}
+
+function setYugongTabState(state) {
+    const loadingEl = document.getElementById('yugong-tab-loading');
+    const readyEl = document.getElementById('yugong-tab-ready');
+    const magnifierBtn = document.getElementById('yugong-magnifier-btn');
+    const isLoading = state === 'loading';
+    if (loadingEl) loadingEl.classList.toggle('hidden', !isLoading);
+    if (readyEl) readyEl.classList.toggle('hidden', isLoading);
+    if (magnifierBtn) magnifierBtn.classList.toggle('hidden', isLoading);
+}
+
 function getYugongStats() {
-    const movedTonnes = typeof getLifetimeTonnes === 'function' ? getLifetimeTonnes() : 0;
+    const movedTonnes = getCommunityMovedTonnes();
     const goalTonnes = YUGONG_MOUNTAIN_GOAL_TONNES;
     const remainingTonnes = Math.max(0, goalTonnes - movedTonnes);
     const progressPct = Math.min(100, (movedTonnes / goalTonnes) * 100);
@@ -203,11 +236,11 @@ function renderYugongSuggestions(stats) {
     `;
 }
 
-function refreshYugongIfVisible() {
+async function refreshYugongIfVisible() {
     const panel = document.getElementById('content-yugong');
     if (panel && !panel.classList.contains('hidden')) {
-        renderYugongTab();
-        refreshYugongLeaderboard(true);
+        await refreshYugongLeaderboard(true);
+        if (yugongTabDataLoaded) renderYugongTab();
     }
 }
 
@@ -261,11 +294,11 @@ function renderYugongLeaderboard(entries) {
     }
 }
 
-async function refreshYugongLeaderboard(force) {
+async function refreshYugongLeaderboard(force, opts = {}) {
     const panel = document.getElementById('content-yugong');
     if (!panel || panel.classList.contains('hidden')) return;
-    if (yugongLeaderboardLoading) return;
 
+    const showLeaderboardSpinner = !!opts.showLeaderboardSpinner;
     const loadingEl = document.getElementById('yugong-leaderboard-loading');
     const errEl = document.getElementById('yugong-leaderboard-error');
     const list = document.getElementById('yugong-leaderboard-list');
@@ -275,50 +308,76 @@ async function refreshYugongLeaderboard(force) {
         return;
     }
 
+    if (yugongLeaderboardLoading && yugongLeaderboardFetchPromise) {
+        return yugongLeaderboardFetchPromise;
+    }
+
     if (typeof callAppsScript !== 'function') {
         if (errEl) {
             errEl.textContent = '排行榜功能未載入，請重新整理頁面。';
             errEl.classList.remove('hidden');
         }
+        yugongTabDataLoaded = true;
         return;
     }
 
     yugongLeaderboardLoading = true;
-    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (showLeaderboardSpinner && loadingEl) loadingEl.classList.remove('hidden');
     if (errEl) errEl.classList.add('hidden');
     if (list && !yugongLeaderboardCache) {
         list.innerHTML = '';
     }
 
-    try {
-        const res = await callAppsScript('getYugongLeaderboard');
-        if (!isBackendSuccess(res)) {
-            const msg = res?.message || '';
-            if (/invalid action|unknown action|missing user/i.test(msg)) {
-                throw new Error('後端未更新排行榜 — 請將 Google_Apps_Script.txt 貼上 Apps Script 並 Deploy 新版本');
+    yugongLeaderboardFetchPromise = (async () => {
+        try {
+            const res = await callAppsScript('getYugongLeaderboard');
+            if (!isBackendSuccess(res)) {
+                const msg = res?.message || '';
+                if (/invalid action|unknown action|missing user/i.test(msg)) {
+                    throw new Error('後端未更新排行榜 — 請將 Google_Apps_Script.txt 貼上 Apps Script 並 Deploy 新版本');
+                }
+                throw new Error(msg || '載入排行榜失敗');
             }
-            throw new Error(msg || '載入排行榜失敗');
+            const entries = Array.isArray(res.leaderboard) ? res.leaderboard : [];
+            yugongLeaderboardCache = entries;
+            setYugongCommunityTotals(entries, res.totalTonnes);
+            renderYugongLeaderboard(entries);
+        } catch (e) {
+            yugongLeaderboardCache = null;
+            yugongCommunityTotalTonnes = null;
+            if (list) list.innerHTML = '';
+            if (errEl) {
+                errEl.textContent = (e && e.message) ? e.message : '載入排行榜失敗，請稍後再試。';
+                errEl.classList.remove('hidden');
+            }
+        } finally {
+            yugongLeaderboardLoading = false;
+            yugongLeaderboardFetchPromise = null;
+            yugongTabDataLoaded = true;
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (!document.getElementById('yugong-tab-ready')?.classList.contains('hidden')) {
+                renderYugongTab();
+            }
         }
-        const entries = Array.isArray(res.leaderboard) ? res.leaderboard : [];
-        yugongLeaderboardCache = entries;
-        renderYugongLeaderboard(entries);
-    } catch (e) {
-        yugongLeaderboardCache = null;
-        if (list) list.innerHTML = '';
-        if (errEl) {
-            errEl.textContent = (e && e.message) ? e.message : '載入排行榜失敗，請稍後再試。';
-            errEl.classList.remove('hidden');
-        }
-    } finally {
-        yugongLeaderboardLoading = false;
-        if (loadingEl) loadingEl.classList.add('hidden');
-    }
+    })();
+
+    return yugongLeaderboardFetchPromise;
 }
 
-function initYugongTab() {
+async function initYugongTab() {
     if (yugongViewZoom < 1 || yugongViewZoom > YUGONG_ZOOM_MAX) {
         yugongViewZoom = 1;
     }
+
+    if (yugongLeaderboardCache && yugongTabDataLoaded) {
+        setYugongTabState('ready');
+        renderYugongTab();
+        refreshYugongLeaderboard(true, { showLeaderboardSpinner: true });
+        return;
+    }
+
+    setYugongTabState('loading');
+    await refreshYugongLeaderboard(true, { showLeaderboardSpinner: false });
+    setYugongTabState('ready');
     renderYugongTab();
-    refreshYugongLeaderboard(true);
 }

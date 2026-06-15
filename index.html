@@ -484,6 +484,16 @@ Local Development Instructions:
             font-size: 0.65rem;
             color: #78716c;
         }
+        .yugong-tab-loading {
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: #a8a29e;
+            font-size: 0.8rem;
+        }
         @media (max-width: 640px) {
             .yugong-bubble-value {
                 font-size: 1.05rem;
@@ -1354,6 +1364,12 @@ Local Development Instructions:
                 </button>
             </div>
 
+            <div id="yugong-tab-loading" class="yugong-tab-loading hidden">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i>
+                <span>載入移山數據…</span>
+            </div>
+
+            <div id="yugong-tab-ready" class="hidden">
             <div class="flex flex-wrap items-center gap-2 mb-1">
                 <span id="yugong-zoom-badge" class="yugong-zoom-badge">放大：最細 · 遠眺成座山</span>
                 <span id="yugong-earned-hint" class="text-[10px] sm:text-xs text-[#a8a29e]"></span>
@@ -1380,8 +1396,8 @@ Local Development Instructions:
             <div class="yugong-stats-row">
                 <div class="yugong-bubble yugong-bubble-moved">
                     <div class="yugong-bubble-label">已經搬咗</div>
-                    <div id="yugong-moved-tonnes" class="yugong-bubble-value">0.00 噸</div>
-                    <div class="yugong-bubble-sub">累積慈善噸數</div>
+                    <div id="yugong-moved-tonnes" class="yugong-bubble-value">—</div>
+                    <div class="yugong-bubble-sub">全玩家合計</div>
                 </div>
                 <div class="yugong-bubble yugong-bubble-remaining">
                     <div class="yugong-bubble-label">仲剩幾多</div>
@@ -1399,7 +1415,7 @@ Local Development Instructions:
                     <h3 class="text-sm font-bold flex items-center gap-1.5">
                         <span>🏆</span> 移山排行榜
                     </h3>
-                    <button type="button" onclick="refreshYugongLeaderboard(true)"
+                    <button type="button" onclick="refreshYugongLeaderboard(true, { showLeaderboardSpinner: true })"
                         class="text-[10px] sm:text-xs px-2.5 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 hover:text-emerald-300 text-[#a8a29e]">
                         更新
                     </button>
@@ -1418,6 +1434,7 @@ Local Development Instructions:
                     <span>💡</span> 移山貼士
                 </h3>
                 <ul id="yugong-suggestions" class="space-y-2"></ul>
+            </div>
             </div>
         </div>
     </div>
@@ -2174,7 +2191,7 @@ Local Development Instructions:
     <script src="js/ui-workoutsets.js?v=2.3.6"></script>
     <script src="js/ui-library.js?v=2.3.8"></script>
     <script src="js/ui-analysis.js?v=2.3.6"></script>
-    <script src="js/ui-yugong.js?v=2.3.18"></script>
+    <script src="js/ui-yugong.js?v=2.3.20"></script>
 
     <script>
         /*
