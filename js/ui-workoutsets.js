@@ -264,10 +264,6 @@ function showLibraryModalForSet() {
         return;
     }
     if (typeof showLibraryModal === 'function') {
-        const isFs = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-        if (isFs) {
-            libModal.style.zIndex = '90'; // ensure it sits above the immersive panel
-        }
         showLibraryModal(false);
     }
 }

@@ -40,7 +40,7 @@ function renderCalendar(year, month) {
         const g = grouped[key];
         const [y, m, d] = key.split('-').map(Number);
         if (y === year && (m - 1) === month) {
-            volByDay[d] = g.totalVolume || 0;
+            volByDay[d] = g.intensityScore != null ? g.intensityScore : (g.totalWeightKg || g.totalVolume || 0);
         }
     });
 
@@ -80,6 +80,7 @@ function renderCalendar(year, month) {
 
         if (v > 0) {
             // 有記錄才可點擊，顯示該日所有訓練（與歷史卡片一致，支援 grouping）
+            cell.classList.add('calendar-workout-day');
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             cell.onclick = () => showWorkoutDetailForDate(dateStr);
         } else {
@@ -89,29 +90,70 @@ function renderCalendar(year, month) {
         grid.appendChild(cell);
     }
 
-    // Muscle volume last 30d （保持不變，獨立於目前顯示的月份）
+    // Muscle volume last 30d （獨立於目前顯示的月份；重量用 kg，跑步機/有氧用 km）
     muscleContainer.innerHTML = '';
     const muscleVol = {};
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+
     workoutHistory.forEach(w => {
         const key = normalizeDateToLocal(w.date);
         const wd = key ? new Date(key) : new Date(w.date);
-        if (wd >= cutoff) {
-            w.exercises.forEach(ex => {
-                const cat = getExerciseCategory(ex.name);
-                let v = 0;
-                ex.sets.forEach(s => v += (s.volume || calculateSetVolume(s)));
-                muscleVol[cat] = (muscleVol[cat] || 0) + v;
+        if (wd < cutoff) return;
+
+        w.exercises.forEach(ex => {
+            const cat = getExerciseCategory(ex.name);
+            if (!muscleVol[cat]) muscleVol[cat] = { weightKg: 0, distanceKm: 0 };
+
+            ex.sets.forEach(s => {
+                const isTreadmill = typeof isTreadmillExercise === 'function' && isTreadmillExercise(ex.name);
+                if (isTreadmill) {
+                    const km = typeof calculateTreadmillDistanceKm === 'function'
+                        ? calculateTreadmillDistanceKm(s)
+                        : (parseFloat(s.volume) || 0);
+                    muscleVol[cat].distanceKm += km;
+                } else {
+                    const kg = typeof calculateSetVolume === 'function'
+                        ? calculateSetVolume(s, ex.name)
+                        : (s.volume || ((s.weight || 0) * (s.reps || 0)));
+                    muscleVol[cat].weightKg += kg;
+                }
             });
-        }
+        });
     });
-    Object.keys(muscleVol).sort((a,b) => muscleVol[b]-muscleVol[a]).forEach(cat => {
-        const pct = Math.round((muscleVol[cat] / Math.max(1, Object.values(muscleVol).reduce((a,b)=>a+b,0))) * 100);
+
+    const categories = Object.keys(muscleVol).filter(cat => {
+        const v = muscleVol[cat];
+        return v.weightKg > 0 || v.distanceKm > 0;
+    });
+
+    const totalWeightKg = categories.reduce((sum, cat) => sum + muscleVol[cat].weightKg, 0);
+    const totalDistanceKm = categories.reduce((sum, cat) => sum + muscleVol[cat].distanceKm, 0);
+
+    const sortScore = (stats) => Math.max(stats.weightKg, stats.distanceKm * 50);
+
+    categories.sort((a, b) => sortScore(muscleVol[b]) - sortScore(muscleVol[a])).forEach(cat => {
+        const stats = muscleVol[cat];
+        let label = '';
+        let pct = 0;
+
+        if (stats.distanceKm > 0 && stats.weightKg <= 0) {
+            pct = totalDistanceKm > 0 ? Math.round((stats.distanceKm / totalDistanceKm) * 100) : 0;
+            label = `${stats.distanceKm.toFixed(1)} km (${pct}%)`;
+        } else if (stats.weightKg > 0 && stats.distanceKm <= 0) {
+            pct = totalWeightKg > 0 ? Math.round((stats.weightKg / totalWeightKg) * 100) : 0;
+            label = `${Math.round(stats.weightKg).toLocaleString()} kg (${pct}%)`;
+        } else {
+            const weightPct = totalWeightKg > 0 ? Math.round((stats.weightKg / totalWeightKg) * 100) : 0;
+            pct = weightPct;
+            label = `${Math.round(stats.weightKg).toLocaleString()} kg + ${stats.distanceKm.toFixed(1)} km (${weightPct}%)`;
+        }
+
         const bar = document.createElement('div');
         bar.innerHTML = `
             <div class="flex justify-between text-xs mb-0.5">
                 <span>${cat}</span>
-                <span class="tabular-nums">${muscleVol[cat].toLocaleString()} kg (${pct}%)</span>
+                <span class="tabular-nums">${label}</span>
             </div>
             <div class="h-2 bg-[#292524] rounded"><div class="h-2 bg-emerald-400 rounded" style="width:${pct}%"></div>
             </div>
@@ -160,28 +202,30 @@ function showAllWorkoutDates() {
         return;
     }
 
-    // Aggregate by normalized date (YYYY-MM-DD) — same logic as the fixed renderCalendar
+    const groupedByDate = typeof groupWorkoutsByDate === 'function'
+        ? groupWorkoutsByDate()
+        : {};
     const groups = {};
     workoutHistory.forEach((w, idx) => {
         const d = normalizeDateToLocal(w.date);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
-
         if (!groups[d]) {
+            const dayGroup = groupedByDate[d];
+            const volDisplay = typeof formatWorkoutVolumeDisplay === 'function'
+                ? formatWorkoutVolumeDisplay({ exercises: dayGroup?.exercises || w.exercises || [] })
+                : { value: '0', unit: 'kg', sub: '0 kg' };
             groups[d] = {
                 date: d,
-                volume: 0,
+                volDisplay,
                 exerciseNames: new Set(),
-                setCount: 0,
+                setCount: dayGroup?.totalSets || 0,
                 repWorkout: w,
                 repIndex: idx
             };
         }
         const g = groups[d];
-        g.volume += (w.totalVolume != null ? w.totalVolume : calculateWorkoutVolume(w));
-
         (w.exercises || []).forEach(ex => {
             if (ex && ex.name) g.exerciseNames.add(ex.name);
-            if (ex && ex.sets) g.setCount += ex.sets.length;
         });
     });
 
@@ -196,7 +240,10 @@ function showAllWorkoutDates() {
         : dates.map(d => {
             const g = groups[d];
             const exCount = g.exerciseNames.size;
-            const volStr = Math.round(g.volume).toLocaleString();
+            const vol = g.volDisplay || { value: '0', unit: 'kg', sub: '0 kg' };
+            const volStr = vol.unit === 'km'
+                ? `${vol.value} km`
+                : (vol.sub && vol.sub.includes('km') ? vol.sub : `${vol.value} kg`);
             return `
                 <div class="workout-date-row px-4 py-3 mb-1.5 rounded-2xl bg-[#252321] hover:bg-[#2f2c2a] active:bg-[#3f3a36] cursor-pointer border border-transparent flex items-center justify-between gap-3"
                      data-date="${d}">
@@ -205,7 +252,7 @@ function showAllWorkoutDates() {
                         <div class="text-[11px] text-[#a8a29e] mt-0.5">${exCount} 動作 • ${g.setCount} 組</div>
                     </div>
                     <div class="text-right shrink-0">
-                        <div class="font-semibold text-emerald-400 tabular-nums">${volStr} kg</div>
+                        <div class="font-semibold text-emerald-400 tabular-nums">${volStr}</div>
                     </div>
                 </div>
             `;

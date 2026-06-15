@@ -197,6 +197,45 @@ Local Development Instructions:
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
         }
 
+        .exercise-drag-handle {
+            touch-action: none;
+            cursor: grab;
+            color: #a8a29e;
+            background: #1c1917;
+            border: 1px solid #57534e;
+            border-radius: 8px;
+            padding: 2px 6px;
+            line-height: 1.1;
+            font-size: 0.85rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .exercise-drag-handle:active {
+            cursor: grabbing;
+            color: #4ade80;
+            border-color: #4ade80;
+        }
+        .exercise-log-card.exercise-dragging {
+            opacity: 0.88;
+            transform: scale(0.985);
+            transition: transform 0.1s, opacity 0.1s;
+        }
+        .exercise-log-card.exercise-drag-over {
+            box-shadow: 0 0 0 2px #4ade80;
+        }
+        body.exercise-drag-active {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body.server-syncing-lock #start-training-btn,
+        body.server-syncing-lock .workout-history-card,
+        body.server-syncing-lock .calendar-workout-day {
+            pointer-events: none;
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
         /* === Full-Screen / Immersive Training Mode (Start New Training) === */
         .fullscreen-training #content-log > .flex:first-child, /* log top header with buttons */
         .fullscreen-training .flex.gap-1\.5.mb-3.text-sm.border-b, /* sub-tabs */
@@ -285,8 +324,21 @@ Local Development Instructions:
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             min-height: 0; /* critical for flex child to scroll properly */
-            /* Add bottom padding inside scroll so last exercise card is never hidden behind the sticky bar */
-            padding-bottom: 12px;
+            padding-bottom: 16px;
+        }
+
+        /* 加入動作區：固定喺 scroll 同底部掣之間，唔放入 scroll 避免被夾 */
+        .immersive-add-exercise {
+            flex-shrink: 0;
+            background: #1c1917;
+            border-top: 1px solid #57534e;
+            padding: 12px 1rem 10px;
+        }
+        @media (min-width: 640px) {
+            .immersive-add-exercise {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
         }
 
         /* Fallback / previous near-fullscreen styles (for non-fullscreen immersive if needed) */
@@ -351,6 +403,8 @@ Local Development Instructions:
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            min-height: 0;
+            padding-bottom: 12px;
         }
 
         /* Modal scrollable content with subtle top/bottom shadows when overflowing */
@@ -585,6 +639,10 @@ Local Development Instructions:
                 class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">訓練計劃</button>
             <button onclick="switchTab('log')" id="tab-log"
                 class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">Workout Log</button>
+            <button onclick="switchTab('yugong')" id="tab-yugong"
+                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">愚公移山</button>
+            <button onclick="switchTab('rixing')" id="tab-rixing"
+                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">日行千里</button>
         </div>
 
         <!-- 概覽 -->
@@ -926,7 +984,7 @@ Local Development Instructions:
         <div id="log-loading-state" class="hidden mb-6">
             <div class="log-card rounded-3xl p-8 text-center border border-[#57534e]">
                 <i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-400 mb-4"></i>
-                <div class="font-semibold text-base mb-2">正在從 Google 載入訓練紀錄...</div>
+                <div class="font-semibold text-base mb-2">正在載入訓練紀錄...</div>
                 <p class="text-sm text-[#a8a29e] mb-4 max-w-[260px] mx-auto">請稍候，數據會安全同步到你的帳號。載入完成後會自動顯示歷史記錄。</p>
                 <button id="log-retry-load-btn"
                         onclick="retryLoadUserLogs()"
@@ -981,7 +1039,7 @@ Local Development Instructions:
                         <div>
                             <span class="text-[#a8a29e]">訓練量</span>
                             <span id="session-volume" class="volume-number font-bold text-emerald-400 tabular-nums ml-2">0</span>
-                            <span class="text-xs text-[#a8a29e] ml-1">kg</span>
+                            <span id="session-volume-unit" class="text-xs text-[#a8a29e] ml-1">kg</span>
                         </div>
                         <div class="text-[#a8a29e]">
                             <span id="session-sets-count">0 組</span>
@@ -992,30 +1050,29 @@ Local Development Instructions:
                     </div>
                 </div>
 
-                <!-- SCROLLABLE MIDDLE: Exercises + Add form -->
-                <div class="immersive-scroll px-4 sm:px-6 py-4 space-y-4">
-                    <!-- Exercises in current workout -->
+                <!-- SCROLLABLE MIDDLE: Exercises only -->
+                <div class="immersive-scroll px-4 sm:px-6 py-4">
                     <div id="current-workout-exercises" class="space-y-3">
                         <!-- Populated dynamically by JS -->
                     </div>
+                </div>
 
-                    <!-- Add Exercise -->
-                    <div class="pt-3 border-t border-[#57534e]">
-                        <div class="flex flex-col sm:flex-row gap-2 items-end">
-                            <div class="flex-1">
-                                <label for="add-exercise-input" class="text-xs text-[#a8a29e] mb-1 block">加入動作</label>
-                                <div class="flex gap-2">
-                                    <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..." 
-                                        class="log-input flex-1 px-4 py-2 rounded-2xl text-sm" onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
-                                    <datalist id="exercise-datalist"></datalist>
-                                    <button onclick="addExerciseToCurrentWorkout()" 
-                                        class="px-4 py-2 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap">+ 加入</button>
-                                </div>
-                            </div>
-                            <button onclick="showLibraryModal(true)" class="px-4 py-2 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524] whitespace-nowrap">動作庫</button>
+                <!-- Add Exercise: fixed above bottom bar, not inside scroll -->
+                <div class="immersive-add-exercise">
+                    <label for="add-exercise-input" class="text-xs text-[#a8a29e] mb-1.5 block">加入動作</label>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div class="flex flex-1 gap-2 min-w-0">
+                            <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..."
+                                class="log-input flex-1 min-w-0 px-4 py-2.5 rounded-2xl text-sm"
+                                onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
+                            <datalist id="exercise-datalist"></datalist>
+                            <button onclick="addExerciseToCurrentWorkout()"
+                                class="px-4 py-2.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap flex-shrink-0">+ 加入</button>
                         </div>
-                        <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 h-4"></div>
+                        <button onclick="showLibraryModal(true)"
+                            class="w-full sm:w-auto px-4 py-2.5 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524] whitespace-nowrap flex-shrink-0">動作庫</button>
                     </div>
+                    <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 min-h-[1rem]"></div>
                 </div>
 
                 <!-- STICKY BOTTOM: Finish + Abandon buttons (address bar / safe-area safe) -->
@@ -1106,10 +1163,10 @@ Local Development Instructions:
 
                 <!-- Charts - Full width, stacked vertically, mobile optimized -->
                 <div class="space-y-4 mb-4">
-                    <!-- Volume Trend Chart -->
+                    <!-- Primary trend chart (Volume / 距離 / 總支撐時間) -->
                     <div>
                         <div class="flex items-baseline justify-between mb-1.5 px-1">
-                            <div class="text-sm font-semibold">訓練量趨勢 (Volume)</div>
+                            <div id="analysis-chart-primary-title" class="text-sm font-semibold">訓練量趨勢 (Volume)</div>
                             <div class="text-[10px] text-[#a8a29e]">Bar + Line</div>
                         </div>
                         <div class="bg-[#1f1c1a] rounded-2xl p-2 border border-[#44403c]">
@@ -1117,10 +1174,10 @@ Local Development Instructions:
                         </div>
                     </div>
 
-                    <!-- e1RM Progression Chart -->
+                    <!-- Secondary trend chart (e1RM / 最長支撐 / 最高速度) -->
                     <div>
                         <div class="flex items-baseline justify-between mb-1.5 px-1">
-                            <div class="text-sm font-semibold">e1RM 進展曲線</div>
+                            <div id="analysis-chart-secondary-title" class="text-sm font-semibold">e1RM 進展曲線</div>
                             <div class="text-[10px] text-[#a8a29e]">Line + 趨勢線</div>
                         </div>
                         <div class="bg-[#1f1c1a] rounded-2xl p-2 border border-[#44403c]">
@@ -1147,7 +1204,8 @@ Local Development Instructions:
                             歷史組數 <span id="analysis-record-count" class="tabular-nums"></span>
                         </div>
                         <div class="flex gap-x-2 text-xs items-center">
-                            <input id="analysis-filter-weight" type="number" step="2.5" placeholder="最低重量" 
+                            <span id="analysis-filter-label" class="text-[#a8a29e] whitespace-nowrap">最低</span>
+                            <input id="analysis-filter-input" type="number" step="1" placeholder="篩選" 
                                    class="log-input w-16 px-2 py-0.5 text-xs rounded-xl" oninput="filterAnalysisTable()">
                             <button onclick="filterAnalysisTable()" class="px-2 py-0.5 border border-[#57534e] rounded-xl">套用</button>
                         </div>
@@ -1156,7 +1214,7 @@ Local Development Instructions:
                     <div id="analysis-table-wrapper" class="overflow-x-auto border border-[#57534e] rounded-2xl max-h-[240px]">
                         <table class="w-full text-xs min-w-[580px]">
                             <thead class="bg-[#292524] sticky top-0 z-10">
-                                <tr>
+                                <tr id="analysis-table-head-row">
                                     <th class="py-2 px-3 text-left">日期</th>
                                     <th class="py-2 px-2 text-center">重量</th>
                                     <th class="py-2 px-2 text-center">次數</th>
@@ -1254,6 +1312,22 @@ Local Development Instructions:
         <div class="mt-4 text-[10px] text-[#a8a29e] px-1 flex items-center gap-x-3">
             <span>數據儲存在本機 + 盡可能同步到你的帳號。</span>
             <button onclick="importDataPrompt()" class="underline hover:no-underline">匯入 JSON 備份</button>
+        </div>
+    </div>
+
+    <!-- 愚公移山 -->
+    <div id="content-yugong" class="tab-content hidden">
+        <div class="section-card rounded-3xl p-5 sm:p-8">
+            <h2 class="text-xl sm:text-2xl font-bold mb-2">愚公移山</h2>
+            <p class="text-sm text-[#a8a29e]">持之以恆，累積訓練量，向慈善目標邁進。</p>
+        </div>
+    </div>
+
+    <!-- 日行千里 -->
+    <div id="content-rixing" class="tab-content hidden">
+        <div class="section-card rounded-3xl p-5 sm:p-8">
+            <h2 class="text-xl sm:text-2xl font-bold mb-2">日行千里</h2>
+            <p class="text-sm text-[#a8a29e]">每日有氧與里程追蹤，穩步前進。</p>
         </div>
     </div>
 
@@ -1439,9 +1513,23 @@ Local Development Instructions:
                 <div class="mt-2 flex items-center gap-2 text-sm">
                     <span class="text-[#a8a29e]">總訓練量</span>
                     <span id="history-edit-volume" class="font-bold text-2xl text-emerald-400 tabular-nums">0</span>
-                    <span class="text-xs text-[#a8a29e]">kg</span>
+                    <span id="history-edit-volume-unit" class="text-xs text-[#a8a29e]">kg</span>
                 </div>
                 <div class="text-[10px] text-[#a8a29e] mt-1">直接修改下方每組的重量、次數、備註。修改會即時反映在總量上。</div>
+            </div>
+
+            <!-- Add Exercise (history edit) -->
+            <div class="px-4 py-3 border-b border-[#57534e] flex-shrink-0">
+                <label for="history-add-exercise-input" class="text-xs text-[#a8a29e] mb-1 block">加入動作</label>
+                <div class="flex gap-2">
+                    <input id="history-add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..."
+                        class="log-input flex-1 px-3 py-2 rounded-2xl text-sm"
+                        onkeydown="if(event.key==='Enter') addExerciseToHistory()">
+                    <button onclick="addExerciseToHistory()"
+                        class="px-3 py-2 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap">+ 加入</button>
+                    <button onclick="showLibraryModalForHistory()"
+                        class="px-3 py-2 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524] whitespace-nowrap">動作庫</button>
+                </div>
             </div>
 
             <!-- Scrollable exercises editor -->
@@ -1558,7 +1646,7 @@ Local Development Instructions:
     </div>
 
     <!-- Exercise Library Modal -->
-    <div id="libraryModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div id="libraryModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[120]">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-2xl p-5 sm:p-6 mx-4 max-h-[88vh] overflow-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-bold text-lg">動作庫</h3>
@@ -1579,7 +1667,7 @@ Local Development Instructions:
     </div>
 
     <!-- Exercise Detail Modal for GIF + tips -->
-    <div id="exerciseDetailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[90]">
+    <div id="exerciseDetailModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[130]">
       <div class="bg-[#1c1917] border border-[#57534e] rounded-3xl w-full max-w-[92vw] sm:max-w-md mx-2 overflow-hidden">
         <div class="flex justify-between items-center px-4 py-3 border-b border-[#57534e]">
           <div>
@@ -1610,7 +1698,7 @@ Local Development Instructions:
     </div>
 
     <!-- Add Custom Exercise Modal -->
-    <div id="customExerciseModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[65]">
+    <div id="customExerciseModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[130]">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-sm p-5 mx-4">
             <h3 class="font-bold mb-3">新增自訂動作</h3>
             <div class="space-y-3 text-sm">
@@ -1631,18 +1719,18 @@ Local Development Instructions:
     </div>
 
     <!-- Extracted data for architecture refactor (Option A) -->
-    <script src="js/data.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/state.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/fullscreen.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/ui-log.js"></script>
-    <script src="js/ui-history.js"></script>
-    <script src="js/ui-calendar.js"></script>
-    <script src="js/ui-workoutsets.js"></script>
-    <script src="js/ui-library.js"></script>
-    <script src="js/ui-analysis.js"></script>
+    <script src="js/data.js?v=2.3.6"></script>
+    <script src="js/utils.js?v=2.3.11"></script>
+    <script src="js/state.js?v=2.3.11"></script>
+    <script src="js/api.js?v=2.3.11"></script>
+    <script src="js/fullscreen.js?v=2.3.6"></script>
+    <script src="js/ui.js?v=2.3.6"></script>
+    <script src="js/ui-log.js?v=2.3.9"></script>
+    <script src="js/ui-history.js?v=2.3.10"></script>
+    <script src="js/ui-calendar.js?v=2.3.6"></script>
+    <script src="js/ui-workoutsets.js?v=2.3.6"></script>
+    <script src="js/ui-library.js?v=2.3.8"></script>
+    <script src="js/ui-analysis.js?v=2.3.6"></script>
 
     <script>
         /*
@@ -1680,7 +1768,8 @@ Local Development Instructions:
         //
         // 公開 GitHub 前請改做你自己嘅 URL，否則會連到作者嘅後端！
         // 詳細步驟請參考 README.md 「GitHub 部署完整指南」
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8C7XUmx5IvhoSQZ-6JKegxyFtDtoK_gWv_xSS7b2vyRO3Nv7Sc6Kz8p6mWsVOrh1/exec";
+        var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8C7XUmx5IvhoSQZ-6JKegxyFtDtoK_gWv_xSS7b2vyRO3Nv7Sc6Kz8p6mWsVOrh1/exec";
+        window.APPS_SCRIPT_URL = APPS_SCRIPT_URL;
 
         // === Username / PIN normalization helpers (enforce rules on client) ===
         // Note: core state (currentUser, workoutLogs, currentWorkout, workoutHistory, etc.)
@@ -1946,12 +2035,21 @@ Local Development Instructions:
                         if (!grouped[sid].exercises[exName]) {
                             grouped[sid].exercises[exName] = { name: exName, sets: [] };
                         }
-                        grouped[sid].exercises[exName].sets.push({
-                            weight: parseFloat(row.weight) || 0,
-                            reps: parseInt(row.reps) || 0,
-                            notes: row.notes || '',
-                            volume: parseFloat(row.volume) || ((parseFloat(row.weight)||0) * (parseInt(row.reps)||0))
-                        });
+                        grouped[sid].exercises[exName].sets.push(
+                            typeof rebuildSetFromLogRow === 'function'
+                                ? rebuildSetFromLogRow(row, exName)
+                                : {
+                                    weight: parseFloat(row.weight) || 0,
+                                    body_weight: row.body_weight != null ? parseFloat(row.body_weight) : 0,
+                                    reps: parseInt(row.reps) || 0,
+                                    duration: row.duration != null ? parseInt(row.duration) : 0,
+                                    incline: row.incline != null ? parseFloat(row.incline) : 0,
+                                    speed: row.speed != null ? parseFloat(row.speed) : 0,
+                                    notes: row.notes || '',
+                                    volume: parseFloat(row.volume) || 0,
+                                    id: row.id || undefined
+                                }
+                        );
                     });
 
         
@@ -1959,11 +2057,15 @@ Local Development Instructions:
                         // 使用 normalize 確保日期正確（即使後端偶爾返回 ISO）
                         const normalizedDate = normalizeDateToLocal(w.date);
 
-                        w.date = normalizedDate;  // 確保 w.date 是乾淨本地日期
+                        w.date = normalizedDate;
                         w.exercises = Object.values(w.exercises);
-                        w.totalVolume = w.exercises.reduce((sum, ex) => {
-                            return sum + ex.sets.reduce((s, st) => s + (st.volume || 0), 0);
-                        }, 0);
+                        if (typeof refreshWorkoutTotals === 'function') {
+                            refreshWorkoutTotals(w);
+                        } else {
+                            w.totalVolume = w.exercises.reduce((sum, ex) => {
+                                return sum + ex.sets.reduce((s, st) => s + (st.volume || 0), 0);
+                            }, 0);
+                        }
                         return w;
                     }).sort((a,b) => b.date.localeCompare(a.date));
 
@@ -2113,9 +2215,8 @@ Local Development Instructions:
         // analysisTimeRange, analysisChart*, bodyPartChart, weeklyVolumeChart moved to js/state.js (A refactor)
         let workoutSetsCacheTimestamp = 0;
         const WORKOUT_SETS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL for cache
-        let currentViewingHistory = null;      // cloned workout being viewed/edited (may move to state later)
-        let isSavingHistory = false;
-        let isDeletingHistory = false;
+        // currentViewingHistory moved to js/state.js
+        // isSavingHistory, isDeletingHistory moved to js/state.js
         let isLoggingIn = false;
 
         // Data now loaded from js/data.js (architecture refactor A)
@@ -2155,6 +2256,7 @@ Local Development Instructions:
         }
 
         function resumeUnfinishedWorkout() {
+            if (guardServerSyncing('同步中，請稍候再繼續訓練')) return;
             hideUnfinishedWorkoutModal();
             // Resume - show in normal (non-fullscreen) log view so other tabs remain clickable
             const live = document.getElementById('live-log-panel');
@@ -2169,6 +2271,7 @@ Local Development Instructions:
         }
 
         function discardAndStartNew() {
+            if (guardServerSyncing('同步中，請稍候再開始訓練')) return;
             hideUnfinishedWorkoutModal();
             currentWorkout = null;
             saveWorkoutData();
@@ -2200,7 +2303,16 @@ Local Development Instructions:
                     if (!lastPerformed[ex.name] && ex.sets && ex.sets.length) {
                         // Store FULL sets from the last historical workout for this exercise (for "Last" display with multi-set support)
                         lastPerformed[ex.name] = {
-                            sets: ex.sets.map(s => ({weight: s.weight, reps: s.reps})),
+                            sets: ex.sets.map(s => ({
+                                weight: s.weight,
+                                body_weight: s.body_weight,
+                                reps: s.reps,
+                                duration: s.duration,
+                                incline: s.incline,
+                                speed: s.speed,
+                                notes: s.notes,
+                                volume: s.volume
+                            })),
                             date: w.date
                         };
                     }
@@ -2246,12 +2358,11 @@ Local Development Instructions:
                     }
                     // 複製 sets
                     (ex.sets || []).forEach(s => {
-                        mergedExercises[key].sets.push({
-                            weight: s.weight || 0,
-                            reps: s.reps || 0,
-                            notes: s.notes || '',
-                            volume: s.volume || ((s.weight||0)*(s.reps||0))
-                        });
+                        mergedExercises[key].sets.push(
+                            typeof cloneWorkoutSet === 'function'
+                                ? cloneWorkoutSet(s, key)
+                                : { ...s }
+                        );
                     });
                 });
             });
@@ -2277,19 +2388,41 @@ Local Development Instructions:
             if (!dateStr) return null;
             const d = normalizeDateToLocal(dateStr);
             const today = getTodayStr();
-            if (d !== today) return null; // 只支援今日繼續
+            if (d !== today) return null;
 
             const todayData = getTodayWorkoutFromHistory();
             if (!todayData || !todayData.exercises || todayData.exercises.length === 0) return null;
 
-            return {
-                id: Date.now(),
+            const preloaded = {
+                id: todayData.id || todayData.session_id || Date.now(),
+                session_id: todayData.session_id || todayData.id,
                 date: today,
-                exercises: JSON.parse(JSON.stringify(todayData.exercises)), // 深拷貝，避免污染 history
+                exercises: JSON.parse(JSON.stringify(todayData.exercises)),
                 notes: todayData.notes || '',
                 startTime: Date.now(),
-                isContinuedFromToday: true
+                isContinuedFromToday: true,
+                _originalSessionIds: todayData._originalSessionIds || []
             };
+            if (typeof markWorkoutSetsAsSyncedFromCloud === 'function') {
+                markWorkoutSetsAsSyncedFromCloud(preloaded);
+            }
+            if (typeof createContinueWorkoutSnapshot === 'function') {
+                preloaded._continueSnapshot = createContinueWorkoutSnapshot(preloaded);
+            }
+            return preloaded;
+        }
+
+        function shouldRefreshContinueWorkout() {
+            if (!currentWorkout) return true;
+            if (currentWorkout.isContinuedFromToday) return false;
+
+            const today = getTodayStr();
+            const draftDate = normalizeDateToLocal(currentWorkout.date);
+            if (draftDate !== today) return true;
+
+            const draftSets = typeof countWorkoutSets === 'function'
+                ? countWorkoutSets(currentWorkout) : 0;
+            return draftSets === 0 && hasTrainingToday();
         }
 
         /**
@@ -2311,24 +2444,37 @@ Local Development Instructions:
          * 新增 helper：將今日紀錄 preload 入 currentWorkout
          * 結構與全新訓練一致
          */
-        function loadTodayWorkoutIntoCurrent() {
-            if (currentWorkout) return false; // 已有進行中訓練就不覆蓋
-
+        function loadTodayWorkoutIntoCurrent(force = false) {
             const todayData = getTodayWorkout();
             if (!todayData || !todayData.exercises || todayData.exercises.length === 0) return false;
 
+            if (!force && currentWorkout) {
+                if (currentWorkout.isContinuedFromToday) return false;
+                const draftSets = typeof countWorkoutSets === 'function'
+                    ? countWorkoutSets(currentWorkout) : 0;
+                if (draftSets > 0) return false;
+            }
+
             currentWorkout = {
-                id: todayData.id,
-                session_id: todayData.session_id || todayData.sessionId,
+                id: todayData.id || todayData.session_id || todayData.sessionId || Date.now(),
+                session_id: todayData.session_id || todayData.sessionId || todayData.id,
                 date: getTodayStr(),
-                exercises: JSON.parse(JSON.stringify(todayData.exercises)), // 深拷貝
+                exercises: JSON.parse(JSON.stringify(todayData.exercises)),
                 notes: todayData.notes || '',
                 startTime: Date.now(),
                 isContinuedFromToday: true,
                 _originalSessionIds: todayData._originalSessionIds || []
             };
 
-            console.log('[loadTodayWorkoutIntoCurrent] 已 preload 今日訓練紀錄');
+            if (typeof markWorkoutSetsAsSyncedFromCloud === 'function') {
+                markWorkoutSetsAsSyncedFromCloud(currentWorkout);
+            }
+            if (typeof createContinueWorkoutSnapshot === 'function') {
+                currentWorkout._continueSnapshot = createContinueWorkoutSnapshot(currentWorkout);
+            }
+            if (typeof sessionCloudDeletedIds !== 'undefined') {
+                sessionCloudDeletedIds = new Set();
+            }
             return true;
         }
 
@@ -2371,32 +2517,43 @@ Local Development Instructions:
                 return;
             }
 
+            if (guardServerSyncing('同步中，請稍候再開始或繼續訓練')) return;
+
             // 自動恢復未完成訓練的提示已完全停用（按用戶要求）
             // 不再彈出 showUnfinishedWorkoutModal()
             // 如有 currentWorkout（來自 localStorage），會直接重用（或由「今日繼續」邏輯處理）
 
-            // If there's already a currentWorkout loaded from storage, reuse it
-            if (!currentWorkout) {
-                const today = getTodayStr();
-                const date = dateStr || today;
+            const today = getTodayStr();
+            const date = dateStr || today;
 
-                // === B. 智能「今日繼續」邏輯 ===
+            // === B. 智能「今日繼續」邏輯 ===
+            if (!currentWorkout || shouldRefreshContinueWorkout()) {
                 let loadedFromToday = false;
-                if (date === today) {
-                    loadedFromToday = loadTodayWorkoutIntoCurrent();
+                if (date === today && hasTrainingToday()) {
+                    loadedFromToday = loadTodayWorkoutIntoCurrent(true);
                 }
-
-                if (loadedFromToday) {
-                    // continue mode
-                } else {
+                if (!loadedFromToday && !currentWorkout) {
                     currentWorkout = { id: Date.now(), date, exercises: [], notes: '', startTime: Date.now() };
                 }
             }
 
+            if (currentWorkout && currentWorkout.isContinuedFromToday &&
+                !currentWorkout._continueSnapshot &&
+                typeof createContinueWorkoutSnapshot === 'function') {
+                currentWorkout._continueSnapshot = createContinueWorkoutSnapshot(currentWorkout);
+            }
+
             // Reset any previous sync status when starting fresh training
             activeBackgroundSyncs = 0;
+            if (typeof sessionCloudDeletedIds !== 'undefined') {
+                sessionCloudDeletedIds = new Set();
+            }
             const syncEl = document.getElementById('sync-status');
             if (syncEl) syncEl.innerHTML = '';
+
+            if (currentWorkout && !currentWorkout.isContinuedFromToday) {
+                delete currentWorkout._continueSnapshot;
+            }
 
             // === Auto "接埋" last chosen training set ===
             // 只有全新空白訓練才自動接 last set；繼續今日訓練已 preload 了內容，跳過。
@@ -2556,38 +2713,25 @@ Local Development Instructions:
             const isContinue = !!currentWorkout.isContinuedFromToday;
 
             if (hasData) {
-                // 確認時給清楚提示
-                if (!confirm('確定放棄本次訓練？\n之前已記錄的組數會自動背景儲存到 Google（只係唔繼續呢個 session）。')) {
-                    return;
+                const msg = isContinue
+                    ? '確定結束繼續訓練？\n今日已記錄的組數會保留，新加的組數會同步到 Google。'
+                    : '確定放棄本次訓練？\n之前已記錄的組數會自動背景儲存到 Google（只係唔繼續呢個 session）。';
+                if (!confirm(msg)) return;
+
+                const snapshot = JSON.parse(JSON.stringify(currentWorkout));
+                if (isContinue && typeof applyContinueWorkoutFinishToLocalHistory === 'function') {
+                    applyContinueWorkoutFinishToLocalHistory(snapshot);
+                    rebuildLastPerformed();
+                    saveWorkoutData();
+                    try { renderWorkoutHistory(); } catch (_) {}
                 }
 
-                // 背景 sync：盡量把這次 session 的內容（preload + 新增）push 一次
-                // 對於 continue 模式，使用 finalizeAndSaveWorkout 以執行 deleteSession + addWorkout，確保不 duplicate
                 if (currentUser) {
-                    // fire-and-forget，非阻塞
-                    const isCont = !!currentWorkout.isContinuedFromToday;
-                    if (isCont) {
-                        finalizeAndSaveWorkout(currentWorkout, currentWorkout.notes || '').then(res => {
-                            if (res && res.status === 'success') {
-                                console.log('[cancel] abandon 時 background save 成功 (continue mode used delete+add)');
-                            }
-                        }).catch(() => {});
-                    } else {
-                        pushCurrentWorkoutToBackend(currentWorkout).then(res => {
-                            if (res && res.status === 'success') {
-                                console.log('[cancel] abandon 時 background push 成功');
-                            }
-                        }).catch(() => {});
-                    }
-                    // 同時更新右上角狀態
-                    try { updateGlobalSyncIndicator('syncing'); } catch (_) {}
-                    setTimeout(() => {
-                        try { updateGlobalSyncIndicator('synced'); } catch (_) {}
-                    }, 1200);
+                    finalizeAndSaveWorkout(snapshot, snapshot.notes || '').catch(() => {});
                 }
 
                 try {
-                    showToast('已自動儲存你之前記錄的組數', 3200);
+                    showToast(isContinue ? '今日訓練已更新' : '已自動儲存你之前記錄的組數', 3200);
                 } catch (_) {}
             } else {
                 if (!confirm('Discard current workout?')) return;
@@ -2605,7 +2749,8 @@ Local Development Instructions:
             if (empty) empty.classList.remove('hidden');
             // resetRestTimer(); // 休息計時器已移除
             exitImmersiveMode();
-            saveWorkoutData(); // clear the draft
+            saveWorkoutData();
+            try { updateStartTrainingButton(); } catch (_) {}
         }
 
         // enterImmersiveMode moved to js/fullscreen.js (A refactor)
@@ -2624,6 +2769,11 @@ Local Development Instructions:
             if (existing) {
                 alert('此動作已在本訓練中。');
                 return;
+            }
+
+            // 切換去下一個動作前，補同步上一個動作未推送的組數
+            if (currentUser && typeof flushWorkoutPendingCloudSync === 'function') {
+                flushWorkoutPendingCloudSync(currentWorkout);
             }
 
             currentWorkout.exercises.push({ name: displayName, sets: [] });
@@ -2780,7 +2930,7 @@ Local Development Instructions:
                     text.classList.remove('hidden');
                     text.textContent = '載入中';
                 }
-                container.title = '正在從 Google 載入訓練記錄...';
+                container.title = '正在載入訓練記錄...';
                 container.onclick = null;
                 container.style.cursor = 'default';
             } else if (status === 'success') {
@@ -2844,7 +2994,7 @@ Local Development Instructions:
         // beforeunload protection for pending background syncs (D.)
         window.addEventListener('beforeunload', function (e) {
             if (globalPendingSyncs > 0 || isFinishingWorkout) {
-                const msg = '數據正在背景同步到 Google，建議等待完成再離開頁面。';
+                const msg = '數據正在背景同步，建議等待完成再離開頁面。';
                 e.preventDefault();
                 e.returnValue = msg;
                 return msg;
@@ -2978,8 +3128,13 @@ Local Development Instructions:
                 return;
             }
 
-            const vol = calculateWorkoutVolume(currentWorkout);
-            const totalSets = currentWorkout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+            const totals = typeof calculateWorkoutTotals === 'function'
+                ? calculateWorkoutTotals(currentWorkout)
+                : { weightKg: calculateWorkoutVolume(currentWorkout), distanceKm: 0, totalSets: 0 };
+            const volDisplay = typeof formatWorkoutVolumeDisplay === 'function'
+                ? formatWorkoutVolumeDisplay(currentWorkout)
+                : { value: totals.weightKg, unit: 'kg', sub: (totals.weightKg / 1000).toFixed(2) + ' tonnes moved' };
+            const totalSets = totals.totalSets;
 
             // Detect new PRs
             const prs = detectNewPRs(currentWorkout);
@@ -2999,8 +3154,10 @@ Local Development Instructions:
             }
 
             if (dateEl) dateEl.textContent = currentWorkout.date || '';
-            volEl.textContent = vol.toLocaleString() + ' kg';
-            tonnesEl.textContent = (vol / 1000).toFixed(2) + ' tonnes moved';
+            volEl.textContent = volDisplay.unit === 'km'
+                ? volDisplay.value + ' km'
+                : volDisplay.value + ' kg';
+            tonnesEl.textContent = volDisplay.sub;
             setsEl.textContent = `${totalSets} sets • ${currentWorkout.exercises.length} exercises`;
 
             // Duration (if startTime recorded)
@@ -3056,44 +3213,10 @@ Local Development Instructions:
         }
 
         function detectNewPRs(workout) {
-            const newPRs = [];
-            const allHistoryForComparison = [...workoutHistory]; // before adding current
-
-            workout.exercises.forEach(ex => {
-                ex.sets.forEach(set => {
-                    const prevBest = getBestForExercise(ex.name, allHistoryForComparison);
-                    const currentE1RM = estimate1RM(set.weight, set.reps);
-
-                    // 1. Best weight for any reps on this exercise
-                    if (!prevBest.bestWeight || set.weight > prevBest.bestWeight) {
-                        newPRs.push(`${ex.name}：新最大重量 ${set.weight}kg`);
-                        prevBest.bestWeight = set.weight;
-                    }
-
-                    // 2. Best e1RM overall for exercise
-                    if (currentE1RM > (prevBest.bestE1RM || 0)) {
-                        newPRs.push(`${ex.name}：新預估1RM ${currentE1RM}kg（${set.reps} 次）`);
-                    }
-                });
-            });
-            return [...new Set(newPRs)]; // dedupe
-        }
-
-        function getBestForExercise(exerciseName, historyArray = workoutHistory) {
-            let bestWeight = 0;
-            let bestE1RM = 0;
-            historyArray.forEach(w => {
-                w.exercises.forEach(ex => {
-                    if (ex.name === exerciseName) {
-                        ex.sets.forEach(s => {
-                            if (s.weight > bestWeight) bestWeight = s.weight;
-                            const e = estimate1RM(s.weight, s.reps);
-                            if (e > bestE1RM) bestE1RM = e;
-                        });
-                    }
-                });
-            });
-            return { bestWeight, bestE1RM };
+            if (typeof detectWorkoutPRs === 'function') {
+                return detectWorkoutPRs(workout, workoutHistory);
+            }
+            return [];
         }
 
         function hideFinishModal() {
@@ -3162,15 +3285,26 @@ Local Development Instructions:
             const notes = document.getElementById('finish-notes').value.trim();
             currentWorkout.notes = notes;
 
-            const finalVol = calculateWorkoutVolume(currentWorkout);
-            currentWorkout.totalVolume = finalVol;
+            const finalTotals = typeof calculateWorkoutTotals === 'function'
+                ? calculateWorkoutTotals(currentWorkout)
+                : { weightKg: calculateWorkoutVolume(currentWorkout), distanceKm: 0 };
+            currentWorkout.totalVolume = finalTotals.weightKg;
+            currentWorkout.totalDistanceKm = finalTotals.distanceKm;
 
             // Capture snapshot 供背景儲存使用
             const workoutToSave = JSON.parse(JSON.stringify(currentWorkout));
 
             // === 立即退出介面（無任何 loading / 等待提示） ===
             // 1. 本地立即更新（歷史 + 持久化）
-            workoutHistory.unshift(workoutToSave);
+            if (isContinue && typeof applyContinueWorkoutFinishToLocalHistory === 'function') {
+                applyContinueWorkoutFinishToLocalHistory(workoutToSave);
+            } else {
+                delete workoutToSave.isContinuedFromToday;
+                delete workoutToSave._originalSessionIds;
+                delete workoutToSave._continueSnapshot;
+                delete workoutToSave.startTime;
+                workoutHistory.unshift(workoutToSave);
+            }
             rebuildLastPerformed();
             saveWorkoutData();
 
@@ -3196,28 +3330,21 @@ Local Development Instructions:
             try { renderOverallStats(); } catch (e) {}
             try { renderCalendar(); } catch (e) {}
             try { updateExerciseSelectForAnalysis(); } catch (e) {}
+            try { updateStartTrainingButton(); } catch (e) {}
 
             // 4. 簡單即時 toast（無阻塞，快速消失）
-            showToast('訓練已記錄', 2200);
+            showToast(isContinue ? '今日訓練已更新' : '訓練已記錄', 2200);
 
             // 重置 guard（UI 已完全退出）
             isFinishingWorkout = false;
 
-            // === 背景默默儲存（deleteSession + addWorkout + keepalive） ===
-            // 完全不阻塞、不顯示狀態、不彈錯誤 toast 給用戶
+            // === 背景默默儲存：只推送未同步 / 已修改的組數（唔會全量 replaceSession） ===
             if (currentUser) {
                 const willDelete = !!(workoutToSave.id || workoutToSave.session_id || workoutToSave.sessionId);
                 setTimeout(() => {
-                    finalizeAndSaveWorkout(workoutToSave, notes)
-                        .then((res) => {
-                            if (res && res.status === 'success') {
-                                // 可選：靜默更新 indicator（不影響已退出的畫面）
-                                try { updateGlobalSyncIndicator('synced'); } catch (_) {}
-                            }
-                        })
-                        .catch((e) => {
-                            // 完全靜默，僅 console
-                        });
+                    finalizeAndSaveWorkout(workoutToSave, notes).catch((e) => {
+                        // 完全靜默，僅 console
+                    });
                 }, 0);
             }
         }
@@ -3225,48 +3352,7 @@ Local Development Instructions:
 
 
 
-        /**
-         * Helper：執行「先刪後寫」的乾淨儲存
-         * 用於 confirmFinishWorkout 及未來其他需要 reconcile 的地方（例如歷史大幅編輯）。
-         * 強烈建議 Finish 流程使用此 helper 保證一致性。
-         */
-        async function finalizeAndSaveWorkout(workout, notes = '') {
-            if (!currentUser || !workout) {
-                return { status: 'skipped', message: 'no user or workout' };
-            }
-
-            const sid = String(
-                workout.id || workout.session_id || workout.sessionId || Date.now()
-            );
-
-            const isContinueSave = !!workout.isContinuedFromToday || !!workout._originalSessionIds || (workout.id && workoutHistory.some(h => (h.id === workout.id || h.session_id === workout.id) && normalizeDateToLocal(h.date) === normalizeDateToLocal(workout.date)));
-
-            // 先刪（清 background incremental 可能造成的重複）
-            let didDelete = false;
-            try {
-                await callAppsScript("deleteSession", {
-                    user: currentUser,
-                    sessionId: sid
-                }, { keepalive: true });
-                didDelete = true;
-            } catch (e) {
-                // continue writing
-            }
-
-            // 再寫完整最新版本
-            const payload = {
-                session_id: sid,
-                date: workout.date || getLocalDateString(),
-                exercises: workout.exercises || [],
-                notes: notes || ''
-            };
-
-            const addResult = await callAppsScript("addWorkout", {
-                user: currentUser,
-                workout: payload
-            }, { keepalive: true });
-            return addResult;
-        }
+        // finalizeAndSaveWorkout moved to js/api.js（單次 replaceSession，更快）
 
         async function pushCurrentWorkoutToLegacyGAS(workout) {
             if (!currentUser || !APPS_SCRIPT_URL) return;
@@ -3282,9 +3368,13 @@ Local Development Instructions:
                                 date: workout.date,
                                 exercise: ex.name,           // bilingual name
                                 weight: set.weight || 0,
+                                body_weight: set.body_weight != null ? parseFloat(set.body_weight) : 0,
                                 reps: set.reps || 0,
+                                duration: set.duration != null ? parseInt(set.duration) : 0,
+                                incline: set.incline != null ? parseFloat(set.incline) : 0,
+                                speed: set.speed != null ? parseFloat(set.speed) : 0,
                                 notes: set.notes || '',
-                                volume: (set.weight || 0) * (set.reps || 0)
+                                volume: set.volume != null ? set.volume : (typeof calculateSetVolume === 'function' ? calculateSetVolume(set, ex.name) : ((set.weight || 0) * (set.reps || 0)))
                             }
                         });
                     } catch (e) { console.warn('GAS save set failed', e); }
@@ -3292,52 +3382,7 @@ Local Development Instructions:
             }
         }
 
-        /**
-         * 新增的乾淨 bulk push（Priority 1 核心）
-         * 使用單一 addWorkout endpoint，一次過儲存整個 workout + exercises + sets + session_id
-         * 絕不使用舊的 per-set loop。
-         * 良好 error handling：永遠回傳結果物件，caller 決定如何處理。
-         */
-        async function pushCurrentWorkoutToBackend(workout) {
-            if (!currentUser || !APPS_SCRIPT_URL || !workout) {
-                return { status: 'skipped', message: 'no currentUser or invalid workout' };
-            }
-            try {
-                // 確保有穩定的 session_id（用於 deleteSession 及 load 時 grouping）
-                const sessionId = String(workout.id || workout.session_id || workout.sessionId || Date.now());
-                workout.id = sessionId; // 回寫，方便本地 history 一致性
-
-
-                const payload = {
-                    session_id: sessionId,
-                    date: workout.date || getLocalDateString(),
-                    exercises: (workout.exercises || []).map(ex => ({
-                        name: ex.name || '',
-                        sets: (ex.sets || []).map(set => ({
-                            weight: parseFloat(set.weight) || 0,
-                            reps: parseInt(set.reps) || 0,
-                            notes: set.notes || '',
-                            volume: (set.volume != null ? parseFloat(set.volume) : (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0))
-                        }))
-                    })),
-                    notes: workout.notes || ''
-                };
-
-                const result = await callAppsScript("addWorkout", {
-                    user: currentUser,
-                    workout: payload
-                });
-
-                if (result && result.status === 'success') {
-                    return result;
-                }
-                console.warn('[pushCurrentWorkoutToBackend] backend returned non-success:', result);
-                return result || { status: 'error', message: 'Backend did not confirm success' };
-            } catch (err) {
-                console.error('[pushCurrentWorkoutToBackend] exception:', err);
-                return { status: 'error', message: err && err.message ? err.message : String(err) };
-            }
-        }
+        // pushCurrentWorkoutToBackend moved to js/api.js
 
         // --- Routines ---
         function showRoutinesModal() {
@@ -3447,94 +3492,7 @@ Local Development Instructions:
 
         // addSetToHistoryExercise, deleteHistorySet, deleteHistoryExercise moved to js/ui-history.js (A refactor)
 
-        // History edit logic (saveHistoryEdit / deleteHistoryWorkout) fully moved to js/ui-history.js (A refactor).
-        // All orphaned top-level code containing bare `await` has been removed to fix the SyntaxError.
-
-        async function deleteHistoryWorkout() {
-            if (!currentViewingHistory) return;
-            if (!confirm('確定要刪除這次訓練記錄嗎？\n刪除後無法恢復。')) return;
-
-            if (isDeletingHistory) return;
-            isDeletingHistory = true;
-
-            const deleteBtn = document.getElementById('delete-history-btn');
-            const saveBtn = document.getElementById('save-history-btn');
-            const origDeleteHtml = deleteBtn ? deleteBtn.innerHTML : '';
-
-            try {
-                if (deleteBtn) {
-                    deleteBtn.disabled = true;
-                    deleteBtn.classList.add('opacity-70', 'cursor-wait');
-                    deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> 刪除中...`;
-                }
-                if (saveBtn) saveBtn.disabled = true;
-
-                const isDayGroup = !!currentViewingHistory._isDayGroup;
-                const d = normalizeDateToLocal(currentViewingHistory.date);
-
-                // === Priority 2: 先 sync backend 刪除 (C. 刪除操作 background / status sync)，再更新本地 ===
-                if (currentUser) {
-                    let targetSessionIds = [];
-                    if (isDayGroup) {
-                        targetSessionIds = (currentViewingHistory._sessionIds || []).slice();
-                    } else {
-                        const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
-                        if (sid) targetSessionIds = [sid];
-                    }
-
-                    try {
-                        updateGlobalSyncIndicator('syncing');
-                        for (const sid of targetSessionIds) {
-                            // [REMOVED] const delRes = await ... (orphaned code from incomplete history extraction - fixed for SyntaxError)
-                            if (delRes && delRes.status === 'error') {
-                                throw new Error(delRes.message || 'deleteSession failed for ' + sid);
-                            }
-                        }
-                        if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
-                    } catch (err) {
-                        console.error('[deleteHistoryWorkout] backend delete failed, revert:', err);
-                        updateGlobalSyncIndicator('error');
-                        showToast('❌ 後端刪除失敗，記錄未移除。請檢查網絡後重試。', 5500);
-                        return; // 不 mutate 本地
-                    }
-                }
-
-                // 成功刪 backend 才改本地
-                if (isDayGroup) {
-                    // 刪除該日期的所有訓練記錄（多場合併情況）
-                    workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
-                } else {
-                    // 單一記錄刪除
-                    let targetIdx = currentViewingHistoryIndex;
-                    if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
-                        (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
-                        targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
-                    }
-
-                    if (targetIdx >= 0) {
-                        workoutHistory.splice(targetIdx, 1);
-                    }
-                }
-
-                saveWorkoutData();
-                try { renderWorkoutHistory(); } catch (e) {}
-                try { renderOverallStats(); } catch (e) {}
-                try { renderCalendar(); } catch (e) {}
-
-                closeHistoryEditModal();
-            } finally {
-                isDeletingHistory = false;
-
-                const deleteBtn2 = document.getElementById('delete-history-btn');
-                const saveBtn2 = document.getElementById('save-history-btn');
-                if (deleteBtn2) {
-                    deleteBtn2.disabled = false;
-                    deleteBtn2.classList.remove('opacity-70', 'cursor-wait');
-                    deleteBtn2.innerHTML = origDeleteHtml || deleteBtn2.innerHTML;
-                }
-                if (saveBtn2) saveBtn2.disabled = false;
-            }
-        }
+        // History edit logic (saveHistoryEdit / deleteHistoryWorkout) fully in js/ui-history.js
 
         // Analysis UI (updateExerciseSelectForAnalysis, renderExerciseAnalysis, renderOverallStats, setAnalysisTimeRange, filterAnalysisTable, charts etc.)
         // moved to js/ui-analysis.js (A refactor)
@@ -3561,11 +3519,17 @@ Local Development Instructions:
             URL.revokeObjectURL(url);
 
             // Also offer flat CSV of all sets
-            let csv = 'date,exercise,weight_kg,reps,volume_kg,notes\n';
+            let csv = 'date,exercise,record_type,body_weight_kg,weight_kg,reps,duration,incline,speed,volume_kg_or_km,volume_unit,notes\n';
             workoutHistory.forEach(w => {
                 w.exercises.forEach(ex => {
+                    const recordType = typeof getExerciseRecordType === 'function'
+                        ? getExerciseRecordType(ex.name) : 'weight';
                     ex.sets.forEach(s => {
-                        csv += `${w.date},${ex.name},${s.weight || 0},${s.reps || 0},${s.volume || 0},"${(s.notes||'').replace(/"/g,'""')}"\n`;
+                        const vol = typeof calculateSetVolume === 'function'
+                            ? calculateSetVolume(s, ex.name)
+                            : (s.volume || 0);
+                        const unit = recordType === 'treadmill' ? 'km' : 'kg';
+                        csv += `${w.date},${ex.name},${recordType},${s.body_weight || 0},${s.weight || 0},${s.reps || 0},${s.duration || 0},${s.incline || 0},${s.speed || 0},${vol},${unit},"${(s.notes||'').replace(/"/g,'""')}"\n`;
                     });
                 });
             });
@@ -3660,6 +3624,7 @@ Local Development Instructions:
 
                 // 初始化開始訓練按鈕狀態（今日繼續智能）
                 try { updateStartTrainingButton(); } catch (e) {}
+                try { if (typeof updateInteractionLock === 'function') updateInteractionLock(); } catch (e) {}
 
                 // (休息計時器功能已移除，無需預設 timer)
                 // if (typeof resetRestTimer === 'function') { resetRestTimer(...); }
@@ -3806,7 +3771,7 @@ Local Development Instructions:
         }
 
         function switchTab(tab) {
-            // 極簡可靠版本 - 支援所有 tab (overview / schedule / supplement / training / log)
+            // 極簡可靠版本 - 支援所有 tab (overview / schedule / supplement / training / log / yugong / rixing)
             // 標準流程：隱藏全部 .tab-content → 顯示目標 content → 更新對應 nav button active 狀態
             // log-only 邏輯嚴格隔離在後面
             // 無多餘 debug

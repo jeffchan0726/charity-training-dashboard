@@ -17,7 +17,14 @@ function renderWorkoutHistory() {
 
     dates.forEach((d) => {
         const g = grouped[d];
-        const vol = g.totalVolume;
+        const volDisplay = typeof formatWorkoutVolumeDisplay === 'function'
+            ? formatWorkoutVolumeDisplay({ exercises: g.exercises || [] })
+            : { value: String(g.totalVolume || 0), unit: 'kg', sub: '' };
+        const volLabel = volDisplay.unit === 'km'
+            ? `${volDisplay.value}km`
+            : (volDisplay.sub && volDisplay.sub.includes('km')
+                ? volDisplay.sub
+                : `${volDisplay.value}kg`);
         // 總動作數量：使用不重複的動作名稱（跨多場訓練）
         const exCount = [...new Set((g.exercises || []).map(e => e && e.name).filter(Boolean))].length;
         const setsCount = g.totalSets;
@@ -28,9 +35,9 @@ function renderWorkoutHistory() {
         card.innerHTML = `
             <div class="flex justify-between">
                 <div class="font-semibold">${cleanDate}</div>
-                <div class="text-emerald-400 text-sm tabular-nums">${vol.toLocaleString()}kg</div>
+                <div class="text-emerald-400 text-sm tabular-nums">${volLabel}</div>
             </div>
-            <div class="text-xs text-[#a8a29e]">${exCount} 動作 • ${setsCount} 組 • ${vol.toLocaleString()}kg</div>
+            <div class="text-xs text-[#a8a29e]">${exCount} 動作 • ${setsCount} 組 • ${volLabel}</div>
             ${g.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${g.notes}"</div>` : ''}
         `;
 
@@ -71,9 +78,21 @@ function groupWorkoutsByDate(workouts = workoutHistory) {
         g.workouts.push(w);
         g.exercises.push(...(w.exercises || []));
         g.totalSets += (w.exercises || []).reduce((a, e) => a + (e.sets ? e.sets.length : 0), 0);
-        g.totalVolume += (w.totalVolume || calculateWorkoutVolume(w));
         if (w.notes && !g.notes) g.notes = w.notes; // 第一條非空 notes
     });
+
+    Object.values(grouped).forEach(g => {
+        const t = typeof calculateWorkoutTotals === 'function'
+            ? calculateWorkoutTotals({ exercises: g.exercises || [] })
+            : { weightKg: 0, distanceKm: 0 };
+        g.totalWeightKg = t.weightKg;
+        g.totalDistanceKm = t.distanceKm;
+        g.totalVolume = t.weightKg;
+        g.intensityScore = typeof getWorkoutIntensityScore === 'function'
+            ? getWorkoutIntensityScore({ exercises: g.exercises || [] })
+            : t.weightKg;
+    });
+
     return grouped;
 }
 
@@ -84,6 +103,7 @@ function groupWorkoutsByDate(workouts = workoutHistory) {
  * 然後交給 showWorkoutDetail / openHistoryEditModal 處理顯示 + 編輯 + 儲存/刪除。
  */
 function showWorkoutDetailForDate(dateStr) {
+    if (guardServerSyncing('同步中，請稍候再查看或編輯歷史紀錄')) return;
     const grouped = groupWorkoutsByDate();
     const g = grouped[dateStr];
     if (!g || !g.workouts || g.workouts.length === 0) {
@@ -98,10 +118,12 @@ function showWorkoutDetailForDate(dateStr) {
         .filter(Boolean);
     const merged = {
         date: g.date,
+        id: sessionIds.length === 1 ? sessionIds[0] : (sessionIds[0] || String(Date.now())),
         exercises: g.exercises ? [...g.exercises] : [],
-        totalVolume: g.totalVolume,
+        totalVolume: g.totalWeightKg != null ? g.totalWeightKg : g.totalVolume,
+        totalDistanceKm: g.totalDistanceKm || 0,
         notes: g.notes || '',
-        _isDayGroup: true,
+        _isDayGroup: g.workouts.length > 1 || sessionIds.length > 1,
         _originalCount: g.workouts.length,
         _sessionIds: sessionIds
     };
@@ -113,10 +135,12 @@ function showWorkoutDetailForDate(dateStr) {
 // 這些函數只操作 currentViewingHistory clone，絕不影響 currentWorkout 及開始新訓練流程
 
 function openHistoryEditModal(original, historyIndex) {
+    if (guardServerSyncing('同步中，請稍候再查看或編輯歷史紀錄')) return;
     if (!original) return;
 
     // 深層 clone，避免直接修改原物件直到「儲存」
     currentViewingHistory = JSON.parse(JSON.stringify(original));
+    historyEditOriginalSnapshot = JSON.parse(JSON.stringify(original));
     currentViewingHistoryIndex = (typeof historyIndex === 'number') ? historyIndex : -1;
 
     const modal = document.getElementById('historyEditModal');
@@ -147,6 +171,19 @@ function openHistoryEditModal(original, historyIndex) {
         if (e.target === modal) closeHistoryEditModal();
     };
 
+    // 綁定加入動作輸入建議
+    const histInput = document.getElementById('history-add-exercise-input');
+    if (histInput) {
+        histInput.value = '';
+        const suggestHandler = () => {
+            if (typeof updateExerciseSuggestions === 'function') {
+                updateExerciseSuggestions(histInput.value);
+            }
+        };
+        histInput.oninput = suggestHandler;
+        histInput.onfocus = suggestHandler;
+    }
+
     // 渲染可編輯內容
     renderHistoryEditContent();
 }
@@ -159,6 +196,13 @@ function closeHistoryEditModal() {
     }
     currentViewingHistory = null;
     currentViewingHistoryIndex = -1;
+    historyEditOriginalSnapshot = null;
+    window._libraryAddToHistory = false;
+}
+
+function isHistoryEditUnchanged() {
+    return typeof isHistoryWorkoutUnchanged === 'function'
+        && isHistoryWorkoutUnchanged(historyEditOriginalSnapshot, currentViewingHistory);
 }
 
 function renderHistoryEditContent() {
@@ -167,25 +211,101 @@ function renderHistoryEditContent() {
     if (!container || !currentViewingHistory) return;
 
     // 計算並顯示即時總量
-    const vol = calculateWorkoutVolume(currentViewingHistory);
-    currentViewingHistory.totalVolume = vol;
-    if (volEl) volEl.textContent = vol.toLocaleString();
+    const volDisplay = typeof formatWorkoutVolumeDisplay === 'function'
+        ? formatWorkoutVolumeDisplay(currentViewingHistory)
+        : { value: String(calculateWorkoutVolume(currentViewingHistory)), unit: 'kg', sub: '' };
+    currentViewingHistory.totalVolume = calculateWorkoutVolume(currentViewingHistory);
+    currentViewingHistory.totalDistanceKm = typeof calculateWorkoutDistanceKm === 'function'
+        ? calculateWorkoutDistanceKm(currentViewingHistory) : 0;
+    if (volEl) {
+        volEl.textContent = volDisplay.unit === 'km'
+            ? volDisplay.value
+            : volDisplay.value;
+        const unitSpan = document.getElementById('history-edit-volume-unit');
+        if (unitSpan) {
+            unitSpan.textContent = volDisplay.unit === 'km' ? 'km' : 'kg';
+        }
+    }
 
-    if (!currentViewingHistory.exercises || currentViewingHistory.exercises.length === 0) {
-        container.innerHTML = `<div class="text-center py-6 text-sm text-[#a8a29e]">此記錄沒有動作資料。</div>`;
+    if (!currentViewingHistory.exercises) {
+        currentViewingHistory.exercises = [];
+    }
+
+    if (currentViewingHistory.exercises.length === 0) {
+        container.innerHTML = `<div class="text-center py-6 text-sm text-[#a8a29e]">此記錄沒有動作。請在上方加入動作。</div>`;
         return;
     }
 
     let html = '';
     currentViewingHistory.exercises.forEach((ex, exIdx) => {
+        const recordType = typeof getExerciseRecordType === 'function'
+            ? getExerciseRecordType(ex.name) : 'weight';
+        const isHold = recordType === 'time_reps';
+        const isTreadmill = recordType === 'treadmill';
+        const isBodyweight = recordType === 'bodyweight';
+        const needsBodyWeight = (isHold || isBodyweight) && typeof isBodyweightExercise === 'function' && isBodyweightExercise(ex.name);
         let setsHtml = '';
         (ex.sets || []).forEach((set, sIdx) => {
             const w = set.weight != null ? set.weight : 0;
+            const bw = set.body_weight != null ? set.body_weight : 0;
             const r = set.reps != null ? set.reps : 0;
+            const d = set.duration != null ? set.duration : 0;
+            const incline = set.incline != null ? set.incline : 0;
+            const speed = set.speed != null ? set.speed : 0;
             const n = set.notes || '';
-            setsHtml += `
-                <div class="flex items-center gap-2 bg-[#1f1c1a] rounded-xl px-2 py-1.5 mb-1 text-sm">
-                    <div class="flex-1 grid grid-cols-3 gap-2">
+            const fieldsHtml = isTreadmill ? `
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">時間 (分)</label>
+                            <input type="number" value="${d}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'duration', this.value)">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">坡度 (%)</label>
+                            <input type="number" step="0.5" value="${incline}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'incline', this.value)">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">速度 (km/h)</label>
+                            <input type="number" step="0.1" value="${speed}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'speed', this.value)">
+                        </div>
+            ` : isHold ? `
+                        ${needsBodyWeight ? `
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">體重 (kg)</label>
+                            <input type="number" step="0.1" value="${bw}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'body_weight', this.value)">
+                        </div>` : ''}
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">時間 (秒)</label>
+                            <input type="number" value="${d}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'duration', this.value)">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">次數</label>
+                            <input type="number" value="${r}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'reps', this.value)">
+                        </div>
+            ` : isBodyweight ? `
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">體重 (kg)</label>
+                            <input type="number" step="0.1" value="${bw}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'body_weight', this.value)">
+                        </div>
+                        <div>
+                            <label class="block text-[9px] text-[#a8a29e] mb-0.5">次數</label>
+                            <input type="number" value="${r}"
+                                   class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
+                                   onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'reps', this.value)">
+                        </div>
+            ` : `
                         <div>
                             <label class="block text-[9px] text-[#a8a29e] mb-0.5">重量 (kg)</label>
                             <input type="number" step="0.5" value="${w}"
@@ -198,12 +318,19 @@ function renderHistoryEditContent() {
                                    class="log-input w-full px-2 py-1 text-center text-sm rounded-xl"
                                    onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'reps', this.value)">
                         </div>
+            `;
+            const notesField = `
                         <div>
                             <label class="block text-[9px] text-[#a8a29e] mb-0.5">備註</label>
                             <input type="text" value="${n}"
                                    class="log-input w-full px-2 py-1 text-sm rounded-xl"
                                    onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'notes', this.value)">
-                        </div>
+                        </div>`;
+            setsHtml += `
+                <div class="flex items-center gap-2 bg-[#1f1c1a] rounded-xl px-2 py-1.5 mb-1 text-sm">
+                    <div class="flex-1 grid ${isTreadmill ? 'grid-cols-4' : (needsBodyWeight && isHold ? 'grid-cols-4' : 'grid-cols-3')} gap-2">
+                        ${fieldsHtml}
+                        ${notesField}
                     </div>
                     <button onclick="deleteHistorySet(${exIdx}, ${sIdx})"
                             class="text-red-400 hover:text-red-300 px-2 py-1 text-xs rounded active:bg-red-900/30" title="刪除此組">✕</button>
@@ -216,23 +343,33 @@ function renderHistoryEditContent() {
         }
 
         html += `
-            <div class="exercise-log-card bg-[#252321] rounded-2xl p-3 border border-[#57534e]">
-                <div class="flex items-center justify-between mb-2">
+            <div class="exercise-log-card bg-[#252321] rounded-2xl p-3 border border-[#57534e] relative" data-ex-idx="${exIdx}">
+                <div class="absolute top-1 right-1 flex items-center gap-0.5 z-10">
+                    <button type="button"
+                            class="exercise-drag-handle"
+                            data-ex-idx="${exIdx}"
+                            onpointerdown="onExerciseDragHandlePointerDown(event, ${exIdx}, 'history')"
+                            onpointermove="onExerciseDragHandlePointerMove(event)"
+                            onpointerup="onExerciseDragHandlePointerUp(event)"
+                            onpointercancel="onExerciseDragHandlePointerCancel(event)"
+                            title="按住 ↕ 拖動調整順序">
+                        ↕
+                    </button>
+                    <button onclick="deleteHistoryExercise(${exIdx})"
+                            class="text-red-400 hover:text-red-300 px-1.5 py-0.5 text-base leading-none active:bg-red-900/30 rounded"
+                            title="刪除此動作">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between mb-2 pr-12">
                     <div>
                         <div class="font-semibold text-sm">${ex.name}</div>
-                        <div class="text-[10px] text-[#a8a29e]">${getMuscleGroup ? getMuscleGroup(ex.name) : ''}</div>
+                        <div class="text-[10px] text-[#a8a29e]">${getMuscleGroup ? getMuscleGroup(ex.name) : ''}${isTreadmill ? ' • 時間+坡度+速度' : ''}${isHold ? ' • 時間+次數' : ''}${isBodyweight ? ' • 體重+次數' : ''}</div>
                     </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="addSetToHistoryExercise(${exIdx})"
-                                class="px-2.5 py-1 text-xs bg-emerald-900/60 hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl flex items-center gap-1">
-                            <i class="fa-solid fa-plus text-[10px]"></i> <span>加組</span>
-                        </button>
-                        <button onclick="deleteHistoryExercise(${exIdx})"
-                                class="px-1.5 py-1 text-xs text-red-400 hover:text-red-300 active:bg-red-900/30 rounded"
-                                title="刪除此動作">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
+                    <button onclick="addSetToHistoryExercise(${exIdx})"
+                            class="px-2.5 py-1 text-xs bg-emerald-900/60 hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl flex items-center gap-1">
+                        <i class="fa-solid fa-plus text-[10px]"></i> <span>加組</span>
+                    </button>
                 </div>
                 <div class="space-y-0.5">
                     ${setsHtml}
@@ -250,19 +387,66 @@ function updateHistorySetField(exIdx, setIdx, field, value) {
     if (!ex || !ex.sets || !ex.sets[setIdx]) return;
 
     const set = ex.sets[setIdx];
-    if (field === 'weight' || field === 'reps') {
-        const num = (field === 'weight') ? parseFloat(value) : parseInt(value);
+    if (field === 'weight' || field === 'reps' || field === 'duration' || field === 'incline' || field === 'speed' || field === 'body_weight') {
+        const num = (field === 'reps') ? parseInt(value) : parseFloat(value);
         set[field] = isNaN(num) ? 0 : num;
-        set.volume = calculateSetVolume(set);
+        if (field === 'body_weight' && typeof rememberBodyWeightKg === 'function') {
+            rememberBodyWeightKg(set[field]);
+        }
+        if (field === 'duration' && parseInt(set.duration) > 0) set.weight = 0;
+        if (field === 'incline' || field === 'speed') {
+            set.weight = 0;
+            set.reps = 0;
+        }
+        set.volume = calculateSetVolume(set, ex.name);
     } else {
         set[field] = (value || '').trim();
     }
 
     // 即時更新 header 總量（不需要全量 re-render 整個列表，體驗更好）
     const volEl = document.getElementById('history-edit-volume');
-    const newVol = calculateWorkoutVolume(currentViewingHistory);
-    currentViewingHistory.totalVolume = newVol;
-    if (volEl) volEl.textContent = newVol.toLocaleString();
+    const volDisplay = typeof formatWorkoutVolumeDisplay === 'function'
+        ? formatWorkoutVolumeDisplay(currentViewingHistory)
+        : { value: String(calculateWorkoutVolume(currentViewingHistory)), unit: 'kg', sub: '' };
+    currentViewingHistory.totalVolume = calculateWorkoutVolume(currentViewingHistory);
+    currentViewingHistory.totalDistanceKm = typeof calculateWorkoutDistanceKm === 'function'
+        ? calculateWorkoutDistanceKm(currentViewingHistory) : 0;
+    if (volEl) volEl.textContent = volDisplay.value;
+    const unitSpan = document.getElementById('history-edit-volume-unit');
+    if (unitSpan) unitSpan.textContent = volDisplay.unit === 'km' ? 'km' : 'kg';
+}
+
+function addExerciseToHistory(nameFromInput = null) {
+    if (!currentViewingHistory) return;
+
+    let name = nameFromInput || (document.getElementById('history-add-exercise-input')?.value || '').trim();
+    if (!name) return;
+
+    const ex = getExerciseByName(name);
+    const displayName = ex ? getExerciseDisplay(ex) : name;
+
+    currentViewingHistory.exercises = currentViewingHistory.exercises || [];
+    const existing = currentViewingHistory.exercises.find(
+        e => e.name.toLowerCase() === displayName.toLowerCase()
+    );
+    if (existing) {
+        alert('此動作已在記錄中。');
+        return;
+    }
+
+    currentViewingHistory.exercises.push({ name: displayName, sets: [] });
+
+    const input = document.getElementById('history-add-exercise-input');
+    if (input) input.value = '';
+
+    renderHistoryEditContent();
+}
+
+function showLibraryModalForHistory() {
+    if (!currentViewingHistory) return;
+    if (typeof showLibraryModal === 'function') {
+        showLibraryModal(false, true);
+    }
 }
 
 function addSetToHistoryExercise(exIdx) {
@@ -272,7 +456,9 @@ function addSetToHistoryExercise(exIdx) {
 
     // 新增一組（預設 0）
     ex.sets = ex.sets || [];
-    ex.sets.push({ weight: 0, reps: 0, notes: '', volume: 0 });
+    ex.sets.push(typeof createDefaultSetForExercise === 'function'
+        ? createDefaultSetForExercise(ex.name)
+        : { weight: 0, reps: 0, notes: '', volume: 0 });
 
     // 重新渲染（簡單直接）
     renderHistoryEditContent();
@@ -299,23 +485,85 @@ function deleteHistoryExercise(exIdx) {
     renderHistoryEditContent();  // 會自動更新總量和 DOM
 }
 
+function moveExerciseInHistory(fromIdx, toIdx) {
+    if (!currentViewingHistory || fromIdx === toIdx) return;
+    const exercises = currentViewingHistory.exercises;
+    if (!exercises || fromIdx < 0 || fromIdx >= exercises.length || toIdx < 0 || toIdx >= exercises.length) return;
+
+    const [item] = exercises.splice(fromIdx, 1);
+    exercises.splice(toIdx, 0, item);
+    renderHistoryEditContent();
+}
+
+function applyHistoryEditLocally(viewing, historyIndex, isDayGroup, dateStr) {
+    const d = normalizeDateToLocal(dateStr);
+    const record = JSON.parse(JSON.stringify(viewing));
+
+    if (isDayGroup) {
+        workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
+        delete record._isDayGroup;
+        delete record._originalCount;
+        delete record._sessionIds;
+        record.totalVolume = calculateWorkoutVolume(record);
+        workoutHistory.unshift(record);
+        return record;
+    }
+
+    let targetIdx = historyIndex;
+    if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
+        (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
+        targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
+    }
+    delete record._isDayGroup;
+    delete record._originalCount;
+    delete record._sessionIds;
+    if (targetIdx >= 0) {
+        workoutHistory[targetIdx] = record;
+    } else {
+        workoutHistory.unshift(record);
+    }
+    return record;
+}
+
 async function saveHistoryEdit() {
     if (!currentViewingHistory) {
         closeHistoryEditModal();
         return;
     }
 
+    if (isHistoryEditUnchanged()) {
+        closeHistoryEditModal();
+        if (typeof showToast === 'function') showToast('沒有變更，無需儲存', 1500);
+        return;
+    }
+
     if (isSavingHistory) return;
     isSavingHistory = true;
+    if (typeof updateInteractionLock === 'function') updateInteractionLock();
 
-    // Use ids for reliable targeting + immediate disable
     const saveBtn = document.getElementById('save-history-btn');
     const deleteBtn = document.getElementById('delete-history-btn');
     const origSaveHtml = saveBtn ? saveBtn.innerHTML : '';
     const origDeleteHtml = deleteBtn ? deleteBtn.innerHTML : '';
 
+    const isDayGroup = !!currentViewingHistory._isDayGroup;
+    const d = normalizeDateToLocal(currentViewingHistory.date);
+
+    let oldSessionIds = [];
+    if (isDayGroup) {
+        oldSessionIds = (currentViewingHistory._sessionIds || []).slice();
+    } else {
+        const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
+        if (sid) oldSessionIds = [sid];
+    }
+
+    const toPush = JSON.parse(JSON.stringify(currentViewingHistory));
+    delete toPush._isDayGroup;
+    delete toPush._originalCount;
+    delete toPush._sessionIds;
+    if (!toPush.id) toPush.id = Date.now().toString();
+
     try {
-        // Disable both buttons during save (prevents double tap on mobile)
         if (saveBtn) {
             saveBtn.disabled = true;
             saveBtn.classList.add('opacity-70', 'cursor-wait');
@@ -326,93 +574,36 @@ async function saveHistoryEdit() {
             deleteBtn.classList.add('opacity-50', 'cursor-wait');
         }
 
-        const isDayGroup = !!currentViewingHistory._isDayGroup;
-        const d = normalizeDateToLocal(currentViewingHistory.date);
+        // 1. 先更新本地（用戶即時見到結果）
+        applyHistoryEditLocally(
+            currentViewingHistory,
+            currentViewingHistoryIndex,
+            isDayGroup,
+            d
+        );
 
-        // === Priority 2: 先 sync backend，再更新本地（失敗即 revert）===
-        if (currentUser) {
-            // 準備要刪除的舊 session(s)
-            let oldSessionIds = [];
-            if (isDayGroup) {
-                oldSessionIds = (currentViewingHistory._sessionIds || []).slice();
-            } else {
-                const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
-                if (sid) oldSessionIds = [sid];
-            }
-
-            // 清理 dayGroup 標記，準備推送版本（保持 exercises 為合併後狀態）
-            const toPush = JSON.parse(JSON.stringify(currentViewingHistory));
-            delete toPush._isDayGroup;
-            delete toPush._originalCount;
-            delete toPush._sessionIds;
-            if (!toPush.id) toPush.id = Date.now().toString();
-
-            try {
-                updateGlobalSyncIndicator('syncing');
-                // 1. 刪除舊 session（支援 dayGroup 多個） + C. 刪除操作也更新狀態
-                for (const sid of oldSessionIds) {
-                    const delRes = await callAppsScript("deleteSession", { user: currentUser, sessionId: sid });
-                    if (delRes && delRes.status === 'error') {
-                        throw new Error(delRes.message || 'deleteSession failed');
-                    }
-                }
-                // 2. 用單一 addWorkout 重推更新後版本（bulk）
-                const pushRes = await pushCurrentWorkoutToBackend(toPush);
-                if (!pushRes || pushRes.status !== 'success') {
-                    throw new Error(pushRes && pushRes.message ? pushRes.message : 'addWorkout push failed');
-                }
-                // 成功後同步 id 回 clone
-                currentViewingHistory.id = toPush.id;
-                if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
-            } catch (err) {
-                console.error('[saveHistoryEdit] backend sync failed, revert:', err);
-                updateGlobalSyncIndicator('error');
-                showToast('❌ 同步後端失敗，修改未保存。請檢查網絡後重試。', 5500);
-                closeHistoryEditModal();
-                return; // 不執行本地 mutation
-            }
-        }
-
-        // Backend 成功（或無登入），才執行本地更新
-        if (isDayGroup) {
-            // 日期群組虛擬物件：刪除該日所有舊記錄，然後用編輯後的合併版本替換（合併為單一記錄）
-            workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
-
-            // 清理特殊標記
-            delete currentViewingHistory._isDayGroup;
-            delete currentViewingHistory._originalCount;
-            delete currentViewingHistory._sessionIds;
-
-            // 重新計算 volume 確保正確
-            currentViewingHistory.totalVolume = calculateWorkoutVolume(currentViewingHistory);
-
-            // 插入合併後的單一記錄（置頂）
-            workoutHistory.unshift(currentViewingHistory);
-        } else {
-            // 單一記錄正常處理
-            let targetIdx = currentViewingHistoryIndex;
-            if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
-                (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
-                targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
-            }
-            if (targetIdx >= 0) {
-                workoutHistory[targetIdx] = currentViewingHistory;
-            } else {
-                workoutHistory.unshift(currentViewingHistory);
-            }
-        }
+        const beforeSnapshot = historyEditOriginalSnapshot
+            ? JSON.parse(JSON.stringify(historyEditOriginalSnapshot))
+            : null;
 
         saveWorkoutData();
-        renderWorkoutHistory();
-        renderOverallStats();
-        renderCalendar();
-        updateExerciseSelectForAnalysis();
-
         closeHistoryEditModal();
-        showToast('歷史記錄已更新', 2200);
+        showToast('歷史記錄已更新', 1800);
+        renderWorkoutHistory();
+
+        // 非緊急 UI 延後渲染，令儲存體感更快
+        setTimeout(() => {
+            try { renderOverallStats(); } catch (_) {}
+            try { renderCalendar(); } catch (_) {}
+            try { updateExerciseSelectForAnalysis(); } catch (_) {}
+        }, 0);
+
+        // 雲端同步放背景：只推送有變更的組數（updateLog / deleteLog / addLog）
+        if (currentUser) runHistoryCloudSync(toPush, oldSessionIds, d, beforeSnapshot);
 
     } finally {
         isSavingHistory = false;
+        if (typeof updateInteractionLock === 'function') updateInteractionLock();
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.classList.remove('opacity-70', 'cursor-wait');
@@ -432,11 +623,16 @@ async function deleteHistoryWorkout() {
         return;
     }
 
+    if (!confirm('確定要刪除這次訓練記錄嗎？\n刪除後無法恢復。')) return;
+
     if (isDeletingHistory) return;
     isDeletingHistory = true;
+    if (typeof updateInteractionLock === 'function') updateInteractionLock();
 
     const deleteBtn = document.getElementById('delete-history-btn');
+    const saveBtn = document.getElementById('save-history-btn');
     const origHtml = deleteBtn ? deleteBtn.innerHTML : '';
+    const origSaveHtml = saveBtn ? saveBtn.innerHTML : '';
 
     try {
         if (deleteBtn) {
@@ -444,31 +640,24 @@ async function deleteHistoryWorkout() {
             deleteBtn.classList.add('opacity-50', 'cursor-wait');
             deleteBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> 刪除中...`;
         }
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.classList.add('opacity-50', 'cursor-wait');
+        }
 
         const isDayGroup = !!currentViewingHistory._isDayGroup;
         const d = normalizeDateToLocal(currentViewingHistory.date);
 
-        if (currentUser) {
-            let sessionIdsToDelete = [];
-            if (isDayGroup) {
-                sessionIdsToDelete = (currentViewingHistory._sessionIds || []).slice();
-            } else {
-                const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
-                if (sid) sessionIdsToDelete = [sid];
-            }
-
-            updateGlobalSyncIndicator('syncing');
-            for (const sid of sessionIdsToDelete) {
-                try {
-                    await callAppsScript("deleteSession", { user: currentUser, sessionId: sid });
-                } catch (e) {
-                    console.warn('[deleteHistoryWorkout] backend delete warning for sid', sid, e);
-                }
-            }
-            if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
+        const sessionIdsToDelete = [];
+        if (isDayGroup) {
+            sessionIdsToDelete.push(...(currentViewingHistory._sessionIds || []));
+        } else {
+            const sid = currentViewingHistory.id || currentViewingHistory.session_id || currentViewingHistory.sessionId;
+            if (sid) sessionIdsToDelete.push(String(sid));
         }
+        const cloudSids = [...new Set(sessionIdsToDelete.map(s => String(s).trim()).filter(Boolean))];
 
-        // 本地刪除
+        // 本地先刪（即時）
         if (isDayGroup) {
             workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
         } else {
@@ -477,19 +666,44 @@ async function deleteHistoryWorkout() {
                 (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
                 targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
             }
-            if (targetIdx >= 0) {
-                workoutHistory.splice(targetIdx, 1);
-            }
+            if (targetIdx >= 0) workoutHistory.splice(targetIdx, 1);
         }
 
         saveWorkoutData();
-        renderWorkoutHistory();
-        renderOverallStats();
-        renderCalendar();
-        updateExerciseSelectForAnalysis();
-
         closeHistoryEditModal();
-        showToast('歷史記錄已刪除', 2200);
+        showToast('歷史記錄已刪除', 1800);
+        renderWorkoutHistory();
+        setTimeout(() => {
+            try { renderOverallStats(); } catch (_) {}
+            try { renderCalendar(); } catch (_) {}
+            try { updateExerciseSelectForAnalysis(); } catch (_) {}
+        }, 0);
+
+        // 雲端並行刪除（背景）
+        if (currentUser && cloudSids.length > 0) {
+            (async () => {
+                let syncOutcome = 'synced';
+                try {
+                    updateGlobalSyncIndicator('syncing');
+                    const del = await deleteSessionsParallel(cloudSids, { keepalive: true });
+                    if (del.ok) updateGlobalSyncIndicator('synced');
+                    else {
+                        syncOutcome = 'error';
+                        updateGlobalSyncIndicator('error');
+                        showToast(`⚠️ 本地已刪除，雲端刪除未完成：${del.message || ''}`, 4000);
+                    }
+                } catch (err) {
+                    syncOutcome = 'error';
+                    console.error('[deleteHistoryWorkout] cloud delete error:', err);
+                    updateGlobalSyncIndicator('error');
+                    showToast('⚠️ 本地已刪除，雲端刪除失敗', 4000);
+                } finally {
+                    if (typeof forceReleaseGlobalSyncLock === 'function' && globalPendingSyncs > 0) {
+                        forceReleaseGlobalSyncLock(syncOutcome);
+                    }
+                }
+            })();
+        }
 
     } catch (err) {
         console.error('[deleteHistoryWorkout] error:', err);
@@ -497,10 +711,18 @@ async function deleteHistoryWorkout() {
         showToast('刪除失敗，請稍後再試', 3000);
     } finally {
         isDeletingHistory = false;
+        if (typeof updateInteractionLock === 'function') updateInteractionLock();
         if (deleteBtn) {
             deleteBtn.disabled = false;
             deleteBtn.classList.remove('opacity-50', 'cursor-wait');
             deleteBtn.innerHTML = origHtml || '刪除';
         }
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.classList.remove('opacity-50', 'cursor-wait');
+            saveBtn.innerHTML = origSaveHtml || '儲存';
+        }
     }
 }
+
+window.moveExerciseInHistory = moveExerciseInHistory;

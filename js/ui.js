@@ -12,16 +12,18 @@ function updateSessionSummary() {
         return;
     }
 
-    let totalVol = 0;
-    let totalSets = 0;
-    currentWorkout.exercises.forEach(ex => {
-        totalSets += ex.sets.length;
-        ex.sets.forEach(s => totalVol += (s.volume || calculateSetVolume(s)));
-    });
+    const totals = typeof calculateWorkoutTotals === 'function'
+        ? calculateWorkoutTotals(currentWorkout)
+        : { weightKg: 0, distanceKm: 0, totalSets: 0 };
+    const display = typeof formatWorkoutVolumeDisplay === 'function'
+        ? formatWorkoutVolumeDisplay(currentWorkout)
+        : { value: '0', unit: 'kg', sub: '0.00 t' };
 
-    volEl.textContent = totalVol.toLocaleString();
-    setsEl.textContent = `${totalSets} 組`;
-    tonnesEl.textContent = (totalVol / 1000).toFixed(2) + ' t';
+    volEl.textContent = display.value;
+    const unitEl = document.getElementById('session-volume-unit');
+    if (unitEl) unitEl.textContent = display.unit;
+    setsEl.textContent = `${totals.totalSets} 組`;
+    tonnesEl.textContent = display.sub;
 }
 
 // Alias for backward compatibility with existing calls
@@ -36,7 +38,10 @@ function updateLastPerformedHint(specificExercise = null) {
         const l = lastPerformed[specificExercise];
         if (l.sets && l.sets.length > 0) {
             const lastS = l.sets[l.sets.length - 1];
-            hint.innerHTML = `<strong>${specificExercise}</strong> 上次：${lastS.weight}kg × ${lastS.reps} 於 ${l.date}`;
+            const display = typeof formatSetDisplay === 'function'
+                ? formatSetDisplay(specificExercise, lastS)
+                : `${lastS.weight}kg × ${lastS.reps}`;
+            hint.innerHTML = `<strong>${specificExercise}</strong> 上次：${display} 於 ${l.date}`;
         }
     } else {
         hint.innerHTML = '';

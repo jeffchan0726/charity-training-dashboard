@@ -1,35 +1,116 @@
 // js/api.js
 // API and backend sync layer extracted as part of architecture refactor (Option A)
+// APPS_SCRIPT_URL is set in index.html (global var + window.APPS_SCRIPT_URL)
+
+function getAppsScriptUrl() {
+    if (typeof APPS_SCRIPT_URL !== 'undefined' && APPS_SCRIPT_URL) return APPS_SCRIPT_URL;
+    if (typeof window !== 'undefined' && window.APPS_SCRIPT_URL) return window.APPS_SCRIPT_URL;
+    return '';
+}
+
+function isBackendSuccess(res) {
+    if (res == null) return false;
+    if (Array.isArray(res)) return res.length > 0 && isBackendSuccess(res[0]);
+    if (typeof res !== 'object') return false;
+
+    const s = String(res.status || '').toLowerCase().trim();
+    if (s === 'success' || s === 'ok') return true;
+    if (s === 'error' || s === 'failed' || s === 'failure') return false;
+
+    // GAS replaceSession / addWorkout 有時只回傳 session_id + added/deleted
+    if (res.session_id != null && (res.added != null || res.deleted != null)) return true;
+    if (res.added != null && res.added >= 0 && !s) return true;
+
+    return false;
+}
+
+function parseAppsScriptResponse(raw) {
+    if (raw == null) return { status: 'error', message: '空回應' };
+    if (typeof raw === 'string') {
+        try { return JSON.parse(raw); } catch (_) { return { status: 'error', message: raw }; }
+    }
+    return raw;
+}
 
 async function callAppsScript(action, data = {}, options = {}) {
     try {
         if (action === "getLogs" && currentUser) {
-            const url = new URL(APPS_SCRIPT_URL);
+            const url = new URL(getAppsScriptUrl());
             url.searchParams.append("action", "getLogs");
             url.searchParams.append("user", currentUser);
             const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
-            return await res.json();
+            return parseAppsScriptResponse(await res.json());
         }
         if (action === "getWorkoutSets" && currentUser) {
             // Use query GET for getWorkoutSets (consistent with getLogs; backend should handle ?action=getWorkoutSets&user=xxx)
-            const url = new URL(APPS_SCRIPT_URL);
+            const url = new URL(getAppsScriptUrl());
             url.searchParams.append("action", "getWorkoutSets");
             url.searchParams.append("user", currentUser);
             const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
-            return await res.json();
+            return parseAppsScriptResponse(await res.json());
         }
+        const scriptUrl = getAppsScriptUrl();
+        if (!scriptUrl) {
+            return { status: 'error', message: 'APPS_SCRIPT_URL 未設定' };
+        }
+
+        const payload = JSON.stringify({ action, ...data });
+        // 必須用 text/plain，避免瀏覽器 CORS preflight（application/json 會令 GAS POST 失敗）
         const fetchOpts = {
-            method: "POST",
-            body: JSON.stringify({ action, ...data })
+            method: 'POST',
+            mode: 'cors',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: payload
         };
         if (options.keepalive) fetchOpts.keepalive = true;
-        const response = await fetch(APPS_SCRIPT_URL, fetchOpts);
-        return await response.json();
+        const response = await fetch(scriptUrl, fetchOpts);
+        const text = await response.text();
+        let parsed = null;
+        try {
+            parsed = text ? JSON.parse(text) : null;
+        } catch (parseErr) {
+            console.warn('[callAppsScript] JSON parse failed:', text ? text.slice(0, 300) : '(empty)');
+            return { status: 'error', message: '後端回應格式錯誤' };
+        }
+        const result = parseAppsScriptResponse(parsed);
+        // 部份 GAS 部署在寫入成功時回傳空 body + HTTP 200
+        if ((!parsed || (parsed.status == null && parsed.message == null)) && response.ok) {
+            return { status: 'success', message: 'HTTP OK (empty body)' };
+        }
+        return result;
     } catch (error) {
-        console.error('[callAppsScript] POST error:', error);
-        // Do not hard alert (was disruptive on mobile during save); return error object for graceful handling in callers (finish/edit/delete)
-        return { status: "error", message: "連接 Apps Script 失敗" };
+        console.error('[callAppsScript] POST error:', action, error);
+        const detail = (error && error.message) ? error.message : String(error);
+        return { status: 'error', message: `連接 Apps Script 失敗：${detail}` };
     }
+}
+
+function workoutHasInFlightSetSync(workout) {
+    return (workout?.exercises || []).some(ex =>
+        (ex.sets || []).some(set => set._syncInFlight)
+    );
+}
+
+function waitForActiveBackgroundSyncs(maxMs = 6000) {
+    const start = Date.now();
+    return new Promise(resolve => {
+        const tick = () => {
+            if (activeBackgroundSyncs <= 0 || Date.now() - start >= maxMs) {
+                resolve();
+                return;
+            }
+            setTimeout(tick, 80);
+        };
+        tick();
+    });
+}
+
+function applySetSyncSuccess(setObj, logId) {
+    setObj.id = logId;
+    setObj._clientLogId = logId;
+    setObj._lastSynced = Date.now();
+    if (typeof markSetSyncedSnapshot === 'function') markSetSyncedSnapshot(setObj);
 }
 
 // Background sync helpers (extracted)
@@ -37,71 +118,277 @@ async function backgroundSyncNewSet(exerciseName, setObj, sessionId) {
     if (!currentUser || !currentWorkout) return;
 
     activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs) + 1;
+    setObj._syncInFlight = true;
     updateSyncStatus('syncing');
 
-    // Ensure we have a client ID for tracking synced log ID
     if (!setObj._clientLogId) {
         setObj._clientLogId = 'inc_' + Date.now() + Math.random().toString(36).slice(2, 10);
     }
 
-    const logPayload = {
-        id: setObj._clientLogId,
-        session_id: sessionId,
-        date: (currentWorkout && currentWorkout.date) || getTodayStr(),
-        exercise: exerciseName,
-        weight: setObj.weight || 0,
-        reps: setObj.reps || 0,
-        notes: setObj.notes || '',
-        volume: setObj.volume || ((setObj.weight || 0) * (setObj.reps || 0))
+    const logPayload = typeof buildSetLogPayload === 'function'
+        ? buildSetLogPayload(setObj, exerciseName, {
+            id: setObj._clientLogId,
+            session_id: sessionId,
+            date: (currentWorkout && currentWorkout.date) || getTodayStr(),
+            exercise: exerciseName
+        })
+        : {
+            id: setObj._clientLogId,
+            session_id: sessionId,
+            date: (currentWorkout && currentWorkout.date) || getTodayStr(),
+            exercise: exerciseName,
+            weight: setObj.weight || 0,
+            body_weight: setObj.body_weight != null ? parseFloat(setObj.body_weight) : 0,
+            reps: setObj.reps || 0,
+            duration: setObj.duration != null ? parseInt(setObj.duration) : 0,
+            incline: setObj.incline != null ? parseFloat(setObj.incline) : 0,
+            speed: setObj.speed != null ? parseFloat(setObj.speed) : 0,
+            notes: setObj.notes || '',
+            volume: setObj.volume != null ? setObj.volume : calculateSetVolume(setObj, exerciseName)
+        };
+
+    const finishBackgroundSync = (outcome) => {
+        activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs - 1);
+        delete setObj._syncInFlight;
+        if (activeBackgroundSyncs === 0) updateSyncStatus(outcome);
+        if (typeof updateInteractionLock === 'function') updateInteractionLock();
     };
 
-    // Fire-and-forget: non-blocking, local UI already updated
-    callAppsScript("addLog", { user: currentUser, log: logPayload })
+    const syncTimeout = setTimeout(() => {
+        if (setObj._syncInFlight) finishBackgroundSync('error');
+    }, 45000);
+
+    callAppsScript('addLog', { user: currentUser, log: logPayload })
         .then(res => {
-            activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs - 1);
-            if (res && res.status === 'success') {
-                setObj.id = logPayload.id;           // store backend log ID for future delete
-                setObj._clientLogId = logPayload.id; // for compatibility with deleteSet
-                setObj._lastSynced = Date.now(); // optional marker
-                if (activeBackgroundSyncs === 0) {
-                    updateSyncStatus('synced');
-                }
+            clearTimeout(syncTimeout);
+            if (isBackendSuccess(res)) {
+                applySetSyncSuccess(setObj, logPayload.id);
+                try { saveWorkoutData(); } catch (_) {}
+                finishBackgroundSync('synced');
             } else {
-                if (activeBackgroundSyncs === 0) updateSyncStatus('error');
+                finishBackgroundSync('error');
             }
         })
-        .catch(err => {
-            activeBackgroundSyncs = Math.max(0, activeBackgroundSyncs - 1);
-            if (activeBackgroundSyncs === 0) updateSyncStatus('error');
+        .catch(() => {
+            clearTimeout(syncTimeout);
+            finishBackgroundSync('error');
         });
+}
+
+/**
+ * 只推送未同步 / 已修改的組數（updateLog / addLog / deleteLog）
+ */
+async function syncPendingWorkoutSets(workout, options = {}) {
+    if (!currentUser || !workout) {
+        return { status: 'skipped', message: 'no user or workout' };
+    }
+
+    const beforeSnap = workout._continueSnapshot || null;
+    const delta = typeof buildWorkoutCloudDelta === 'function'
+        ? buildWorkoutCloudDelta(workout, beforeSnap)
+        : null;
+    if (!delta || !delta.hasChanges) {
+        return { status: 'success', incremental: true, added: 0, updated: 0, deleted: 0, skipped: true };
+    }
+
+    return syncWorkoutCloudDelta(delta, workout, options);
+}
+
+/**
+ * 切換動作時：背景補同步未推送的組數（唔會 replaceSession 全量重寫）
+ */
+function flushWorkoutPendingCloudSync(workout) {
+    if (!currentUser || !workout) return;
+
+    (async () => {
+        let syncOutcome = 'synced';
+        try {
+            await waitForActiveBackgroundSyncs();
+            if (workoutHasInFlightSetSync(workout)) {
+                await waitForActiveBackgroundSyncs(3000);
+            }
+            const beforeSnap = workout._continueSnapshot || null;
+            const delta = typeof buildWorkoutCloudDelta === 'function'
+                ? buildWorkoutCloudDelta(workout, beforeSnap)
+                : null;
+            if (!delta || !delta.hasChanges || delta.needsFullPush) return;
+
+            updateGlobalSyncIndicator('syncing');
+            const res = await syncPendingWorkoutSets(workout, { keepalive: true });
+            if (isBackendSuccess(res)) updateGlobalSyncIndicator('synced');
+            else {
+                syncOutcome = 'error';
+                updateGlobalSyncIndicator('error');
+            }
+        } catch (_) {
+            syncOutcome = 'error';
+            updateGlobalSyncIndicator('error');
+        } finally {
+            if (globalPendingSyncs > 0) forceReleaseGlobalSyncLock(syncOutcome);
+        }
+    })();
 }
 
 async function backgroundDeleteLog(logId) {
     if (!currentUser || !logId) return;
 
-    globalPendingSyncs = Math.max(0, globalPendingSyncs) + 1; // reuse for status
     updateGlobalSyncIndicator('syncing');
+    try {
+        const res = await callAppsScript('deleteLog', { user: currentUser, logId });
+        if (isBackendSuccess(res)) {
+            if (typeof sessionCloudDeletedIds !== 'undefined') sessionCloudDeletedIds.add(String(logId));
+            updateGlobalSyncIndicator('synced');
+        } else {
+            updateGlobalSyncIndicator('error');
+        }
+    } catch (_) {
+        updateGlobalSyncIndicator('error');
+    }
+}
 
-    callAppsScript("deleteLog", { user: currentUser, logId: logId })
-        .then(res => {
-            globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
-            if (res && res.status === 'success') {
-                if (globalPendingSyncs === 0) updateGlobalSyncIndicator('synced');
-            } else {
-                if (globalPendingSyncs === 0) updateGlobalSyncIndicator('error');
+/**
+ * 統一增量雲端同步：deleteLog / updateLog / addLog
+ */
+async function syncWorkoutCloudDelta(delta, workout, options = {}) {
+    if (!currentUser || !workout || !delta || !delta.hasChanges) {
+        return { status: 'success', incremental: true, updated: 0, deleted: 0, added: 0, skipped: true };
+    }
+
+    const sessionId = String(workout.id || workout.session_id || workout.sessionId || Date.now());
+    workout.id = sessionId;
+    const dateStr = normalizeDateToLocal(workout.date);
+    const syncOpts = { keepalive: true, ...options };
+    const tasks = [];
+
+    (delta.deletes || []).forEach(logId => {
+        tasks.push(
+            callAppsScript('deleteLog', { user: currentUser, logId }, syncOpts)
+                .then(res => ({ kind: 'delete', logId, res }))
+        );
+    });
+
+    (delta.updates || []).forEach(u => {
+        const log = typeof buildSetLogPayload === 'function'
+            ? buildSetLogPayload(u.raw, u.exercise, { id: u.id })
+            : { id: u.id, exercise: u.exercise, ...u.raw };
+        tasks.push(
+            callAppsScript('updateLog', { user: currentUser, log }, syncOpts)
+                .then(res => ({ kind: 'update', u, res }))
+        );
+    });
+
+    (delta.adds || []).forEach(a => {
+        const logId = getSetCloudLogId(a.raw) || ('live_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
+        const log = typeof buildSetLogPayload === 'function'
+            ? buildSetLogPayload(a.raw, a.exercise, {
+                id: logId,
+                session_id: sessionId,
+                date: dateStr,
+                exercise: a.exercise
+            })
+            : {
+                id: logId,
+                session_id: sessionId,
+                date: dateStr,
+                exercise: a.exercise,
+                ...a.raw
+            };
+        tasks.push(
+            callAppsScript('addLog', { user: currentUser, log }, syncOpts)
+                .then(res => ({ kind: 'add', a, logId, res }))
+        );
+    });
+
+    try {
+        const results = await Promise.all(tasks);
+        const failed = results.find(r => r.res && !isBackendSuccess(r.res));
+        if (failed) {
+            if (/unknown action/i.test(String(failed.res?.message || ''))) return null;
+            return failed.res;
+        }
+
+        results.forEach(r => {
+            if (r.kind === 'add') {
+                applySetSyncSuccess(r.a.raw, r.logId);
+            } else if (r.kind === 'update') {
+                r.u.raw._lastSynced = Date.now();
+                if (typeof markSetSyncedSnapshot === 'function') markSetSyncedSnapshot(r.u.raw);
+            } else if (r.kind === 'delete' && r.logId) {
+                if (typeof sessionCloudDeletedIds !== 'undefined') {
+                    sessionCloudDeletedIds.add(String(r.logId));
+                }
             }
-        })
-        .catch(err => {
-            globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
-            if (globalPendingSyncs === 0) updateGlobalSyncIndicator('error');
         });
+
+        try { saveWorkoutData(); } catch (_) {}
+
+        return {
+            status: 'success',
+            incremental: true,
+            updated: (delta.updates || []).length,
+            deleted: (delta.deletes || []).length,
+            added: (delta.adds || []).length
+        };
+    } catch (err) {
+        return { status: 'error', message: err && err.message ? err.message : String(err) };
+    }
+}
+
+function forceReleaseGlobalSyncLock(outcome) {
+    globalPendingSyncs = 0;
+    lastGlobalSyncOutcome = outcome === 'error' ? 'error' : 'synced';
+    renderGlobalSyncIndicatorState();
+    if (typeof updateInteractionLock === 'function') updateInteractionLock();
+}
+
+function renderGlobalSyncIndicatorState() {
+    const container = document.getElementById('global-sync-indicator');
+    const icon = document.getElementById('sync-icon');
+    const text = document.getElementById('sync-text');
+    if (!container || !icon || !text) return;
+
+    container.classList.remove('hidden', 'syncing', 'success', 'error');
+    container.classList.add('flex');
+    text.classList.remove('hidden');
+
+    if (globalPendingSyncs > 0) {
+        container.classList.add('syncing');
+        icon.className = 'fa-solid fa-sync fa-spin text-[9px] sm:text-[10px]';
+        text.textContent = '同步中，請稍候';
+        container.title = '正在上傳數據到 Google，請稍候...';
+        return;
+    }
+
+    if (lastGlobalSyncOutcome === 'error') {
+        container.classList.add('error');
+        icon.className = 'fa-solid fa-exclamation-triangle text-[9px] sm:text-[10px]';
+        text.textContent = '同步失敗';
+        container.title = '同步失敗，點擊重試';
+        container.onclick = () => {
+            container.onclick = null;
+            lastGlobalSyncOutcome = 'synced';
+            updateGlobalSyncIndicator('syncing');
+        };
+        return;
+    }
+
+    container.classList.add('success');
+    icon.className = 'fa-solid fa-check text-[9px] sm:text-[10px]';
+    text.textContent = '已同步';
+    container.title = '數據已同步到雲端';
+    setTimeout(() => {
+        if (container && container.classList.contains('success') && globalPendingSyncs === 0) {
+            container.classList.remove('flex', 'success');
+            container.classList.add('hidden');
+        }
+    }, 2000);
 }
 
 function updateSyncStatus(status) {
     const el = document.getElementById('sync-status');
     if (el) {
         if (status === 'syncing') {
-            el.innerHTML = '↻ 同步中...';
+            el.innerHTML = '↻ 同步中，請稍候...';
             el.style.color = '#fbbf24';
         } else if (status === 'synced') {
             el.innerHTML = '✓ 已備份';
@@ -122,55 +409,310 @@ function updateSyncStatus(status) {
 
     // Global top-right indicator (A. requirement)
     updateGlobalSyncIndicator(status);
+    if (typeof updateInteractionLock === 'function') updateInteractionLock();
 }
 
 function updateGlobalSyncIndicator(status) {
-    const container = document.getElementById('global-sync-indicator');
-    const icon = document.getElementById('sync-icon');
-    const text = document.getElementById('sync-text');
-    if (!container || !icon) return;
-
-    // Manage pending count for multiple concurrent ops
     if (status === 'syncing') {
-        globalPendingSyncs = Math.max(0, globalPendingSyncs) + 1;
+        globalPendingSyncs++;
     } else if (status === 'synced' || status === 'error') {
-        globalPendingSyncs = Math.max(0, globalPendingSyncs) - 1;
+        lastGlobalSyncOutcome = status;
+        globalPendingSyncs = Math.max(0, globalPendingSyncs - 1);
     }
 
-    container.classList.remove('hidden', 'syncing', 'success', 'error');
-    container.classList.add('flex');
-    text.classList.add('hidden');
+    renderGlobalSyncIndicatorState();
+    if (typeof updateInteractionLock === 'function') updateInteractionLock();
+}
 
-    if (globalPendingSyncs > 0 || status === 'syncing') {
-        container.classList.add('syncing');
-        icon.className = 'fa-solid fa-sync fa-spin text-[9px] sm:text-[10px]';
-        text.classList.remove('hidden');
-        text.textContent = '同步中';
-        container.title = '正在上傳數據到 Google...';
-    } else if (status === 'synced' || globalPendingSyncs === 0) {
-        container.classList.add('success');
-        icon.className = 'fa-solid fa-check text-[9px] sm:text-[10px]';
-        text.classList.remove('hidden');
-        text.textContent = '已同步';
-        container.title = '數據已同步到雲端';
-        setTimeout(() => {
-            if (container && container.classList.contains('success')) {
-                container.classList.remove('flex', 'success');
-                container.classList.add('hidden');
+function buildWorkoutApiPayload(workout, notesOverride) {
+    const sessionId = String(workout.id || workout.session_id || workout.sessionId || Date.now());
+    const exercises = (workout.exercises || []).map(ex => ({
+        name: ex.name || '',
+        sets: (ex.sets || []).map(set => {
+            const row = {
+                weight: parseFloat(set.weight) || 0,
+                reps: parseInt(set.reps) || 0,
+                notes: set.notes || ''
+            };
+            const bodyWeight = set.body_weight != null ? parseFloat(set.body_weight) : 0;
+            if (bodyWeight) row.body_weight = bodyWeight;
+            const dur = set.duration != null ? parseInt(set.duration) : 0;
+            const incline = set.incline != null ? parseFloat(set.incline) : 0;
+            const speed = set.speed != null ? parseFloat(set.speed) : 0;
+            if (dur) row.duration = dur;
+            if (incline) row.incline = incline;
+            if (speed) row.speed = speed;
+            return row;
+        })
+    }));
+
+    return {
+        session_id: sessionId,
+        date: workout.date || getLocalDateString(),
+        notes: notesOverride != null ? notesOverride : (workout.notes || ''),
+        exercises
+    };
+}
+
+function buildReplaceSessionPayload(workout, notesOverride) {
+    const p = buildWorkoutApiPayload(workout, notesOverride);
+    return { date: p.date, notes: p.notes, exercises: p.exercises };
+}
+
+async function deleteSessionsParallel(sids, options = {}) {
+    if (!sids || !sids.length) return { ok: true };
+    const results = await Promise.all(
+        sids.map(sid => callAppsScript('deleteSession', { user: currentUser, sessionId: sid }, options))
+    );
+    const failed = results.find(r => r && !isBackendSuccess(r));
+    if (failed) return { ok: false, message: (failed && failed.message) || 'deleteSession failed' };
+    return { ok: true };
+}
+
+async function pushCurrentWorkoutToBackend(workout, options = {}) {
+    if (!currentUser || !getAppsScriptUrl() || !workout) {
+        return { status: 'skipped', message: 'no currentUser or invalid workout' };
+    }
+    try {
+        const payload = buildWorkoutApiPayload(workout);
+        workout.id = payload.session_id;
+        const result = await callAppsScript('addWorkout', { user: currentUser, workout: payload }, options);
+        if (isBackendSuccess(result)) return result;
+        console.warn('[pushCurrentWorkoutToBackend] backend returned non-success:', result);
+        return result || { status: 'error', message: 'Backend did not confirm success' };
+    } catch (err) {
+        console.error('[pushCurrentWorkoutToBackend] exception:', err);
+        return { status: 'error', message: err && err.message ? err.message : String(err) };
+    }
+}
+
+/**
+ * 完成訓練 / 放棄繼續：
+ * - 已逐組同步過 → 只推送未同步 / 已修改的組數
+ * - 從未同步過（離線）→ 一次 replaceSession 全量推送
+ */
+async function finalizeAndSaveWorkout(workout, notes = '') {
+    if (!currentUser || !workout) {
+        return { status: 'skipped', message: 'no user or workout' };
+    }
+
+    try { updateGlobalSyncIndicator('syncing'); } catch (_) {}
+
+    const sid = String(workout.id || workout.session_id || workout.sessionId || Date.now());
+    workout.id = sid;
+    const syncOpts = { keepalive: true };
+    let syncOutcome = 'synced';
+
+    try {
+        await waitForActiveBackgroundSyncs();
+        if (workoutHasInFlightSetSync(workout)) {
+            await waitForActiveBackgroundSyncs(4000);
+        }
+
+        const beforeSnap = workout._continueSnapshot || null;
+        const isContinue = !!(workout.isContinuedFromToday || beforeSnap);
+        const delta = typeof buildWorkoutCloudDelta === 'function'
+            ? buildWorkoutCloudDelta(workout, beforeSnap)
+            : { hasChanges: true, needsFullPush: true, requiresFullSync: false };
+
+        if (!delta.hasChanges) {
+            try { updateGlobalSyncIndicator('synced'); } catch (_) {}
+            return { status: 'success', incremental: true, skipped: true };
+        }
+
+        if (isContinue && !delta.requiresFullSync) {
+            const incRes = await syncWorkoutCloudDelta(delta, workout, syncOpts);
+            if (incRes === null) {
+                syncOutcome = 'error';
+                try { updateGlobalSyncIndicator('error'); } catch (_) {}
+                return { status: 'error', message: 'incremental sync unavailable' };
             }
-        }, 2000);
-    } else if (status === 'error') {
-        container.classList.add('error');
-        icon.className = 'fa-solid fa-exclamation-triangle text-[9px] sm:text-[10px]';
-        text.classList.remove('hidden');
-        text.textContent = '同步失敗';
-        container.title = '同步失敗，點擊重試';
-        container.onclick = () => {
-            // simple retry hook - caller should handle actual retry
-            container.onclick = null;
-            updateGlobalSyncIndicator('syncing');
-        };
+            if (isBackendSuccess(incRes)) {
+                try { updateGlobalSyncIndicator('synced'); } catch (_) {}
+                return incRes;
+            }
+            syncOutcome = 'error';
+            try { updateGlobalSyncIndicator('error'); } catch (_) {}
+            return incRes;
+        }
+
+        if (!delta.needsFullPush) {
+            const incRes = await syncWorkoutCloudDelta(delta, workout, syncOpts);
+            if (incRes === null) {
+                syncOutcome = 'error';
+                try { updateGlobalSyncIndicator('error'); } catch (_) {}
+                return { status: 'error', message: 'incremental sync unavailable' };
+            }
+            if (isBackendSuccess(incRes)) {
+                try { updateGlobalSyncIndicator('synced'); } catch (_) {}
+                return incRes;
+            }
+            syncOutcome = 'error';
+            try { updateGlobalSyncIndicator('error'); } catch (_) {}
+            return incRes;
+        }
+
+        const res = await callAppsScript('replaceSession', {
+            user: currentUser,
+            sessionId: sid,
+            workout: buildReplaceSessionPayload(workout, notes)
+        }, syncOpts);
+
+        if (isBackendSuccess(res)) {
+            (workout.exercises || []).forEach(ex => {
+                (ex.sets || []).forEach(set => {
+                    if (typeof markSetSyncedSnapshot === 'function') {
+                        set._lastSynced = Date.now();
+                        markSetSyncedSnapshot(set);
+                    }
+                });
+            });
+            try { saveWorkoutData(); } catch (_) {}
+            try { updateGlobalSyncIndicator('synced'); } catch (_) {}
+            return res;
+        }
+
+        if (/unknown action/i.test(String(res?.message || ''))) {
+            await deleteSessionsParallel([sid], syncOpts);
+            const addRes = await pushCurrentWorkoutToBackend(workout, syncOpts);
+            if (isBackendSuccess(addRes)) try { updateGlobalSyncIndicator('synced'); } catch (_) {}
+            else try { updateGlobalSyncIndicator('error'); } catch (_) {}
+            return addRes;
+        }
+
+        syncOutcome = 'error';
+        try { updateGlobalSyncIndicator('error'); } catch (_) {}
+        return res;
+    } catch (err) {
+        syncOutcome = 'error';
+        try { updateGlobalSyncIndicator('error'); } catch (_) {}
+        throw err;
+    } finally {
+        if (globalPendingSyncs > 0) forceReleaseGlobalSyncLock(syncOutcome);
+        if (activeBackgroundSyncs > 0) {
+            activeBackgroundSyncs = 0;
+            if (typeof updateInteractionLock === 'function') updateInteractionLock();
+        }
     }
+}
+
+/**
+ * 歷史紀錄編輯：只同步有變更的組數（updateLog / deleteLog / addLog）。
+ * 若舊資料缺少 log id 或無法 diff，回傳 null 讓 caller fallback 至 replaceSession。
+ */
+async function syncHistoryEditIncremental(beforeWorkout, afterWorkout, toPush, options = {}) {
+    if (!currentUser || !getAppsScriptUrl() || !beforeWorkout || !afterWorkout) {
+        return { status: 'skipped', message: 'no user or workout' };
+    }
+
+    if (typeof workoutAllSetsHaveCloudIds === 'function' && !workoutAllSetsHaveCloudIds(beforeWorkout)) {
+        return null;
+    }
+
+    const delta = typeof buildWorkoutCloudDelta === 'function'
+        ? buildWorkoutCloudDelta(afterWorkout, beforeWorkout)
+        : null;
+    if (!delta || delta.requiresFullSync) return null;
+    if (!delta.hasChanges) {
+        return { status: 'success', incremental: true, updated: 0, deleted: 0, added: 0 };
+    }
+
+    return syncWorkoutCloudDelta(delta, toPush, options);
+}
+
+/**
+ * 歷史紀錄編輯：全量同步到後端（replaceSession；多 session 時並行刪除後重建）
+ */
+async function syncHistoryWorkoutToBackend(toPush, oldSessionIds) {
+    const sids = [...new Set((oldSessionIds || []).map(s => String(s).trim()).filter(Boolean))];
+    const targetSid = String(toPush.id || toPush.session_id || toPush.sessionId || Date.now());
+    toPush.id = targetSid;
+    const workoutPayload = buildReplaceSessionPayload(toPush);
+    const syncOpts = { keepalive: true };
+
+    if (sids.length === 1) {
+        const sid = sids[0];
+        const replaceRes = await callAppsScript('replaceSession', {
+            user: currentUser,
+            sessionId: sid,
+            workout: workoutPayload
+        }, syncOpts);
+        if (isBackendSuccess(replaceRes)) {
+            toPush.id = sid;
+            return replaceRes;
+        }
+        if (/unknown action/i.test(String(replaceRes?.message || ''))) {
+            const del = await deleteSessionsParallel([sid], syncOpts);
+            if (!del.ok) return { status: 'error', message: del.message };
+            toPush.id = sid;
+            return await pushCurrentWorkoutToBackend(toPush, syncOpts);
+        }
+        return replaceRes;
+    }
+
+    if (sids.length > 1) {
+        const del = await deleteSessionsParallel(sids, syncOpts);
+        if (!del.ok) return { status: 'error', message: del.message };
+        toPush.id = String(Date.now());
+    }
+
+    return await pushCurrentWorkoutToBackend(toPush, syncOpts);
+}
+
+function runHistoryCloudSync(toPush, oldSessionIds, dateStr, beforeSnapshot) {
+    (async () => {
+        let syncOutcome = 'synced';
+        try {
+            updateGlobalSyncIndicator('syncing');
+
+            let syncRes = null;
+            if (beforeSnapshot && typeof syncHistoryEditIncremental === 'function') {
+                syncRes = await syncHistoryEditIncremental(beforeSnapshot, toPush, toPush);
+                if (syncRes === null) {
+                    syncRes = await syncHistoryWorkoutToBackend(toPush, oldSessionIds);
+                }
+            } else {
+                syncRes = await syncHistoryWorkoutToBackend(toPush, oldSessionIds);
+            }
+
+            if (isBackendSuccess(syncRes)) {
+                updateGlobalSyncIndicator('synced');
+                if (toPush.id) {
+                    const d = normalizeDateToLocal(dateStr);
+                    const idx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
+                    if (idx >= 0) {
+                        workoutHistory[idx].id = toPush.id;
+                        if (syncRes.incremental && beforeSnapshot) {
+                            workoutHistory[idx] = JSON.parse(JSON.stringify(toPush));
+                        }
+                        saveWorkoutData();
+                    }
+                }
+            } else {
+                syncOutcome = 'error';
+                console.warn('[runHistoryCloudSync] non-success:', syncRes);
+                updateGlobalSyncIndicator('error');
+                const detail = (syncRes && syncRes.message) ? syncRes.message : '';
+                showToast(detail
+                    ? `⚠️ 本地已保存，雲端同步未完成：${detail}`
+                    : '⚠️ 本地已保存，雲端同步未完成，請稍後再試', 4000);
+            }
+        } catch (err) {
+            syncOutcome = 'error';
+            console.error('[runHistoryCloudSync] error:', err);
+            updateGlobalSyncIndicator('error');
+            showToast('⚠️ 本地已保存，雲端同步失敗，請稍後再試', 4000);
+        } finally {
+            if (globalPendingSyncs > 0) {
+                console.warn('[runHistoryCloudSync] clearing stale sync lock, pending=', globalPendingSyncs);
+                forceReleaseGlobalSyncLock(syncOutcome);
+            }
+            if (activeBackgroundSyncs > 0) {
+                activeBackgroundSyncs = 0;
+                if (typeof updateInteractionLock === 'function') updateInteractionLock();
+            }
+        }
+    })();
 }
 
 // More API helpers can be added here (loadUserLogs, etc.) in subsequent steps.

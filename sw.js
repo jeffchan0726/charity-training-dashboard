@@ -1,6 +1,6 @@
 // Basic Service Worker for Recomp Charity PWA (web.dev + Google HTML Service friendly)
 // Caches core shell + assets for offline use. Images are best-effort.
-const CACHE_NAME = 'recomp-charity-v2.2';
+const CACHE_NAME = 'recomp-charity-v2.3.7';
 const CORE_ASSETS = [
   'index.html',
   './',
@@ -53,6 +53,17 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+
+  // JS 模組永遠優先走網絡，避免舊版快取導致同步邏輯錯誤
+  try {
+    const url = new URL(req.url);
+    if (url.pathname.endsWith('.js')) {
+      event.respondWith(
+        fetch(req).catch(() => caches.match(req))
+      );
+      return;
+    }
+  } catch (_) {}
 
   event.respondWith(
     caches.match(req).then((cached) => {

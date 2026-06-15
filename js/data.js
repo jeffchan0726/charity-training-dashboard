@@ -15,11 +15,11 @@ const EXERCISES = [
     { id: "barbell_bench_press", name: "槓鈴臥推 (Barbell Bench Press)", muscle_group: "胸部", image: "images/barbell_bench_press.jpg" },
     { id: "lower_chest_cable_fly", name: "下胸繩索飛鳥 (Lower Chest Cable Fly)", muscle_group: "胸部", image: "images/lower_chest_cable_fly.jpg" },
     { id: "cable_crossover", name: "繩索夾胸 (Cable Crossover)", muscle_group: "胸部", image: "images/cable_crossover.jpg" },
-    { id: "chest_dips", name: "雙槓胸推 (Chest Dips)", muscle_group: "胸部", image: "images/chest_dips.jpg" },
+    { id: "chest_dips", name: "雙槓胸推 (Chest Dips)", muscle_group: "胸部", image: "images/chest_dips.jpg", is_bodyweight: true },
     { id: "machine_chest_press", name: "機器胸推 (Machine Chest Press)", muscle_group: "胸部", image: "images/machine_chest_press.jpg" },
 
     // 背部 (香港常用「拉背」「划船」)
-    { id: "pull_ups", name: "引體向上 (Pull-ups)", muscle_group: "背部", image: "images/pull_ups.jpg" },
+    { id: "pull_ups", name: "引體向上 (Pull-ups)", muscle_group: "背部", image: "images/pull_ups.jpg", is_bodyweight: true },
     { id: "deadlift", name: "硬拉 (Deadlift)", muscle_group: "背部", image: "images/deadlift.jpg" },
     { id: "seated_cable_row", name: "坐姿繩索拉背 (Seated Cable Row)", muscle_group: "背部", image: "images/seated_cable_row.jpg" },
     { id: "barbell_row", name: "槓鈴划船 (Barbell Bent Over Row)", muscle_group: "背部", image: "images/barbell_row.jpg" },
@@ -63,19 +63,20 @@ const EXERCISES = [
     { id: "barbell_shrugs", name: "槓鈴聳肩 (Barbell Shrugs)", muscle_group: "肩膀", image: "images/barbell_shrugs.jpg" },
 
     // 核心 (香港常用「腹輪」「平板撐」「斬木」)
-    { id: "ab_wheel_rollout", name: "腹輪 (Ab Wheel Rollout)", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg" },
-    { id: "dragon_flag", name: "龍旗 (Dragon Flag)", muscle_group: "核心", image: "images/dragon_flag.jpg" },
-    { id: "hanging_leg_raise", name: "懸垂舉腿 (Hanging Leg Raise)", muscle_group: "核心", image: "images/hanging_leg_raise.jpg" },
-    { id: "plank", name: "平板撐 (Plank)", muscle_group: "核心", image: "images/plank.jpg" },
+    { id: "ab_wheel_rollout", name: "腹輪 (Ab Wheel Rollout)", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg", is_bodyweight: true },
+    { id: "dragon_flag", name: "龍旗 (Dragon Flag)", muscle_group: "核心", image: "images/dragon_flag.jpg", is_bodyweight: true },
+    { id: "hanging_leg_raise", name: "懸垂舉腿 (Hanging Leg Raise)", muscle_group: "核心", image: "images/hanging_leg_raise.jpg", is_bodyweight: true },
+    { id: "plank", name: "平板支撐 (Plank)", muscle_group: "核心", image: "images/plank.jpg", is_hold: true, is_bodyweight: true },
     { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/wood_chopper.jpg" },
     { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
 
-    // 全身 / 有氧
+    // 全身 / 有氧 — is_hold = 時間+次數記錄（唔用重量）
     { id: "farmer_carry", name: "農夫行走 (Farmer's Carry)", muscle_group: "全身", image: "images/farmer_carry.jpg" },
-    { id: "battle_ropes", name: "戰繩 (Battle Ropes)", muscle_group: "全身", image: "images/battle_ropes.jpg" },
-    { id: "burpees", name: "波比跳 (Burpees)", muscle_group: "全身", image: "images/burpees.jpg" },
-    { id: "rowing_machine", name: "划船機 (Rowing Machine)", muscle_group: "有氧", image: "images/rowing_machine.jpg" },
-    { id: "jump_rope", name: "跳繩 (Jump Rope)", muscle_group: "有氧", image: "images/jump_rope.jpg" },
+    { id: "battle_ropes", name: "戰繩 (Battle Ropes)", muscle_group: "全身", image: "images/battle_ropes.jpg", is_hold: true },
+    { id: "burpees", name: "波比跳 (Burpees)", muscle_group: "全身", image: "images/burpees.jpg", is_bodyweight: true },
+    { id: "rowing_machine", name: "划船機 (Rowing Machine)", muscle_group: "有氧", image: "images/rowing_machine.jpg", is_hold: true },
+    { id: "jump_rope", name: "跳繩 (Jump Rope)", muscle_group: "有氧", image: "images/jump_rope.jpg", is_hold: true },
+    { id: "treadmill", name: "跑步機 (Treadmill)", muscle_group: "有氧", image: "images/treadmill.jpg", record_type: "treadmill" },
 ];
 
 // Source of truth for the 3 fixed, non-modifiable Training Days.
@@ -167,4 +168,32 @@ function getExerciseImage(name) {
 function getMuscleGroup(name) {
     const ex = getExerciseByName(name);
     return ex ? ex.muscle_group : '其他';
+}
+
+// 時間+次數動作（唔用重量）：平板支撐、戰繩、跳繩等 → 顯示計時器 UI
+function isHoldExercise(name) {
+    const ex = getExerciseByName(name);
+    return !!(ex && ex.is_hold);
+}
+
+function isTimeRepsExercise(name) {
+    return isHoldExercise(name);
+}
+
+function isBodyweightExercise(name) {
+    const ex = getExerciseByName(name);
+    return !!(ex && ex.is_bodyweight);
+}
+
+function getExerciseRecordType(name) {
+    const ex = getExerciseByName(name);
+    if (!ex) return 'weight';
+    if (ex.record_type) return ex.record_type;
+    if (ex.is_hold) return 'time_reps';
+    if (ex.is_bodyweight) return 'bodyweight';
+    return 'weight';
+}
+
+function isTreadmillExercise(name) {
+    return getExerciseRecordType(name) === 'treadmill';
 }
