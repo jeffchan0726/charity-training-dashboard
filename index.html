@@ -439,6 +439,51 @@ Local Development Instructions:
         .yugong-tip-dynamic {
             color: #fbbf24;
         }
+        .yugong-leaderboard-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 0.65rem;
+            border-radius: 0.85rem;
+            background: #292524;
+            border: 1px solid #44403c;
+        }
+        .yugong-leaderboard-row.is-me {
+            border-color: #4ade80;
+            background: rgba(22, 101, 52, 0.22);
+        }
+        .yugong-leaderboard-rank {
+            width: 1.75rem;
+            text-align: center;
+            font-weight: 800;
+            font-size: 0.8rem;
+            color: #a8a29e;
+            flex-shrink: 0;
+        }
+        .yugong-leaderboard-rank.top3 {
+            color: #fbbf24;
+        }
+        .yugong-leaderboard-user {
+            flex: 1;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #e7e5e4;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .yugong-leaderboard-tonnes {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #4ade80;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .yugong-leaderboard-meta {
+            font-size: 0.65rem;
+            color: #78716c;
+        }
         @media (max-width: 640px) {
             .yugong-bubble-value {
                 font-size: 1.05rem;
@@ -1349,6 +1394,25 @@ Local Development Instructions:
                 <div id="yugong-progress-bar" class="yugong-progress-bar" style="width: 0%"></div>
             </div>
 
+            <div class="border-t border-[#44403c] pt-4 mb-4">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <h3 class="text-sm font-bold flex items-center gap-1.5">
+                        <span>🏆</span> 移山排行榜
+                    </h3>
+                    <button type="button" onclick="refreshYugongLeaderboard(true)"
+                        class="text-[10px] sm:text-xs px-2.5 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 hover:text-emerald-300 text-[#a8a29e]">
+                        更新
+                    </button>
+                </div>
+                <p class="yugong-leaderboard-meta mb-2">全玩家累積搬咗幾多噸（慈善訓練量）</p>
+                <div id="yugong-leaderboard-loading" class="hidden text-xs text-[#a8a29e] py-3 text-center">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入排行榜…
+                </div>
+                <div id="yugong-leaderboard-error" class="hidden text-xs text-red-400 py-2"></div>
+                <p id="yugong-leaderboard-rank-hint" class="hidden text-xs text-emerald-300/90 mb-2"></p>
+                <ol id="yugong-leaderboard-list" class="space-y-1.5 list-none p-0 m-0"></ol>
+            </div>
+
             <div class="border-t border-[#44403c] pt-4">
                 <h3 class="text-sm font-bold mb-2.5 flex items-center gap-1.5">
                     <span>💡</span> 移山貼士
@@ -2101,7 +2165,7 @@ Local Development Instructions:
     <script src="js/data.js?v=2.3.6"></script>
     <script src="js/utils.js?v=2.3.12"></script>
     <script src="js/state.js?v=2.3.11"></script>
-    <script src="js/api.js?v=2.3.11"></script>
+    <script src="js/api.js?v=2.3.18"></script>
     <script src="js/fullscreen.js?v=2.3.6"></script>
     <script src="js/ui.js?v=2.3.6"></script>
     <script src="js/ui-log.js?v=2.3.9"></script>
@@ -2110,7 +2174,7 @@ Local Development Instructions:
     <script src="js/ui-workoutsets.js?v=2.3.6"></script>
     <script src="js/ui-library.js?v=2.3.8"></script>
     <script src="js/ui-analysis.js?v=2.3.6"></script>
-    <script src="js/ui-yugong.js?v=2.3.16"></script>
+    <script src="js/ui-yugong.js?v=2.3.18"></script>
 
     <script>
         /*

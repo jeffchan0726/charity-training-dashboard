@@ -60,6 +60,10 @@ const YUGONG_SUGGESTIONS = [
 
 let yugongViewZoom = 1;
 let yugongLastProgressPct = 0;
+let yugongLeaderboardCache = null;
+let yugongLeaderboardLoading = false;
+
+const YUGONG_RANK_MEDALS = ['🥇', '🥈', '🥉'];
 
 function getYugongStats() {
     const movedTonnes = typeof getLifetimeTonnes === 'function' ? getLifetimeTonnes() : 0;
@@ -203,6 +207,111 @@ function refreshYugongIfVisible() {
     const panel = document.getElementById('content-yugong');
     if (panel && !panel.classList.contains('hidden')) {
         renderYugongTab();
+        refreshYugongLeaderboard(true);
+    }
+}
+
+function getYugongRankLabel(rank) {
+    if (rank >= 1 && rank <= 3) return YUGONG_RANK_MEDALS[rank - 1];
+    return String(rank);
+}
+
+function renderYugongLeaderboard(entries) {
+    const list = document.getElementById('yugong-leaderboard-list');
+    const hint = document.getElementById('yugong-leaderboard-rank-hint');
+    const errEl = document.getElementById('yugong-leaderboard-error');
+    if (!list) return;
+
+    if (errEl) errEl.classList.add('hidden');
+
+    if (!entries || entries.length === 0) {
+        list.innerHTML = '<li class="text-xs text-[#a8a29e] text-center py-3">暫時未有玩家記錄，做第一個移山嘅人啦！</li>';
+        if (hint) hint.classList.add('hidden');
+        return;
+    }
+
+    const me = typeof currentUser !== 'undefined' ? currentUser : null;
+    let myRank = 0;
+
+    list.innerHTML = entries.map((entry, i) => {
+        const rank = i + 1;
+        const isMe = me && entry.user === me;
+        if (isMe) myRank = rank;
+        const tonnes = (entry.tonnes != null ? entry.tonnes : (entry.weightKg || 0) / 1000).toFixed(2);
+        return `
+            <li class="yugong-leaderboard-row${isMe ? ' is-me' : ''}">
+                <span class="yugong-leaderboard-rank${rank <= 3 ? ' top3' : ''}">${getYugongRankLabel(rank)}</span>
+                <span class="yugong-leaderboard-user">${entry.user}${isMe ? '（你）' : ''}</span>
+                <span class="yugong-leaderboard-tonnes">${tonnes} 噸</span>
+            </li>
+        `;
+    }).join('');
+
+    if (hint) {
+        if (me && myRank > 0) {
+            hint.textContent = '你而家排第 ' + myRank + ' 名，繼續加油呀！';
+            hint.classList.remove('hidden');
+        } else if (me) {
+            hint.textContent = '你未有雲端記錄，完成訓練同步後就會上榜。';
+            hint.classList.remove('hidden');
+        } else {
+            hint.textContent = '登入後可以睇到自己排名。';
+            hint.classList.remove('hidden');
+        }
+    }
+}
+
+async function refreshYugongLeaderboard(force) {
+    const panel = document.getElementById('content-yugong');
+    if (!panel || panel.classList.contains('hidden')) return;
+    if (yugongLeaderboardLoading) return;
+
+    const loadingEl = document.getElementById('yugong-leaderboard-loading');
+    const errEl = document.getElementById('yugong-leaderboard-error');
+    const list = document.getElementById('yugong-leaderboard-list');
+
+    if (!force && yugongLeaderboardCache) {
+        renderYugongLeaderboard(yugongLeaderboardCache);
+        return;
+    }
+
+    if (typeof callAppsScript !== 'function') {
+        if (errEl) {
+            errEl.textContent = '排行榜功能未載入，請重新整理頁面。';
+            errEl.classList.remove('hidden');
+        }
+        return;
+    }
+
+    yugongLeaderboardLoading = true;
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (errEl) errEl.classList.add('hidden');
+    if (list && !yugongLeaderboardCache) {
+        list.innerHTML = '';
+    }
+
+    try {
+        const res = await callAppsScript('getYugongLeaderboard');
+        if (!isBackendSuccess(res)) {
+            const msg = res?.message || '';
+            if (/invalid action|unknown action|missing user/i.test(msg)) {
+                throw new Error('後端未更新排行榜 — 請將 Google_Apps_Script.txt 貼上 Apps Script 並 Deploy 新版本');
+            }
+            throw new Error(msg || '載入排行榜失敗');
+        }
+        const entries = Array.isArray(res.leaderboard) ? res.leaderboard : [];
+        yugongLeaderboardCache = entries;
+        renderYugongLeaderboard(entries);
+    } catch (e) {
+        yugongLeaderboardCache = null;
+        if (list) list.innerHTML = '';
+        if (errEl) {
+            errEl.textContent = (e && e.message) ? e.message : '載入排行榜失敗，請稍後再試。';
+            errEl.classList.remove('hidden');
+        }
+    } finally {
+        yugongLeaderboardLoading = false;
+        if (loadingEl) loadingEl.classList.add('hidden');
     }
 }
 
@@ -211,4 +320,5 @@ function initYugongTab() {
         yugongViewZoom = 1;
     }
     renderYugongTab();
+    refreshYugongLeaderboard(true);
 }
