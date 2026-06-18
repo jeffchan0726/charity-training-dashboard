@@ -69,6 +69,7 @@ const EXERCISES = [
     { id: "plank", name: "平板支撐 (Plank)", muscle_group: "核心", image: "images/plank.jpg", is_hold: true, is_bodyweight: true },
     { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/wood_chopper.jpg" },
     { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
+    { id: "decline_crunch", name: "下斜捲腹 (Decline Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg", is_bodyweight: true },
 
     // 全身 / 有氧 — is_hold = 時間+次數記錄（唔用重量）
     { id: "farmer_carry", name: "農夫行走 (Farmer's Carry)", muscle_group: "全身", image: "images/farmer_carry.jpg" },
@@ -94,7 +95,7 @@ const TRAINING_DAYS = [
       "下胸繩索飛鳥 (Lower Chest Cable Fly)",
       "繩索三頭下壓 (Tricep Rope Pushdown)",
       "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)",
-      "斬木 (Wood Chopper)"
+      "下斜捲腹 (Decline Crunch)"
     ]
   },
   {
@@ -104,11 +105,11 @@ const TRAINING_DAYS = [
     fullName: "訓練日 2（Back + Biceps + Core）",
     exercises: [
       "引體向上 (Pull-ups)",
-      "坐姿繩索拉背 (Seated Cable Row)",
       "硬拉 (Deadlift)",
+      "坐姿繩索拉背 (Seated Cable Row)",
       "貝葉斯繩索彎舉 (Bayesian Cable Curls)",
       "牧師椅彎舉 (Preacher Curls)",
-      "腹輪 (Ab Wheel Rollout)"
+      "斬木 (Wood Chopper)"
     ]
   },
   {
