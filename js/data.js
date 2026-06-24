@@ -87,28 +87,30 @@ const TRAINING_DAYS = [
   {
     id: 1,
     label: "訓練日 1",
-    subtitle: "Chest + Triceps",
-    fullName: "訓練日 1（Chest + Triceps）",
+    subtitle: "Chest + Triceps + Shoulders",
+    fullName: "訓練日 1（Chest + Triceps + Shoulders）",
     exercises: [
       "上斜啞鈴推胸 (Incline Dumbbell Press)",
       "平板啞鈴推胸 (Flat Dumbbell Press)",
       "下胸繩索飛鳥 (Lower Chest Cable Fly)",
       "繩索三頭下壓 (Tricep Rope Pushdown)",
       "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)",
+      "坐姿啞鈴肩推 (Seated Dumbbell Shoulder Press)",
       "下斜捲腹 (Decline Crunch)"
     ]
   },
   {
     id: 2,
     label: "訓練日 2",
-    subtitle: "Back + Biceps + Core",
-    fullName: "訓練日 2（Back + Biceps + Core）",
+    subtitle: "Back + Biceps + Shoulders + Core",
+    fullName: "訓練日 2（Back + Biceps + Shoulders + Core）",
     exercises: [
       "引體向上 (Pull-ups)",
       "硬拉 (Deadlift)",
       "坐姿繩索拉背 (Seated Cable Row)",
       "貝葉斯繩索彎舉 (Bayesian Cable Curls)",
       "牧師椅彎舉 (Preacher Curls)",
+      "後飛 (Rear Delt Raises)",
       "斬木 (Wood Chopper)"
     ]
   },
@@ -119,10 +121,11 @@ const TRAINING_DAYS = [
     fullName: "訓練日 3（Legs + Shoulders + Forearms + Core）",
     exercises: [
       "澤奇深蹲 (Zercher Squats)",
+      "羅馬尼亞硬拉 (Romanian Deadlift)",
+      "站姿小腿提踵 (Standing Calf Raise)",
       "指力彎舉 (Finger Curls)",
       "反向腕彎舉 (Reverse Forearm Curl)",
       "側舉 (Lateral Raises)",
-      "後飛 (Rear Delt Raises)",
       "龍旗 (Dragon Flag)"
     ]
   }
