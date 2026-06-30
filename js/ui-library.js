@@ -81,22 +81,28 @@ function renderLibraryList() {
 
     filtered.forEach(ex => {
         const display = getExerciseDisplay(ex);
-        const id = ex.id || display.toLowerCase().replace(/[^a-z0-9]/g, '_');
         const div = document.createElement('div');
         div.className = 'exercise-card bg-[#292524] rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition flex flex-col';
         div.onclick = () => showExerciseDetail(ex.name);
         div.innerHTML = `
             <div class="relative bg-[#1c1917]">
-                <img src="${ex.image}" class="w-full h-32 object-contain" loading="lazy" onerror="this.style.display='none';">
-                <div class="absolute top-1 right-1 bg-black/50 text-[9px] px-1 rounded">${ex.muscle_group}</div>
+                <img src="${sanitizeUrl(ex.image)}" class="w-full h-32 object-contain" loading="lazy" onerror="this.style.display='none';">
+                <div class="absolute top-1 right-1 bg-black/50 text-[9px] px-1 rounded">${escapeHtml(ex.muscle_group)}</div>
             </div>
             <div class="p-2 flex-1">
-                <div class="font-medium text-sm leading-tight truncate">${display}</div>
+                <div class="font-medium text-sm leading-tight truncate">${escapeHtml(display)}</div>
             </div>
             <div class="px-2 pb-2">
-                <button onclick="event.stopImmediatePropagation(); useExerciseFromLibrary('${ex.name}');" class="text-xs px-2.5 py-1 bg-emerald-900/70 hover:bg-emerald-800 rounded w-full">加入</button>
+                <button type="button" class="lib-use-exercise-btn text-xs px-2.5 py-1 bg-emerald-900/70 hover:bg-emerald-800 rounded w-full">加入</button>
             </div>
         `;
+        const addBtn = div.querySelector('.lib-use-exercise-btn');
+        if (addBtn) {
+            addBtn.addEventListener('click', (ev) => {
+                ev.stopImmediatePropagation();
+                useExerciseFromLibrary(ex.name);
+            });
+        }
         container.appendChild(div);
     });
 }
@@ -107,17 +113,56 @@ function showExerciseDetail(nameOrObj) {
 
     let ex = typeof nameOrObj === 'string' ? getExerciseByName(nameOrObj) : nameOrObj;
     if (!ex && typeof nameOrObj === 'string') {
-        ex = { name: nameOrObj, muscle_group: '全身' };
+        const libEntry = (exerciseLibrary || []).find(e =>
+            e.name === nameOrObj || (e.name && e.name.toLowerCase() === nameOrObj.toLowerCase())
+        );
+        ex = {
+            name: nameOrObj,
+            muscle_group: (libEntry && libEntry.category)
+                || (typeof getMuscleGroup === 'function' ? getMuscleGroup(nameOrObj) : null)
+                || '全身'
+        };
     }
     if (!ex) return;
 
     const displayName = getExerciseDisplay(ex);
-    const id = (ex.id || nameOrObj || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
 
+    const gifWrap = document.getElementById('detail-gif-wrap');
     const gifEl = document.getElementById('detail-gif');
-    // Use original image path for detail (no GIF, no placeholder)
-    gifEl.src = ex.image || '';
-    gifEl.onerror = () => { gifEl.style.display = 'none'; };
+    const gifLoading = document.getElementById('detail-gif-loading');
+    const gifFallback = ex.image || '';
+    const gifUrl = typeof getExerciseGifUrl === 'function' ? getExerciseGifUrl(ex) : null;
+
+    if (gifEl) {
+        gifEl.style.display = 'none';
+        gifEl.removeAttribute('src');
+        gifEl.alt = displayName + ' 動作示範';
+        gifEl.onerror = () => {
+            if (gifFallback) {
+                gifEl.src = gifFallback;
+                gifEl.style.display = '';
+            } else {
+                gifEl.style.display = 'none';
+            }
+            if (gifLoading) gifLoading.classList.add('hidden');
+        };
+        gifEl.onload = () => {
+            gifEl.style.display = '';
+            if (gifLoading) gifLoading.classList.add('hidden');
+        };
+
+        if (gifUrl) {
+            if (gifLoading) gifLoading.classList.remove('hidden');
+            gifEl.src = gifUrl;
+        } else if (gifFallback) {
+            if (gifLoading) gifLoading.classList.add('hidden');
+            gifEl.src = gifFallback;
+            gifEl.style.display = '';
+        } else if (gifLoading) {
+            gifLoading.classList.add('hidden');
+        }
+    }
+    if (gifWrap) gifWrap.classList.toggle('hidden', !gifUrl && !gifFallback);
 
     document.getElementById('detail-name').textContent = displayName;
     document.getElementById('detail-muscle').textContent = ex.muscle_group || '全身';
@@ -138,7 +183,7 @@ function showExerciseDetail(nameOrObj) {
     tips.forEach(tip => {
         const li = document.createElement('li');
         li.className = 'flex gap-2';
-        li.innerHTML = `<span class="text-emerald-400">•</span> <span>${tip}</span>`;
+        li.innerHTML = `<span class="text-emerald-400">•</span> <span>${escapeHtml(tip)}</span>`;
         tipsEl.appendChild(li);
     });
 
@@ -153,6 +198,13 @@ function hideExerciseDetail() {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
     }
+    const gifEl = document.getElementById('detail-gif');
+    if (gifEl) {
+        gifEl.removeAttribute('src');
+        gifEl.style.display = 'none';
+    }
+    const gifLoading = document.getElementById('detail-gif-loading');
+    if (gifLoading) gifLoading.classList.add('hidden');
 }
 
 const EXPERT_TIPS_BY_ID = {
@@ -224,7 +276,7 @@ const EXPERT_TIPS_BY_ID = {
     ],
     lat_pulldown: [
         "寬握，挺胸，肩胛先下壓",
-        "拉至锁骨附近，手肘向後下方",
+        "拉至鎖骨附近，手肘向後下方",
         "避免身體過度後仰借力",
         "回程慢 2–3 秒，感受背闊肌拉伸"
     ],
@@ -374,9 +426,9 @@ const EXPERT_TIPS_BY_ID = {
     ],
     overhead_press: [
         "核心 bracing，臀部夾緊",
-        "槓鈴從锁骨推至頭頂，頭略前移讓出空間",
+        "槓鈴從鎖骨推至頭頂，頭略前移讓出空間",
         "手肘略在前方，避免過度外展",
-        "下降控制至锁骨附近"
+        "下降控制至鎖骨附近"
     ],
     seated_dumbbell_press: [
         "椅背調至約 85°，肩胛貼靠",
@@ -449,6 +501,12 @@ const EXPERT_TIPS_BY_ID = {
         "以腹肌捲曲帶動，非用手拉繩索",
         "下巴微收，擠壓腹部 1 秒",
         "回程慢而受控，保持繃緊"
+    ],
+    decline_crunch: [
+        "下斜板固定，腳勾穩，避免身體下滑",
+        "下巴微收，以腹肌捲曲帶動，非用手拉",
+        "頂點擠壓下腹 1 秒，呼氣發力",
+        "下降慢 2–3 秒，全程保持腹部繃緊"
     ],
     farmer_carry: [
         "雙手垂握重物，肩膀下沉後縮",
@@ -580,12 +638,27 @@ function getExpertTips(nameOrEx) {
         ? getExerciseRecordType(ex.name || displayName)
         : 'weight';
 
+    const group = ex.muscle_group
+        || (typeof getMuscleGroup === 'function' ? getMuscleGroup(displayName) : null)
+        || '全身';
+
+    // 跑步機／計時類動作優先用記錄類型提示
+    if (recordType === 'treadmill' || recordType === 'time_reps') {
+        if (EXPERT_TIPS_BY_RECORD_TYPE[recordType]) {
+            return EXPERT_TIPS_BY_RECORD_TYPE[recordType];
+        }
+    }
+
+    // 自訂動作或未逐個編寫的動作：用肌群通用提示
+    if (EXPERT_TIPS_BY_MUSCLE_GROUP[group]) {
+        return EXPERT_TIPS_BY_MUSCLE_GROUP[group];
+    }
+
     if (EXPERT_TIPS_BY_RECORD_TYPE[recordType]) {
         return EXPERT_TIPS_BY_RECORD_TYPE[recordType];
     }
 
-    const group = ex.muscle_group || (typeof getMuscleGroup === 'function' ? getMuscleGroup(displayName) : null) || '全身';
-    return EXPERT_TIPS_BY_MUSCLE_GROUP[group] || EXPERT_TIPS_BY_RECORD_TYPE.weight;
+    return EXPERT_TIPS_BY_RECORD_TYPE.weight;
 }
 
 function useExerciseFromLibrary(name) {

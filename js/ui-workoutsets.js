@@ -37,7 +37,7 @@ function renderWorkoutSetsBar() {
         let cls = 'text-xs px-3 py-1 bg-sky-700 hover:bg-sky-600 active:bg-sky-800 rounded-2xl transition flex items-center';
         btn.className = cls;
         btn.title = '固定預設訓練日（不可編輯 / 不可刪除）';
-        btn.innerHTML = `<span class="font-medium">${preset.name}</span> <span class="text-[9px] opacity-70">🔒</span>`;
+        btn.innerHTML = `<span class="font-medium">${escapeHtml(preset.name)}</span> <span class="text-[9px] opacity-70">🔒</span>`;
         btn.onclick = (e) => {
             loadWorkoutSet(preset);  // 直接用前端 preset 物件載入
         };
@@ -56,7 +56,7 @@ function renderWorkoutSetsBar() {
             btn.title = '載入此自訂訓練組合到目前訓練';
         }
         btn.className = cls;
-        btn.innerHTML = `<span class="font-medium">${set.name}</span>`;
+        btn.innerHTML = `<span class="font-medium">${escapeHtml(set.name)}</span>`;
         if (isLast) {
             btn.innerHTML += ` <span class="text-[10px] opacity-70">✓</span>`;
         }
@@ -135,6 +135,9 @@ function loadWorkoutSet(set) {
 
     // Remember this choice so next time user starts a new workout, we can auto "接埋" it
     lastWorkoutSetName = set.name;
+    if (currentWorkout) {
+        currentWorkout.workoutSetName = set.name;
+    }
     saveWorkoutData();
 
     // Re-render the sets bar while in fullscreen so it stays fresh and interactive
@@ -227,7 +230,7 @@ function renderEditingSetExercises() {
         const chip = document.createElement('div');
         chip.className = 'inline-flex items-center gap-1 px-2 py-0.5 bg-[#3f3a36] text-xs rounded-2xl border border-[#57534e]';
         chip.innerHTML = `
-            <span class="max-w-[180px] truncate">${name}</span>
+            <span class="max-w-[180px] truncate">${escapeHtml(name)}</span>
             <button class="text-red-400 hover:text-red-300 px-1" title="移除">×</button>
         `;
         chip.querySelector('button').onclick = () => {
@@ -334,7 +337,7 @@ async function renderExistingSetsList() {
         const row = document.createElement('div');
         row.className = 'flex justify-between items-center bg-[#292524] px-3 py-1.5 rounded-2xl text-sm';
         row.innerHTML = `
-            <div class="flex-1 pr-2 truncate" title="${set.name}">${set.name} <span class="text-[10px] text-[#a8a29e]">(${set.exercises ? set.exercises.length : 0} 動作)</span></div>
+            <div class="flex-1 pr-2 truncate" title="${escapeAttr(set.name)}">${escapeHtml(set.name)} <span class="text-[10px] text-[#a8a29e]">(${set.exercises ? set.exercises.length : 0} 動作)</span></div>
             <div class="flex gap-1">
                 <button class="text-emerald-400 text-xs px-2 py-0.5 hover:bg-emerald-900/30 rounded" title="載入到訓練">載入</button>
                 <button class="text-[#a8a29e] text-xs px-2 py-0.5 hover:bg-[#3f3a36] rounded" title="編輯">編輯</button>

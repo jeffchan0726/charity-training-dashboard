@@ -103,16 +103,116 @@ function configureAnalysisChartTitles(recordType) {
 }
 
 // --- Per Exercise Analysis (Redesigned) ---
+function buildAnalysisExerciseSelectHtml(exercises, filterKey) {
+    if (!exercises.length) return '';
+
+    if (filterKey === 'all') {
+        const groups = {};
+        const order = [...(typeof EXERCISE_CATEGORIES !== 'undefined' ? EXERCISE_CATEGORIES : []), '其他'];
+        exercises.forEach(name => {
+            const g = (typeof getMuscleGroup === 'function' ? getMuscleGroup(name) : null) || '其他';
+            if (!groups[g]) groups[g] = [];
+            groups[g].push(name);
+        });
+        let html = '';
+        order.forEach(g => {
+            if (!groups[g] || !groups[g].length) return;
+            html += `<optgroup label="${escapeAttr(g)}">`;
+            groups[g].forEach(e => {
+                html += `<option value="${escapeAttr(e)}">${escapeHtml(e)}</option>`;
+            });
+            html += '</optgroup>';
+        });
+        return html;
+    }
+
+    const filter = (typeof ANALYSIS_EXERCISE_FILTERS !== 'undefined' ? ANALYSIS_EXERCISE_FILTERS : [])
+        .find(f => f.key === filterKey);
+    if (filter && filter.dayId) {
+        const day = (typeof TRAINING_DAYS !== 'undefined' ? TRAINING_DAYS : [])
+            .find(d => d.id === filter.dayId);
+        const subtitle = day && day.subtitle ? day.subtitle : '';
+        const label = (day && day.label ? day.label : filter.label) + (subtitle ? ` · ${subtitle}` : '');
+        let html = `<optgroup label="${escapeAttr(label)}">`;
+        exercises.forEach(e => {
+            html += `<option value="${escapeAttr(e)}">${escapeHtml(e)}</option>`;
+        });
+        html += '</optgroup>';
+        return html;
+    }
+
+    return exercises.map(e => `<option value="${escapeAttr(e)}">${escapeHtml(e)}</option>`).join('');
+}
+
+function renderAnalysisCategoryFilters(allExercises) {
+    const container = document.getElementById('analysis-category-filters');
+    if (!container) return;
+
+    const exercises = allExercises || [];
+    const filters = typeof getAnalysisFiltersForExercises === 'function'
+        ? getAnalysisFiltersForExercises(exercises)
+        : [{ key: 'all', label: '全部' }];
+
+    if (!filters.some(f => f.key === analysisExerciseFilter)) {
+        analysisExerciseFilter = 'all';
+    }
+
+    container.innerHTML = '';
+    filters.forEach(f => {
+        const chip = document.createElement('button');
+        const active = analysisExerciseFilter === f.key;
+        chip.type = 'button';
+        chip.className = `px-2.5 py-1 rounded-2xl border whitespace-nowrap flex-shrink-0 ${
+            active ? 'bg-emerald-900/80 border-emerald-600 text-white' : 'border-[#57534e] hover:bg-[#292524]'
+        }`;
+        chip.textContent = f.label;
+        chip.onclick = () => setAnalysisExerciseFilter(f.key);
+        container.appendChild(chip);
+    });
+}
+
+function setAnalysisExerciseFilter(filterKey) {
+    analysisExerciseFilter = filterKey || 'all';
+    updateExerciseSelectForAnalysis();
+    renderExerciseAnalysis();
+}
+
+function filterExercisesForAnalysis(allExercises) {
+    const filterKey = analysisExerciseFilter || 'all';
+    return allExercises.filter(name =>
+        typeof matchesAnalysisExerciseFilter === 'function'
+            ? matchesAnalysisExerciseFilter(name, filterKey)
+            : true
+    );
+}
+
 function updateExerciseSelectForAnalysis() {
     const sel = document.getElementById('analysis-exercise-select');
     if (!sel) return;
     if (!currentUser || workoutHistory.length === 0) {
         sel.innerHTML = '';
+        renderAnalysisCategoryFilters([]);
         return;
     }
-    const exercises = getAllExercisesFromHistory();
-    sel.innerHTML = exercises.map(e => `<option value="${e}">${e}</option>`).join('');
-    if (exercises.length) sel.value = exercises[0];
+
+    const allExercises = getAllExercisesFromHistory();
+    renderAnalysisCategoryFilters(allExercises);
+
+    const prev = sel.value;
+    const exercises = filterExercisesForAnalysis(allExercises);
+
+    if (!exercises.length) {
+        sel.innerHTML = '<option value="">此分類暫無紀錄</option>';
+        sel.value = '';
+        return;
+    }
+
+    sel.innerHTML = buildAnalysisExerciseSelectHtml(exercises, analysisExerciseFilter || 'all');
+    if (prev && exercises.includes(prev)) {
+        sel.value = prev;
+    } else if (exercises.length) {
+        sel.value = exercises[0];
+    }
 }
 
 function setAnalysisTimeRange(range) {
@@ -376,7 +476,7 @@ function renderTreadmillAnalysis(exercise, cardsContainer, tableBody, countEl, i
 
     if (cardsContainer) {
         if (filteredSets.length === 0) {
-            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${exercise} 記錄</div>`;
+            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${escapeHtml(exercise)} 記錄</div>`;
         } else {
             const totalKm = filteredSets.reduce((sum, s) => sum + s.distanceKm, 0);
             const totalMins = filteredSets.reduce((sum, s) => sum + s.duration, 0);
@@ -441,7 +541,7 @@ function renderTreadmillAnalysis(exercise, cardsContainer, tableBody, countEl, i
                 <td class="py-1.5 px-2 text-center tabular-nums">${s.speed}</td>
                 <td class="py-1.5 px-2 text-center tabular-nums">${s.incline}</td>
                 <td class="py-1.5 px-2 text-center text-emerald-300 tabular-nums">${s.distanceKm.toFixed(2)}</td>
-                <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${s.notes || ''}</td>
+                <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${escapeHtml(s.notes || '')}</td>
             </tr>
         `).join('') || `<tr><td colspan="6" class="py-3 text-center text-[#a8a29e]">此範圍內沒有記錄。</td></tr>`;
     }
@@ -459,7 +559,7 @@ function renderHoldAnalysis(exercise, cardsContainer, tableBody, countEl, insigh
 
     if (cardsContainer) {
         if (filteredSets.length === 0) {
-            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${exercise} 記錄</div>`;
+            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${escapeHtml(exercise)} 記錄</div>`;
         } else {
             const bestHold = Math.max(...filteredSets.map(s => s.duration));
             const totalHold = filteredSets.reduce((sum, s) => sum + s.duration, 0);
@@ -525,7 +625,7 @@ function renderHoldAnalysis(exercise, cardsContainer, tableBody, countEl, insigh
                     <td class="py-1.5 px-2 text-center tabular-nums">${s.duration}</td>
                     <td class="py-1.5 px-2 text-center tabular-nums">${s.reps}</td>
                     <td class="py-1.5 px-2 text-center text-emerald-300 tabular-nums">${s.volume || 0}</td>
-                    <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${s.notes || ''}</td>
+                    <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${escapeHtml(s.notes || '')}</td>
                 </tr>
             `).join('') || `<tr><td colspan="6" class="py-3 text-center text-[#a8a29e]">此範圍內沒有記錄。</td></tr>`;
         } else {
@@ -534,8 +634,8 @@ function renderHoldAnalysis(exercise, cardsContainer, tableBody, countEl, insigh
                     <td class="py-1.5 px-3 font-medium">${s.date}</td>
                     <td class="py-1.5 px-2 text-center tabular-nums">${s.duration}</td>
                     <td class="py-1.5 px-2 text-center tabular-nums">${s.reps}</td>
-                    <td class="py-1.5 px-2 text-center text-emerald-300">${typeof formatSetDisplay === 'function' ? formatSetDisplay(exercise, s) : `${s.duration}秒 × ${s.reps}次`}</td>
-                    <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${s.notes || ''}</td>
+                    <td class="py-1.5 px-2 text-center text-emerald-300">${escapeHtml(typeof formatSetDisplay === 'function' ? formatSetDisplay(exercise, s) : `${s.duration}秒 × ${s.reps}次`)}</td>
+                    <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${escapeHtml(s.notes || '')}</td>
                 </tr>
             `).join('') || `<tr><td colspan="5" class="py-3 text-center text-[#a8a29e]">此範圍內沒有記錄。</td></tr>`;
         }
@@ -578,7 +678,7 @@ function renderBodyweightAnalysis(exercise, cardsContainer, tableBody, countEl, 
 
     if (cardsContainer) {
         if (filteredSets.length === 0) {
-            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${exercise} 記錄</div>`;
+            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${escapeHtml(exercise)} 記錄</div>`;
         } else {
             const bestReps = Math.max(...filteredSets.map(s => s.reps));
             const totalVol = filteredSets.reduce((sum, s) => sum + s.volume, 0);
@@ -635,7 +735,7 @@ function renderBodyweightAnalysis(exercise, cardsContainer, tableBody, countEl, 
                 <td class="py-1.5 px-2 text-center tabular-nums">${s.body_weight}</td>
                 <td class="py-1.5 px-2 text-center tabular-nums">${s.reps}</td>
                 <td class="py-1.5 px-2 text-center text-emerald-300 tabular-nums">${s.volume}</td>
-                <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${s.notes || ''}</td>
+                <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${escapeHtml(s.notes || '')}</td>
             </tr>
         `).join('') || `<tr><td colspan="5" class="py-3 text-center text-[#a8a29e]">此範圍內沒有記錄。</td></tr>`;
     }
@@ -653,7 +753,7 @@ function renderWeightAnalysis(exercise, cardsContainer, tableBody, countEl, insi
     if (cardsContainer) {
         const f = filteredSets;
         if (f.length === 0) {
-            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${exercise} 記錄</div>`;
+            cardsContainer.innerHTML = `<div class="col-span-2 text-xs text-[#a8a29e] p-3 bg-[#292524] rounded-2xl">此時間範圍內沒有 ${escapeHtml(exercise)} 記錄</div>`;
         } else {
             const bestE1 = Math.max(...f.map(s => s.e1rm));
             const sortedAsc = [...f].sort((a, b) => a.date.localeCompare(b.date));
@@ -727,7 +827,7 @@ function renderWeightAnalysis(exercise, cardsContainer, tableBody, countEl, insi
                 <td class="py-1.5 px-2 text-center">${s.reps}</td>
                 <td class="py-1.5 px-2 text-center text-emerald-300 tabular-nums">${s.volume}</td>
                 <td class="py-1.5 px-2 text-center text-amber-300 tabular-nums">${s.e1rm}</td>
-                <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${s.notes || ''}</td>
+                <td class="py-1.5 px-3 text-xs text-[#a8a29e] truncate max-w-[90px]">${escapeHtml(s.notes || '')}</td>
             </tr>
         `).join('') || `<tr><td colspan="6" class="py-3 text-center text-[#a8a29e]">此範圍內沒有記錄。</td></tr>`;
     }

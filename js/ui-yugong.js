@@ -274,7 +274,7 @@ function renderYugongLeaderboard(entries) {
         return `
             <li class="yugong-leaderboard-row${isMe ? ' is-me' : ''}">
                 <span class="yugong-leaderboard-rank${rank <= 3 ? ' top3' : ''}">${getYugongRankLabel(rank)}</span>
-                <span class="yugong-leaderboard-user">${entry.user}${isMe ? '（你）' : ''}</span>
+                <span class="yugong-leaderboard-user">${escapeHtml(entry.user)}${isMe ? '（你）' : ''}</span>
                 <span class="yugong-leaderboard-tonnes">${tonnes} 噸</span>
             </li>
         `;
@@ -294,18 +294,15 @@ function renderYugongLeaderboard(entries) {
     }
 }
 
-async function refreshYugongLeaderboard(force, opts = {}) {
+function isYugongPanelVisible() {
     const panel = document.getElementById('content-yugong');
-    if (!panel || panel.classList.contains('hidden')) return;
+    return !!(panel && !panel.classList.contains('hidden'));
+}
 
-    const showLeaderboardSpinner = !!opts.showLeaderboardSpinner;
-    const loadingEl = document.getElementById('yugong-leaderboard-loading');
-    const errEl = document.getElementById('yugong-leaderboard-error');
-    const list = document.getElementById('yugong-leaderboard-list');
-
+/** 純數據拉取（唔理 tab 是否可見）— 供登入／開頁背景預載 */
+async function fetchYugongLeaderboardData(force = false) {
     if (!force && yugongLeaderboardCache) {
-        renderYugongLeaderboard(yugongLeaderboardCache);
-        return;
+        return yugongLeaderboardCache;
     }
 
     if (yugongLeaderboardLoading && yugongLeaderboardFetchPromise) {
@@ -313,21 +310,11 @@ async function refreshYugongLeaderboard(force, opts = {}) {
     }
 
     if (typeof callAppsScript !== 'function') {
-        if (errEl) {
-            errEl.textContent = '排行榜功能未載入，請重新整理頁面。';
-            errEl.classList.remove('hidden');
-        }
         yugongTabDataLoaded = true;
-        return;
+        return null;
     }
 
     yugongLeaderboardLoading = true;
-    if (showLeaderboardSpinner && loadingEl) loadingEl.classList.remove('hidden');
-    if (errEl) errEl.classList.add('hidden');
-    if (list && !yugongLeaderboardCache) {
-        list.innerHTML = '';
-    }
-
     yugongLeaderboardFetchPromise = (async () => {
         try {
             const res = await callAppsScript('getYugongLeaderboard');
@@ -341,22 +328,17 @@ async function refreshYugongLeaderboard(force, opts = {}) {
             const entries = Array.isArray(res.leaderboard) ? res.leaderboard : [];
             yugongLeaderboardCache = entries;
             setYugongCommunityTotals(entries, res.totalTonnes);
-            renderYugongLeaderboard(entries);
+            return entries;
         } catch (e) {
             yugongLeaderboardCache = null;
             yugongCommunityTotalTonnes = null;
-            if (list) list.innerHTML = '';
-            if (errEl) {
-                errEl.textContent = (e && e.message) ? e.message : '載入排行榜失敗，請稍後再試。';
-                errEl.classList.remove('hidden');
-            }
+            throw e;
         } finally {
             yugongLeaderboardLoading = false;
             yugongLeaderboardFetchPromise = null;
             yugongTabDataLoaded = true;
-            if (loadingEl) loadingEl.classList.add('hidden');
-            if (!document.getElementById('yugong-tab-ready')?.classList.contains('hidden')) {
-                renderYugongTab();
+            if (yugongLeaderboardCache && typeof primeYugongTabFromPrefetch === 'function') {
+                try { primeYugongTabFromPrefetch(); } catch (_) {}
             }
         }
     })();
@@ -364,20 +346,89 @@ async function refreshYugongLeaderboard(force, opts = {}) {
     return yugongLeaderboardFetchPromise;
 }
 
+async function prefetchYugongLeaderboard(force = false) {
+    try {
+        return await fetchYugongLeaderboardData(force);
+    } catch (_) {
+        return null;
+    }
+}
+
+async function refreshYugongLeaderboard(force, opts = {}) {
+    const panelVisible = isYugongPanelVisible();
+    const showLeaderboardSpinner = !!opts.showLeaderboardSpinner;
+    const loadingEl = document.getElementById('yugong-leaderboard-loading');
+    const errEl = document.getElementById('yugong-leaderboard-error');
+    const list = document.getElementById('yugong-leaderboard-list');
+
+    if (!force && yugongLeaderboardCache) {
+        if (panelVisible) renderYugongLeaderboard(yugongLeaderboardCache);
+        return yugongLeaderboardCache;
+    }
+
+    if (panelVisible) {
+        if (showLeaderboardSpinner && loadingEl) loadingEl.classList.remove('hidden');
+        if (errEl) errEl.classList.add('hidden');
+        if (list && !yugongLeaderboardCache) list.innerHTML = '';
+    }
+
+    try {
+        const entries = await fetchYugongLeaderboardData(force);
+        if (panelVisible && entries) {
+            renderYugongLeaderboard(entries);
+        }
+        return entries;
+    } catch (e) {
+        if (panelVisible) {
+            if (list) list.innerHTML = '';
+            if (errEl) {
+                errEl.textContent = (e && e.message) ? e.message : '載入排行榜失敗，請稍後再試。';
+                errEl.classList.remove('hidden');
+            }
+        }
+        return null;
+    } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        if (panelVisible && !document.getElementById('yugong-tab-ready')?.classList.contains('hidden')) {
+            renderYugongTab();
+        }
+    }
+}
+
+/** 背景預載完成後預先 render（tab 未打開都準備好，撳入去唔使再等） */
+function primeYugongTabFromPrefetch() {
+    if (!yugongLeaderboardCache) return;
+    setYugongTabState('ready');
+    renderYugongTab();
+    renderYugongLeaderboard(yugongLeaderboardCache);
+}
+
 async function initYugongTab() {
     if (yugongViewZoom < 1 || yugongViewZoom > YUGONG_ZOOM_MAX) {
         yugongViewZoom = 1;
     }
 
-    if (yugongLeaderboardCache && yugongTabDataLoaded) {
-        setYugongTabState('ready');
-        renderYugongTab();
-        refreshYugongLeaderboard(true, { showLeaderboardSpinner: true });
+    if (yugongLeaderboardCache) {
+        primeYugongTabFromPrefetch();
         return;
     }
 
+    if (yugongLeaderboardLoading && yugongLeaderboardFetchPromise) {
+        setYugongTabState('loading');
+        try {
+            await yugongLeaderboardFetchPromise;
+        } catch (_) {}
+        if (yugongLeaderboardCache) {
+            primeYugongTabFromPrefetch();
+            return;
+        }
+    }
+
     setYugongTabState('loading');
-    await refreshYugongLeaderboard(true, { showLeaderboardSpinner: false });
-    setYugongTabState('ready');
-    renderYugongTab();
+    try {
+        await refreshYugongLeaderboard(false, { showLeaderboardSpinner: true });
+    } finally {
+        setYugongTabState('ready');
+        renderYugongTab();
+    }
 }

@@ -130,7 +130,7 @@ function exitImmersiveMode() {
         // Also restore any previously hidden elements from older logic
         const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
         if (topHeader) topHeader.style.display = '';
-        const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
+        const subNav = document.getElementById('log-sub-nav');
         if (subNav) subNav.style.display = '';
 
         // Cleanup any lingering debug listeners (defensive)
@@ -175,7 +175,7 @@ function exitImmersiveMode() {
         if (mainNav) mainNav.style.display = '';
         const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
         if (topHeader) topHeader.style.display = '';
-        const subNav = document.querySelector('#content-log .flex.gap-1\\.5.mb-3.text-sm.border-b');
+        const subNav = document.getElementById('log-sub-nav');
         if (subNav) subNav.style.display = '';
     }
 }

@@ -239,17 +239,20 @@ function renderCurrentWorkout() {
         const needsBodyWeight = (isHold || isBodyweight) && typeof isBodyweightExercise === 'function' && isBodyweightExercise(ex.name);
         let lastHtml = '';
         if (lastPerf && lastPerf.sets && lastPerf.sets.length) {
-            lastHtml = '<div>Last:</div>';
+            const lastDate = lastPerf.date ? `（${escapeHtml(lastPerf.date)}）` : '';
+            lastHtml = `<div>上次${lastDate}：</div>`;
             lastPerf.sets.forEach((s, i) => {
                 const display = typeof formatSetDisplay === 'function'
                     ? formatSetDisplay(ex.name, s)
                     : (isHold ? `${s.duration || 0}秒 × ${s.reps || 0}次` : `${s.weight}kg × ${s.reps}`);
-                lastHtml += `<div>set ${i+1} : ${display}</div>`;
+                lastHtml += `<div>set ${i + 1}：${escapeHtml(display)}</div>`;
             });
         }
 
-        let imgSrc = getExerciseImage(ex.name);
-        const muscle = getMuscleGroup(ex.name);
+        const imgSrc = sanitizeUrl(getExerciseImage(ex.name));
+        const muscle = escapeHtml(getMuscleGroup(ex.name));
+        const exNameAttr = escapeAttr(ex.name);
+        const exNameHtml = escapeHtml(ex.name);
 
         let setsListHtml = '';
         if (ex.sets.length > 0) {
@@ -257,10 +260,16 @@ function renderCurrentWorkout() {
                 const setText = typeof formatSetDisplay === 'function'
                     ? formatSetDisplay(ex.name, set)
                     : `${set.weight || 0}kg × ${set.reps || 0}`;
+                const cmpBadge = typeof formatSetComparisonBadge === 'function'
+                    ? formatSetComparisonBadge(ex.name, set, sIdx)
+                    : '';
                 setsListHtml += `
-                    <div class="flex items-center justify-between px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
-                        <span class="font-medium">set ${sIdx+1} : ${setText}</span>
-                        <button onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded" title="刪除此組"><i class="fa-solid fa-times"></i></button>
+                    <div class="flex items-center justify-between gap-2 px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
+                        <span class="font-medium min-w-0 truncate">set ${sIdx + 1}：${escapeHtml(setText)}</span>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            ${cmpBadge}
+                            <button onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded" title="刪除此組"><i class="fa-solid fa-times"></i></button>
+                        </div>
                     </div>`;
             });
             setsListHtml = `<div class="mt-2 space-y-0.5">${setsListHtml}</div>`;
@@ -289,12 +298,12 @@ function renderCurrentWorkout() {
                 </div>
                 <div class="flex gap-2 items-start">
                     <img src="${imgSrc}" 
-                         class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer"
-                         onerror="this.style.display='none';"
-                         onclick="event.stopImmediatePropagation(); showExerciseDetail('${ex.name}');">
+                         class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer exercise-detail-trigger"
+                         data-exercise-name="${exNameAttr}"
+                         onerror="this.style.display='none';">
                     
                     <div class="flex-1 min-w-0 pr-14">
-                        <div class="font-semibold text-sm leading-tight cursor-pointer" onclick="showExerciseDetail('${ex.name}');">${ex.name}</div>
+                        <div class="font-semibold text-sm leading-tight cursor-pointer exercise-detail-trigger" data-exercise-name="${exNameAttr}">${exNameHtml}</div>
                         <div class="flex items-center gap-1 mt-0.5">
                             <span class="muscle-chip text-[9px] px-1.5">${muscle}</span>
                             ${isTreadmill ? '<span class="text-[9px] px-1.5 py-0.5 bg-sky-900/50 text-sky-300 rounded-full">時間+坡度+速度</span>' : ''}
@@ -433,6 +442,14 @@ function renderCurrentWorkout() {
             </div>`;
     });
     container.innerHTML = html;
+
+    container.querySelectorAll('.exercise-detail-trigger').forEach(el => {
+        el.addEventListener('click', (ev) => {
+            ev.stopImmediatePropagation();
+            const name = el.getAttribute('data-exercise-name');
+            if (name) showExerciseDetail(name);
+        });
+    });
 
     updateSessionSummary();
 

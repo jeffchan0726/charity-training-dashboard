@@ -41,7 +41,7 @@ function updateLastPerformedHint(specificExercise = null) {
             const display = typeof formatSetDisplay === 'function'
                 ? formatSetDisplay(specificExercise, lastS)
                 : `${lastS.weight}kg × ${lastS.reps}`;
-            hint.innerHTML = `<strong>${specificExercise}</strong> 上次：${display} 於 ${l.date}`;
+            hint.innerHTML = `<strong>${escapeHtml(specificExercise)}</strong> 上次：${escapeHtml(display)} 於 ${escapeHtml(l.date)}`;
         }
     } else {
         hint.innerHTML = '';

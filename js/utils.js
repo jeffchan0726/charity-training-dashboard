@@ -27,6 +27,70 @@ function getTodayStr() {
     return getLocalDateString();
 }
 
+/** Escape text for safe insertion into HTML content. */
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/** Escape text for HTML attribute values (e.g. value="", data-*, title=""). */
+function escapeAttr(str) {
+    return escapeHtml(str);
+}
+
+/** Escape text embedded in single-quoted JavaScript string literals (legacy onclick handlers). */
+function escapeJsString(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/\r/g, '\\r')
+        .replace(/\n/g, '\\n')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029')
+        .replace(/</g, '\\x3c');
+}
+
+/** Block javascript:/data: URLs in img src etc. */
+function sanitizeUrl(url) {
+    if (url == null || url === '') return '';
+    const s = String(url).trim();
+    if (/^(javascript|data|vbscript):/i.test(s)) return '';
+    return escapeAttr(s);
+}
+
+function isLogTabVisible() {
+    const panel = document.getElementById('content-log');
+    return !!(panel && !panel.classList.contains('hidden'));
+}
+
+/** 還原 Workout Log 正常 UI（隱藏 loading、顯示子導航同空狀態區） */
+function finalizeLogTabUiReady() {
+    const loadingEl = document.getElementById('log-loading-state');
+    const emptyState = document.getElementById('log-empty-state');
+    const subNav = document.getElementById('log-sub-nav');
+    if (loadingEl) loadingEl.classList.add('hidden');
+    if (emptyState) emptyState.style.display = '';
+    if (subNav) subNav.style.visibility = '';
+}
+
+/** 雲端載入失敗時，從 localStorage 還原該用戶的本地 workoutHistory。 */
+function restoreLocalWorkoutCacheAfterCloudLoadFail() {
+    try {
+        if (typeof loadWorkoutData === 'function') {
+            loadWorkoutData({ skipHistory: false });
+        }
+        if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
+    } catch (e) {
+        console.warn('[restoreLocalWorkoutCacheAfterCloudLoadFail]', e);
+    }
+}
+
 function formatDateForDisplay(dateStr) {
     if (!dateStr) return '未知日期';
     try {
@@ -100,6 +164,26 @@ function getUserStorageKey() {
     return `charityWorkoutData_${currentUser || 'guest'}`;
 }
 
+function getWorkoutSessionId(workout) {
+    if (!workout) return '';
+    return String(workout.id || workout.session_id || workout.sessionId || '').trim();
+}
+
+/** 移除 workoutHistory 內重複的 session_id（保留較新／較前的一筆） */
+function dedupeWorkoutHistoryBySessionId(history) {
+    const seen = new Set();
+    const out = [];
+    (history || []).forEach(w => {
+        const sid = getWorkoutSessionId(w);
+        if (sid) {
+            if (seen.has(sid)) return;
+            seen.add(sid);
+        }
+        out.push(w);
+    });
+    return out;
+}
+
 function saveWorkoutData() {
     try {
         const data = {
@@ -115,21 +199,24 @@ function saveWorkoutData() {
     } catch (e) { console.warn('Local storage save failed', e); }
 }
 
-function loadWorkoutData() {
+function loadWorkoutData(options = {}) {
+    const skipHistory = options.skipHistory === true;
     try {
         const raw = localStorage.getItem(getUserStorageKey());
         if (raw) {
             const data = JSON.parse(raw);
-            workoutHistory = data.history || [];
-            if (typeof refreshWorkoutTotals === 'function') {
-                workoutHistory.forEach(w => refreshWorkoutTotals(w));
-            }
-            // Strip legacy rpe from history sets (RPE feature removed)
-            workoutHistory.forEach(w => {
-                if (w.exercises) w.exercises.forEach(ex => {
-                    if (ex.sets) ex.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
+            if (!skipHistory) {
+                workoutHistory = dedupeWorkoutHistoryBySessionId(data.history || []);
+                if (typeof refreshWorkoutTotals === 'function') {
+                    workoutHistory.forEach(w => refreshWorkoutTotals(w));
+                }
+                // Strip legacy rpe from history sets (RPE feature removed)
+                workoutHistory.forEach(w => {
+                    if (w.exercises) w.exercises.forEach(ex => {
+                        if (ex.sets) ex.sets.forEach(s => { if ('rpe' in s) delete s.rpe; });
+                    });
                 });
-            });
+            }
             // Use EXERCISES as the source of truth for library (bilingual)
             // Keep any custom if stored, but default to EXERCISES
             exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
@@ -260,6 +347,97 @@ function getLifetimeTonnes() {
     return getLifetimeWeightKg() / 1000;
 }
 
+/** 取得上一次訓練（含今日早前場次）同一組 index 的數據 */
+function getLastPerformedSetForComparison(exerciseName, setIndex) {
+    const perf = lastPerformed[exerciseName];
+    if (!perf || !perf.sets || setIndex < 0 || setIndex >= perf.sets.length) return null;
+    return perf.sets[setIndex];
+}
+
+/**
+ * 對比今組 vs 上次同組 index
+ * @returns {{ status: 'up'|'down'|'same', label: string, detail: string }|null}
+ */
+function compareSetWithPrevious(exName, currentSet, previousSet) {
+    if (!currentSet || !previousSet) return null;
+
+    const recordType = typeof getExerciseRecordType === 'function'
+        ? getExerciseRecordType(exName)
+        : 'weight';
+
+    let currentScore = 0;
+    let prevScore = 0;
+    let detail = '';
+
+    if (recordType === 'treadmill') {
+        currentScore = calculateTreadmillDistanceKm(currentSet);
+        prevScore = calculateTreadmillDistanceKm(previousSet);
+        const diff = Math.round((currentScore - prevScore) * 100) / 100;
+        if (diff > 0) detail = `+${diff}km`;
+        else if (diff < 0) detail = `${diff}km`;
+    } else if (recordType === 'time_reps') {
+        const curDur = parseInt(currentSet.duration) || 0;
+        const prevDur = parseInt(previousSet.duration) || 0;
+        const curRep = parseInt(currentSet.reps) || 0;
+        const prevRep = parseInt(previousSet.reps) || 0;
+        currentScore = curDur * 1000 + curRep;
+        prevScore = prevDur * 1000 + prevRep;
+        const dDur = curDur - prevDur;
+        const dRep = curRep - prevRep;
+        if (dDur !== 0) detail = dDur > 0 ? `+${dDur}秒` : `${dDur}秒`;
+        else if (dRep !== 0) detail = dRep > 0 ? `+${dRep}次` : `${dRep}次`;
+    } else {
+        currentScore = calculateSetVolume(currentSet, exName);
+        prevScore = calculateSetVolume(previousSet, exName);
+        const cw = parseFloat(currentSet.weight) || 0;
+        const pw = parseFloat(previousSet.weight) || 0;
+        const cr = parseInt(currentSet.reps) || 0;
+        const pr = parseInt(previousSet.reps) || 0;
+        const cbw = parseFloat(currentSet.body_weight) || 0;
+        const pbw = parseFloat(previousSet.body_weight) || 0;
+
+        if (recordType === 'bodyweight') {
+            const diff = currentScore - prevScore;
+            if (diff > 0) detail = `+${diff}kg`;
+            else if (diff < 0) detail = `${diff}kg`;
+        } else if (cw !== pw && cr === pr) {
+            detail = cw > pw ? `+${Math.round((cw - pw) * 10) / 10}kg` : `${Math.round((cw - pw) * 10) / 10}kg`;
+        } else if (cr !== pr && cw === pw) {
+            detail = cr > pr ? `+${cr - pr}次` : `${cr - pr}次`;
+        } else {
+            const diff = currentScore - prevScore;
+            if (diff > 0) detail = `+${diff}kg`;
+            else if (diff < 0) detail = `${diff}kg`;
+        }
+        if (recordType === 'bodyweight' && cbw !== pbw && detail === '') {
+            detail = cbw > pbw ? `+${Math.round((cbw - pbw) * 10) / 10}kg體重` : `${Math.round((cbw - pbw) * 10) / 10}kg體重`;
+        }
+    }
+
+    const epsilon = recordType === 'treadmill' ? 0.005 : 0.5;
+    let status = 'same';
+    if (currentScore > prevScore + epsilon) status = 'up';
+    else if (currentScore < prevScore - epsilon) status = 'down';
+
+    const labels = { up: '進步', down: '退步', same: '持平' };
+    return { status, label: labels[status], detail };
+}
+
+function formatSetComparisonBadge(exName, set, setIndex) {
+    const prev = getLastPerformedSetForComparison(exName, setIndex);
+    const cmp = compareSetWithPrevious(exName, set, prev);
+    if (!cmp) return '';
+
+    const colors = {
+        up: 'text-emerald-400',
+        down: 'text-red-400',
+        same: 'text-[#a8a29e]'
+    };
+    const icons = { up: '↑', down: '↓', same: '→' };
+    const detail = cmp.detail ? `<span class="opacity-80 font-normal">${escapeHtml(cmp.detail)}</span>` : '';
+    return `<span class="text-[10px] font-semibold ${colors[cmp.status]} flex items-center gap-0.5">${escapeHtml(cmp.label)} ${icons[cmp.status]}${detail}</span>`;
+}
+
 function formatSetDisplay(exName, set) {
     if (!set) return '';
     if (typeof isTreadmillExercise === 'function' && isTreadmillExercise(exName)) {
@@ -356,6 +534,59 @@ function isHistoryWorkoutUnchanged(beforeWorkout, afterWorkout) {
 
 function getSetCloudLogId(set) {
     return set && (set.id || set._clientLogId) ? String(set.id || set._clientLogId) : null;
+}
+
+/**
+ * 合併多個 workout 的 exercises（按動作名），同一 cloud log id 的組只保留一次。
+ * 用於同日多場訓練的歷史查看／日曆／繼續訓練。
+ */
+function mergeExercisesByName(exercises) {
+    const merged = {};
+    const order = [];
+    (exercises || []).forEach(ex => {
+        if (!ex || !ex.name) return;
+        const key = String(ex.name).trim();
+        if (!key) return;
+        if (!merged[key]) {
+            merged[key] = { name: ex.name, sets: [] };
+            order.push(key);
+        }
+        const seenIds = new Set(
+            merged[key].sets.map(s => getSetCloudLogId(s)).filter(Boolean)
+        );
+        (ex.sets || []).forEach(s => {
+            const id = getSetCloudLogId(s);
+            if (id) {
+                if (seenIds.has(id)) return;
+                seenIds.add(id);
+            }
+            const cloned = typeof cloneWorkoutSet === 'function'
+                ? cloneWorkoutSet(s, ex.name)
+                : { ...s, volume: s.volume || 0 };
+            merged[key].sets.push(cloned);
+        });
+    });
+    return order.map(k => merged[k]);
+}
+
+/** 完成訓練：以 session_id upsert，避免重複卡片 */
+function upsertWorkoutInHistory(workout) {
+    if (!workout) return null;
+    const record = JSON.parse(JSON.stringify(workout));
+    delete record.isContinuedFromToday;
+    delete record._originalSessionIds;
+    delete record._continueSnapshot;
+    delete record.startTime;
+
+    const sid = getWorkoutSessionId(record);
+    if (sid) {
+        record.id = sid;
+        workoutHistory = workoutHistory.filter(w => getWorkoutSessionId(w) !== sid);
+    }
+    if (typeof refreshWorkoutTotals === 'function') refreshWorkoutTotals(record);
+    workoutHistory.unshift(record);
+    workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+    return record;
 }
 
 function workoutAllSetsHaveCloudIds(workout) {
@@ -634,6 +865,7 @@ function applyContinueWorkoutFinishToLocalHistory(workout) {
     workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== today);
     if (typeof refreshWorkoutTotals === 'function') refreshWorkoutTotals(record);
     workoutHistory.unshift(record);
+    workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
     return record;
 }
 

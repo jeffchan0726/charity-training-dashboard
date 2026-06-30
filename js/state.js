@@ -34,6 +34,9 @@ let lastFinishClick = 0;
 let globalPendingSyncs = 0;
 let lastGlobalSyncOutcome = 'synced';
 let lastSyncError = null;
+let pendingWorkoutSyncQueue = []; // { sessionId, workout, notes } — 完成訓練同步失敗時待重試
+let retryGlobalSyncInFlight = false;
+let cloudLogsReady = false; // getLogs + workoutHistory 重建已完成
 let isSavingHistory = false;
 let isDeletingHistory = false;
 let sessionCloudDeletedIds = new Set(); // 本 session 已背景 deleteLog 的 id，避免 finish 重複刪
@@ -58,6 +61,7 @@ let _immersiveTopCollapsed = false;
 
 // Analysis UI state (charts + time range filter) - moved here as part of A refactor
 let analysisTimeRange = 'all'; // 'all' | '12w' | '30d'
+let analysisExerciseFilter = 'all'; // ANALYSIS_EXERCISE_FILTERS key
 let analysisChart1RM = null;
 let analysisChartVolume = null;
 let bodyPartChart = null;

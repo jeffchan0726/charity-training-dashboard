@@ -152,7 +152,7 @@ function renderCalendar(year, month) {
         const bar = document.createElement('div');
         bar.innerHTML = `
             <div class="flex justify-between text-xs mb-0.5">
-                <span>${cat}</span>
+                <span>${escapeHtml(cat)}</span>
                 <span class="tabular-nums">${label}</span>
             </div>
             <div class="h-2 bg-[#292524] rounded"><div class="h-2 bg-emerald-400 rounded" style="width:${pct}%"></div>

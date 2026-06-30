@@ -29,16 +29,23 @@ function renderWorkoutHistory() {
         const exCount = [...new Set((g.exercises || []).map(e => e && e.name).filter(Boolean))].length;
         const setsCount = g.totalSets;
         const cleanDate = d;
+        const setLabels = (g.workoutSetLabels || []).filter(Boolean);
+        const setLabelsHtml = setLabels.length
+            ? `<div class="text-xs text-sky-400 font-medium mt-0.5 leading-snug">${setLabels.map(escapeHtml).join('<br>')}</div>`
+            : '';
 
         const card = document.createElement('div');
         card.className = 'workout-history-card log-card rounded-2xl p-3.5 cursor-pointer';
         card.innerHTML = `
-            <div class="flex justify-between">
-                <div class="font-semibold">${cleanDate}</div>
-                <div class="text-emerald-400 text-sm tabular-nums">${volLabel}</div>
+            <div class="flex justify-between items-start gap-2">
+                <div class="min-w-0">
+                    <div class="font-semibold">${cleanDate}</div>
+                    ${setLabelsHtml}
+                </div>
+                <div class="text-emerald-400 text-sm tabular-nums flex-shrink-0">${volLabel}</div>
             </div>
-            <div class="text-xs text-[#a8a29e]">${exCount} 動作 • ${setsCount} 組 • ${volLabel}</div>
-            ${g.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${g.notes}"</div>` : ''}
+            <div class="text-xs text-[#a8a29e] mt-1">${exCount} 動作 • ${setsCount} 組 • ${volLabel}</div>
+            ${g.notes ? `<div class="text-[10px] italic text-[#a8a29e] mt-1 line-clamp-1">"${escapeHtml(g.notes)}"</div>` : ''}
         `;
 
         // 統一使用 showWorkoutDetailForDate，與日曆點擊行為一致
@@ -71,17 +78,39 @@ function groupWorkoutsByDate(workouts = workoutHistory) {
                 exercises: [],
                 totalSets: 0,
                 totalVolume: 0,
-                notes: ''
+                notes: '',
+                _seenSessionIds: new Set()
             };
         }
         const g = grouped[d];
+        const sid = typeof getWorkoutSessionId === 'function' ? getWorkoutSessionId(w) : '';
+        if (sid && g._seenSessionIds.has(sid)) return;
+        if (sid) g._seenSessionIds.add(sid);
         g.workouts.push(w);
-        g.exercises.push(...(w.exercises || []));
-        g.totalSets += (w.exercises || []).reduce((a, e) => a + (e.sets ? e.sets.length : 0), 0);
-        if (w.notes && !g.notes) g.notes = w.notes; // 第一條非空 notes
+        if (w.notes && !g.notes) g.notes = w.notes;
     });
 
     Object.values(grouped).forEach(g => {
+        const allExercises = g.workouts.flatMap(w => w.exercises || []);
+        g.exercises = typeof mergeExercisesByName === 'function'
+            ? mergeExercisesByName(allExercises)
+            : allExercises;
+        g.totalSets = g.exercises.reduce((a, e) => a + (e.sets ? e.sets.length : 0), 0);
+        const labels = [];
+        g.workouts.forEach(w => {
+            const label = typeof resolveWorkoutSetLabel === 'function'
+                ? resolveWorkoutSetLabel(w)
+                : '';
+            if (label && !labels.includes(label)) labels.push(label);
+        });
+        if (!labels.length && typeof inferWorkoutSetNameFromExercises === 'function') {
+            const inferred = typeof formatWorkoutSetDisplayLabel === 'function'
+                ? formatWorkoutSetDisplayLabel(inferWorkoutSetNameFromExercises(g.exercises))
+                : '';
+            if (inferred) labels.push(inferred);
+        }
+        g.workoutSetLabels = labels;
+        delete g._seenSessionIds;
         const t = typeof calculateWorkoutTotals === 'function'
             ? calculateWorkoutTotals({ exercises: g.exercises || [] })
             : { weightKg: 0, distanceKm: 0 };
@@ -114,7 +143,7 @@ function showWorkoutDetailForDate(dateStr) {
     // 組成與 renderWorkoutHistory 點擊時相同的 merged 物件
     // 同時附帶 _sessionIds，方便 save/delete 時精準 sync backend（deleteSession + re-push）
     const sessionIds = (g.workouts || [])
-        .map(w => w.id || w.session_id || w.sessionId)
+        .map(w => (typeof getWorkoutSessionId === 'function' ? getWorkoutSessionId(w) : (w.id || w.session_id || w.sessionId)))
         .filter(Boolean);
     const merged = {
         date: g.date,
@@ -322,7 +351,7 @@ function renderHistoryEditContent() {
             const notesField = `
                         <div>
                             <label class="block text-[9px] text-[#a8a29e] mb-0.5">備註</label>
-                            <input type="text" value="${n}"
+                            <input type="text" value="${escapeAttr(n)}"
                                    class="log-input w-full px-2 py-1 text-sm rounded-xl"
                                    onchange="updateHistorySetField(${exIdx}, ${sIdx}, 'notes', this.value)">
                         </div>`;
@@ -363,8 +392,8 @@ function renderHistoryEditContent() {
                 </div>
                 <div class="flex items-center justify-between mb-2 pr-12">
                     <div>
-                        <div class="font-semibold text-sm">${ex.name}</div>
-                        <div class="text-[10px] text-[#a8a29e]">${getMuscleGroup ? getMuscleGroup(ex.name) : ''}${isTreadmill ? ' • 時間+坡度+速度' : ''}${isHold ? ' • 時間+次數' : ''}${isBodyweight ? ' • 體重+次數' : ''}</div>
+                        <div class="font-semibold text-sm">${escapeHtml(ex.name)}</div>
+                        <div class="text-[10px] text-[#a8a29e]">${escapeHtml(getMuscleGroup ? getMuscleGroup(ex.name) : '')}${isTreadmill ? ' • 時間+坡度+速度' : ''}${isHold ? ' • 時間+次數' : ''}${isBodyweight ? ' • 體重+次數' : ''}</div>
                     </div>
                     <button onclick="addSetToHistoryExercise(${exIdx})"
                             class="px-2.5 py-1 text-xs bg-emerald-900/60 hover:bg-emerald-800 active:bg-emerald-900 rounded-2xl flex items-center gap-1">
@@ -506,6 +535,9 @@ function applyHistoryEditLocally(viewing, historyIndex, isDayGroup, dateStr) {
         delete record._sessionIds;
         record.totalVolume = calculateWorkoutVolume(record);
         workoutHistory.unshift(record);
+        if (typeof dedupeWorkoutHistoryBySessionId === 'function') {
+            workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+        }
         return record;
     }
 
@@ -521,6 +553,9 @@ function applyHistoryEditLocally(viewing, historyIndex, isDayGroup, dateStr) {
         workoutHistory[targetIdx] = record;
     } else {
         workoutHistory.unshift(record);
+    }
+    if (typeof dedupeWorkoutHistoryBySessionId === 'function') {
+        workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
     }
     return record;
 }

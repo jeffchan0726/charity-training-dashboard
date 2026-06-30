@@ -5,6 +5,28 @@
 // Exercise categories used for filtering in library
 const EXERCISE_CATEGORIES = ['胸部', '背部', '腿部', '肩膀', '手臂', '核心', '全身', '有氧'];
 
+// 單一動作分析 — 分類篩選（訓練日 + 肌群 + 細分部位）
+const ANALYSIS_EXERCISE_FILTERS = [
+    { key: 'all', label: '全部' },
+    { key: 'day1', label: '訓練日 1', dayId: 1 },
+    { key: 'day2', label: '訓練日 2', dayId: 2 },
+    { key: 'day3', label: '訓練日 3', dayId: 3 },
+    { key: 'chest', label: '胸肌', muscle: '胸部' },
+    { key: 'back', label: '背肌', muscle: '背部' },
+    { key: 'legs', label: '大腿', muscle: '腿部', excludeIds: ['standing_calf_raise'] },
+    { key: 'calves', label: '小腿', exerciseIds: ['standing_calf_raise'] },
+    { key: 'glutes', label: '臀部', exerciseIds: ['hip_thrust', 'romanian_deadlift', 'bulgarian_split_squat'] },
+    { key: 'shoulders', label: '肩膀', muscle: '肩膀' },
+    { key: 'biceps', label: '二頭', exerciseIds: ['barbell_curl', 'preacher_curls', 'bayesian_cable_curls', 'hammer_curls'] },
+    { key: 'triceps', label: '三頭', exerciseIds: ['tricep_rope_pushdown', 'cable_overhead_triceps', 'skull_crushers', 'chest_dips'] },
+    { key: 'forearms', label: '前臂', exerciseIds: ['reverse_forearm_curl', 'finger_curls'] },
+    { key: 'arms', label: '手臂', muscle: '手臂' },
+    { key: 'core', label: '核心', muscle: '核心' },
+    { key: 'fullbody', label: '全身', muscle: '全身' },
+    { key: 'cardio', label: '有氧', muscle: '有氧' },
+    { key: 'other', label: '其他', other: true }
+];
+
 // Unified Exercise Database - Clean deduplicated, all names in "中文 (English)" format
 // muscle_group, image (local /images/ only - no fallback)
 // All UI (history, analysis, selectors, cards) MUST use this unified bilingual name
@@ -200,4 +222,135 @@ function getExerciseRecordType(name) {
 
 function isTreadmillExercise(name) {
     return getExerciseRecordType(name) === 'treadmill';
+}
+
+/** 將動作名統一為 EXERCISES 嘅 display name，方便同訓練日 preset 比對 */
+function normalizeExerciseNameForMatch(name) {
+    if (!name) return '';
+    const ex = getExerciseByName(name);
+    return ex ? getExerciseDisplay(ex) : String(name).trim();
+}
+
+/** 訓練日 1/2/3 同自訂 Set 嘅定義清單 */
+function getKnownWorkoutSetDefinitions() {
+    const presets = (typeof TRAINING_DAYS !== 'undefined' ? TRAINING_DAYS : []).map(day => ({
+        name: day.fullName,
+        label: day.label,
+        exercises: day.exercises || []
+    }));
+    const custom = (typeof workoutSets !== 'undefined' ? workoutSets : []).map(s => ({
+        name: s.name,
+        label: s.name,
+        exercises: s.exercises || []
+    }));
+    return [...presets, ...custom];
+}
+
+/** 訓練日 1/2/3 顯示完整名稱；自訂 Set 顯示原名 */
+function formatWorkoutSetDisplayLabel(setName) {
+    if (!setName) return '';
+    const trimmed = String(setName).trim();
+    if (typeof TRAINING_DAYS !== 'undefined') {
+        for (const day of TRAINING_DAYS) {
+            if (trimmed === day.fullName || trimmed === day.label || trimmed.startsWith(day.label)) {
+                return day.fullName;
+            }
+        }
+    }
+    return trimmed;
+}
+
+/** 從已做動作推斷最接近嘅訓練日／Set（舊紀錄冇存 set 名時用） */
+function inferWorkoutSetNameFromExercises(exercises) {
+    const performed = [];
+    (exercises || []).forEach(ex => {
+        const hasSet = (ex.sets || []).some(s => {
+            const reps = parseInt(s.reps) || 0;
+            const weight = parseFloat(s.weight) || 0;
+            const vol = parseFloat(s.volume) || 0;
+            const dur = parseInt(s.duration) || 0;
+            return reps > 0 || weight > 0 || vol > 0 || dur > 0;
+        });
+        if (!hasSet) return;
+        const norm = normalizeExerciseNameForMatch(ex.name);
+        if (norm) performed.push(norm);
+    });
+    if (!performed.length) return '';
+
+    const performedSet = new Set(performed);
+    let best = { name: '', score: 0 };
+    let secondScore = 0;
+
+    getKnownWorkoutSetDefinitions().forEach(def => {
+        let score = 0;
+        (def.exercises || []).forEach(en => {
+            const norm = normalizeExerciseNameForMatch(en);
+            if (performedSet.has(norm)) score++;
+        });
+        if (score > best.score) {
+            secondScore = best.score;
+            best = { name: def.name, score };
+        } else if (score > secondScore) {
+            secondScore = score;
+        }
+    });
+
+    const minScore = performedSet.size <= 2 ? 1 : 2;
+    if (best.score >= minScore && best.score > secondScore) {
+        return best.name;
+    }
+    return '';
+}
+
+function isExerciseInTrainingDay(name, dayId) {
+    if (typeof TRAINING_DAYS === 'undefined') return false;
+    const day = TRAINING_DAYS.find(d => d.id === dayId);
+    if (!day) return false;
+    const norm = normalizeExerciseNameForMatch(name);
+    return (day.exercises || []).some(en => normalizeExerciseNameForMatch(en) === norm);
+}
+
+function getExerciseIdByName(name) {
+    const ex = getExerciseByName(name);
+    return ex ? ex.id : null;
+}
+
+function matchesAnalysisExerciseFilter(name, filterKey) {
+    if (!filterKey || filterKey === 'all') return true;
+    const filter = (typeof ANALYSIS_EXERCISE_FILTERS !== 'undefined' ? ANALYSIS_EXERCISE_FILTERS : [])
+        .find(f => f.key === filterKey);
+    if (!filter) return true;
+
+    if (filter.dayId) return isExerciseInTrainingDay(name, filter.dayId);
+
+    const exId = getExerciseIdByName(name);
+
+    if (filter.other) {
+        return !getExerciseByName(name) || getMuscleGroup(name) === '其他';
+    }
+    if (filter.exerciseIds) {
+        return !!(exId && filter.exerciseIds.includes(exId));
+    }
+    if (filter.muscle) {
+        if (getMuscleGroup(name) !== filter.muscle) return false;
+        if (filter.excludeIds && exId && filter.excludeIds.includes(exId)) return false;
+        return true;
+    }
+    return true;
+}
+
+function getAnalysisFiltersForExercises(exerciseNames) {
+    const list = exerciseNames || [];
+    return (typeof ANALYSIS_EXERCISE_FILTERS !== 'undefined' ? ANALYSIS_EXERCISE_FILTERS : [])
+        .filter(f => f.key === 'all' || list.some(name => matchesAnalysisExerciseFilter(name, f.key)));
+}
+
+/** 取得單次訓練嘅訓練日／Set 顯示標籤 */
+function resolveWorkoutSetLabel(workout) {
+    if (!workout) return '';
+    const stored = workout.workoutSetName || workout.trainingDay || '';
+    if (stored) return formatWorkoutSetDisplayLabel(stored);
+    return formatWorkoutSetDisplayLabel(
+        inferWorkoutSetNameFromExercises(workout.exercises)
+    );
 }

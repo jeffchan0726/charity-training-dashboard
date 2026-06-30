@@ -341,6 +341,70 @@ function forceReleaseGlobalSyncLock(outcome) {
     if (typeof updateInteractionLock === 'function') updateInteractionLock();
 }
 
+function enqueuePendingWorkoutSync(workout, notes) {
+    if (!workout) return;
+    const sid = String(workout.id || workout.session_id || workout.sessionId || Date.now());
+    const entry = {
+        sessionId: sid,
+        workout: JSON.parse(JSON.stringify(workout)),
+        notes: notes || ''
+    };
+    pendingWorkoutSyncQueue = (pendingWorkoutSyncQueue || []).filter(e => e.sessionId !== sid);
+    pendingWorkoutSyncQueue.push(entry);
+}
+
+function dequeuePendingWorkoutSync(sessionId) {
+    const sid = String(sessionId || '').trim();
+    if (!sid) return;
+    pendingWorkoutSyncQueue = (pendingWorkoutSyncQueue || []).filter(e => e.sessionId !== sid);
+}
+
+async function retryFailedSyncs() {
+    if (retryGlobalSyncInFlight) return;
+    retryGlobalSyncInFlight = true;
+    let anyError = false;
+
+    try {
+        updateGlobalSyncIndicator('syncing');
+
+        const queue = [...(pendingWorkoutSyncQueue || [])];
+        for (const entry of queue) {
+            try {
+                const res = await finalizeAndSaveWorkout(entry.workout, entry.notes || '');
+                if (!isBackendSuccess(res)) anyError = true;
+            } catch (err) {
+                console.warn('[retryFailedSyncs] workout sync failed:', err);
+                anyError = true;
+            }
+        }
+
+        if (currentUser) {
+            try {
+                if (typeof bootstrapGoogleCloudData === 'function') {
+                    await bootstrapGoogleCloudData({ force: true });
+                } else if (typeof loadUserLogs === 'function') {
+                    await loadUserLogs();
+                }
+            } catch (err) {
+                console.warn('[retryFailedSyncs] cloud reload failed:', err);
+                anyError = true;
+            }
+        }
+
+        if (anyError || (pendingWorkoutSyncQueue && pendingWorkoutSyncQueue.length > 0)) {
+            lastGlobalSyncOutcome = 'error';
+        } else {
+            lastGlobalSyncOutcome = 'synced';
+        }
+    } catch (err) {
+        console.warn('[retryFailedSyncs] unexpected error:', err);
+        lastGlobalSyncOutcome = 'error';
+    } finally {
+        retryGlobalSyncInFlight = false;
+        forceReleaseGlobalSyncLock(lastGlobalSyncOutcome);
+    }
+}
+
 function renderGlobalSyncIndicatorState() {
     const container = document.getElementById('global-sync-indicator');
     const icon = document.getElementById('sync-icon');
@@ -364,10 +428,9 @@ function renderGlobalSyncIndicatorState() {
         icon.className = 'fa-solid fa-exclamation-triangle text-[9px] sm:text-[10px]';
         text.textContent = '同步失敗';
         container.title = '同步失敗，點擊重試';
+        container.style.cursor = 'pointer';
         container.onclick = () => {
-            container.onclick = null;
-            lastGlobalSyncOutcome = 'synced';
-            updateGlobalSyncIndicator('syncing');
+            retryFailedSyncs().finally(() => renderGlobalSyncIndicatorState());
         };
         return;
     }
@@ -502,6 +565,7 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
     workout.id = sid;
     const syncOpts = { keepalive: true };
     let syncOutcome = 'synced';
+    let result = { status: 'error', message: 'sync not completed' };
 
     try {
         await waitForActiveBackgroundSyncs();
@@ -511,13 +575,28 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
 
         const beforeSnap = workout._continueSnapshot || null;
         const isContinue = !!(workout.isContinuedFromToday || beforeSnap);
+
+        if (isContinue) {
+            const originalSids = [...new Set((workout._originalSessionIds || [])
+                .map(s => String(s).trim())
+                .filter(Boolean)
+                .filter(id => id !== sid))];
+            if (originalSids.length > 0) {
+                const delRes = await deleteSessionsParallel(originalSids, syncOpts);
+                if (!delRes.ok) {
+                    console.warn('[finalizeAndSaveWorkout] delete original sessions failed:', delRes.message);
+                }
+            }
+        }
+
         const delta = typeof buildWorkoutCloudDelta === 'function'
             ? buildWorkoutCloudDelta(workout, beforeSnap)
             : { hasChanges: true, needsFullPush: true, requiresFullSync: false };
 
         if (!delta.hasChanges) {
             try { updateGlobalSyncIndicator('synced'); } catch (_) {}
-            return { status: 'success', incremental: true, skipped: true };
+            result = { status: 'success', incremental: true, skipped: true };
+            return result;
         }
 
         if (isContinue && !delta.requiresFullSync) {
@@ -525,15 +604,18 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
             if (incRes === null) {
                 syncOutcome = 'error';
                 try { updateGlobalSyncIndicator('error'); } catch (_) {}
-                return { status: 'error', message: 'incremental sync unavailable' };
+                result = { status: 'error', message: 'incremental sync unavailable' };
+                return result;
             }
             if (isBackendSuccess(incRes)) {
                 try { updateGlobalSyncIndicator('synced'); } catch (_) {}
-                return incRes;
+                result = incRes;
+                return result;
             }
             syncOutcome = 'error';
             try { updateGlobalSyncIndicator('error'); } catch (_) {}
-            return incRes;
+            result = incRes;
+            return result;
         }
 
         if (!delta.needsFullPush) {
@@ -541,15 +623,18 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
             if (incRes === null) {
                 syncOutcome = 'error';
                 try { updateGlobalSyncIndicator('error'); } catch (_) {}
-                return { status: 'error', message: 'incremental sync unavailable' };
+                result = { status: 'error', message: 'incremental sync unavailable' };
+                return result;
             }
             if (isBackendSuccess(incRes)) {
                 try { updateGlobalSyncIndicator('synced'); } catch (_) {}
-                return incRes;
+                result = incRes;
+                return result;
             }
             syncOutcome = 'error';
             try { updateGlobalSyncIndicator('error'); } catch (_) {}
-            return incRes;
+            result = incRes;
+            return result;
         }
 
         const res = await callAppsScript('replaceSession', {
@@ -569,7 +654,8 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
             });
             try { saveWorkoutData(); } catch (_) {}
             try { updateGlobalSyncIndicator('synced'); } catch (_) {}
-            return res;
+            result = res;
+            return result;
         }
 
         if (/unknown action/i.test(String(res?.message || ''))) {
@@ -577,17 +663,25 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
             const addRes = await pushCurrentWorkoutToBackend(workout, syncOpts);
             if (isBackendSuccess(addRes)) try { updateGlobalSyncIndicator('synced'); } catch (_) {}
             else try { updateGlobalSyncIndicator('error'); } catch (_) {}
-            return addRes;
+            result = addRes;
+            return result;
         }
 
         syncOutcome = 'error';
         try { updateGlobalSyncIndicator('error'); } catch (_) {}
-        return res;
+        result = res;
+        return result;
     } catch (err) {
         syncOutcome = 'error';
         try { updateGlobalSyncIndicator('error'); } catch (_) {}
-        throw err;
+        result = { status: 'error', message: err && err.message ? err.message : String(err) };
+        return result;
     } finally {
+        if (isBackendSuccess(result)) {
+            dequeuePendingWorkoutSync(sid);
+        } else if (result.status !== 'skipped') {
+            enqueuePendingWorkoutSync(workout, notes);
+        }
         if (globalPendingSyncs > 0) forceReleaseGlobalSyncLock(syncOutcome);
         if (activeBackgroundSyncs > 0) {
             activeBackgroundSyncs = 0;
@@ -665,29 +759,22 @@ function runHistoryCloudSync(toPush, oldSessionIds, dateStr, beforeSnapshot) {
         try {
             updateGlobalSyncIndicator('syncing');
 
-            let syncRes = null;
-            if (beforeSnapshot && typeof syncHistoryEditIncremental === 'function') {
-                syncRes = await syncHistoryEditIncremental(beforeSnapshot, toPush, toPush);
-                if (syncRes === null) {
-                    syncRes = await syncHistoryWorkoutToBackend(toPush, oldSessionIds);
-                }
-            } else {
-                syncRes = await syncHistoryWorkoutToBackend(toPush, oldSessionIds);
-            }
+            // 歷史編輯一律全量 replaceSession，避免 addLog 殘留行搞亂其他日期
+            const syncRes = await syncHistoryWorkoutToBackend(toPush, oldSessionIds);
 
             if (isBackendSuccess(syncRes)) {
                 updateGlobalSyncIndicator('synced');
-                if (toPush.id) {
-                    const d = normalizeDateToLocal(dateStr);
-                    const idx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
-                    if (idx >= 0) {
-                        workoutHistory[idx].id = toPush.id;
-                        if (syncRes.incremental && beforeSnapshot) {
-                            workoutHistory[idx] = JSON.parse(JSON.stringify(toPush));
-                        }
-                        saveWorkoutData();
-                    }
+                const d = normalizeDateToLocal(dateStr);
+                const sid = String(toPush.id || toPush.session_id || toPush.sessionId || '').trim();
+                if (sid) {
+                    workoutHistory = workoutHistory.filter(w => getWorkoutSessionId(w) !== sid);
                 }
+                workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
+                const saved = JSON.parse(JSON.stringify(toPush));
+                if (sid) saved.id = sid;
+                workoutHistory.unshift(saved);
+                workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+                saveWorkoutData();
             } else {
                 syncOutcome = 'error';
                 console.warn('[runHistoryCloudSync] non-success:', syncRes);
@@ -716,6 +803,67 @@ function runHistoryCloudSync(toPush, oldSessionIds, dateStr, beforeSnapshot) {
 }
 
 // More API helpers can be added here (loadUserLogs, etc.) in subsequent steps.
+
+let googleBootstrapPromise = null;
+let googleBootstrapUserKey = null;
+
+function resetGoogleBootstrapState() {
+    googleBootstrapPromise = null;
+    googleBootstrapUserKey = null;
+}
+
+/**
+ * 登入或頁面載入時一次過背景拉取所有 Google 雲端數據，
+ * 唔使等用戶撳入某個 tab 先開始載入。
+ */
+async function bootstrapGoogleCloudData(options = {}) {
+    const force = options.force === true;
+    const userKey = currentUser || '__guest__';
+
+    if (!force && googleBootstrapPromise && googleBootstrapUserKey === userKey) {
+        return googleBootstrapPromise;
+    }
+
+    googleBootstrapUserKey = userKey;
+    googleBootstrapPromise = (async () => {
+        const tasks = [];
+
+        if (currentUser && typeof loadUserLogs === 'function') {
+            tasks.push(
+                loadUserLogs({ silent: true }).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] loadUserLogs failed:', err);
+                })
+            );
+        }
+
+        if (currentUser && typeof loadWorkoutSets === 'function') {
+            tasks.push(
+                loadWorkoutSets(force).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] loadWorkoutSets failed:', err);
+                })
+            );
+        }
+
+        if (typeof prefetchYugongLeaderboard === 'function') {
+            tasks.push(
+                prefetchYugongLeaderboard(force).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] yugong prefetch failed:', err);
+                })
+            );
+        }
+
+        await Promise.all(tasks);
+
+        if (typeof primeYugongTabFromPrefetch === 'function') {
+            try { primeYugongTabFromPrefetch(); } catch (_) {}
+        }
+        if (typeof finalizeLogTabUiReady === 'function') {
+            try { finalizeLogTabUiReady(); } catch (_) {}
+        }
+    })();
+
+    return googleBootstrapPromise;
+}
 
 // Workout Sets data loading (moved from main for A refactor)
 async function loadWorkoutSets(forceRefresh = false) {

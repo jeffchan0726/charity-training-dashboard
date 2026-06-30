@@ -1,0 +1,156 @@
+/* Mobile-only app shell — 手機用戶專用 UI */
+
+html.mobile-app {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-app body {
+    overscroll-behavior-y: none;
+    padding-bottom: 0;
+}
+
+/* ── Compact header ── */
+.mobile-app .charity-header .app-header-inner {
+    padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
+    padding-bottom: 0.65rem;
+}
+
+.mobile-app .app-title {
+    font-size: 1.05rem;
+    line-height: 1.25;
+    font-weight: 700;
+}
+
+.mobile-app .app-subtitle {
+    font-size: 0.65rem;
+    opacity: 0.9;
+}
+
+.mobile-app .app-header-actions {
+    gap: 0.35rem;
+}
+
+.mobile-app .app-header-btn {
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.75rem;
+    border-radius: 0.85rem;
+}
+
+/* ── Touch & inputs (prevent iOS zoom) ── */
+.mobile-app input,
+.mobile-app select,
+.mobile-app textarea,
+.mobile-app .log-input {
+    font-size: 16px !important;
+}
+
+.mobile-app button,
+.mobile-app .quick-add-btn {
+    min-height: 44px;
+}
+
+/* ── Cards & spacing ── */
+.mobile-app .section-card,
+.mobile-app .log-card {
+    border-radius: 1.15rem;
+}
+
+.mobile-app #content-overview .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.mobile-app #content-overview .section-card {
+    padding: 0.85rem !important;
+}
+
+.mobile-app #content-overview .text-4xl {
+    font-size: 1.75rem !important;
+}
+
+/* Analysis: full-width stacked controls */
+.mobile-app #log-section-analysis select,
+.mobile-app #analysis-exercise-select {
+    width: 100%;
+    min-height: 44px;
+}
+
+.mobile-app #log-section-analysis .flex.items-center.gap-2 {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.mobile-app #analysis-category-filters {
+    flex-wrap: wrap;
+    overflow-x: visible;
+}
+
+.mobile-app #analysis-category-filters button {
+    min-height: 36px;
+}
+
+/* Schedule rows: always stacked time + content */
+.mobile-app #content-schedule .flex-col,
+.mobile-app #content-schedule [class*="sm:flex-row"] {
+    flex-direction: column !important;
+}
+
+.mobile-app #content-schedule .w-20 {
+    width: auto !important;
+    font-size: 0.7rem !important;
+    color: #4ade80 !important;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+/* Modals: bottom-sheet feel on phone */
+.mobile-app #loginModal > div,
+.mobile-app #addUserModal > div,
+.mobile-app #exerciseDetailModal > div {
+    margin-bottom: 0;
+    max-height: 92dvh;
+    overflow-y: auto;
+}
+
+.mobile-app #exerciseDetailModal {
+    align-items: flex-end !important;
+}
+
+.mobile-app #exerciseDetailModal > div {
+    border-radius: 1.25rem 1.25rem 0 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+/* Scrollable chips hide scrollbar visually */
+.mobile-app .overflow-x-auto {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.mobile-app .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+}
+
+/* Disable hover lift on touch devices */
+@media (hover: none) {
+    .exercise-card:hover {
+        transform: none;
+        box-shadow: none;
+    }
+    .perf-card:hover {
+        transform: none;
+    }
+}
+
+.mobile-app .time-range-btn {
+    min-height: 36px;
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+}
+
+/* Training plan cards — single column feel */
+.mobile-app #content-training .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+}
