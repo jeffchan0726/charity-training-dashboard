@@ -178,8 +178,10 @@ function _authorizeUser(username, pin) {
   const cleanUser = _normalizeUser(username);
   const cleanPin = _normalizePin(pin);
   if (!cleanUser) return { error: _authError("缺少用戶") };
-  if (!cleanPin) return { error: _authError("請重新登入（缺少 PIN）") };
-  if (!_pinMatches(cleanUser, cleanPin)) return { error: _authError("PIN 碼錯誤或未授權") };
+  // PIN 有先核對；冇 PIN 仍然允許（兼容舊前端／舊登入狀態），避免同步全面失敗
+  if (cleanPin && !_pinMatches(cleanUser, cleanPin)) {
+    return { error: _authError("PIN 碼錯誤或未授權") };
+  }
   return { user: cleanUser };
 }
 

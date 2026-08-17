@@ -51,7 +51,7 @@ Local Development Instructions:
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.24">
+    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.25">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body {
@@ -2143,11 +2143,11 @@ Local Development Instructions:
     </div>
 
     <!-- Extracted data for architecture refactor (Option A) -->
-    <script src="js/data.js?v=2.3.24"></script>
-    <script src="js/exercise-gif-map.js?v=2.3.24"></script>
-    <script src="js/utils.js?v=2.3.24"></script>
-    <script src="js/state.js?v=2.3.24"></script>
-    <script src="js/api.js?v=2.3.24"></script>
+    <script src="js/data.js?v=2.3.25"></script>
+    <script src="js/exercise-gif-map.js?v=2.3.25"></script>
+    <script src="js/utils.js?v=2.3.25"></script>
+    <script src="js/state.js?v=2.3.25"></script>
+    <script src="js/api.js?v=2.3.25"></script>
     <script src="js/fullscreen.js?v=2.3.24"></script>
     <script src="js/ui.js?v=2.3.24"></script>
     <script src="js/ui-log.js?v=2.3.24"></script>
@@ -2458,6 +2458,10 @@ Local Development Instructions:
                 const logs = await callAppsScript("getLogs");
                 if (!Array.isArray(logs)) {
                     const msg = (logs && logs.message) ? logs.message : 'getLogs 回傳格式錯誤';
+                    if (/pin|未授權|重新登入|未登入/i.test(String(msg))) {
+                        try { showToast('請重新登入以同步雲端', 3600); } catch (_) {}
+                        try { showLoginModal(); } catch (_) {}
+                    }
                     throw new Error(msg);
                 }
                 workoutLogs = logs;
@@ -2533,7 +2537,7 @@ Local Development Instructions:
                         <div class="log-card rounded-3xl p-8 text-center border border-red-900/40 bg-red-950/10">
                             <i class="fa-solid fa-exclamation-triangle text-3xl text-red-400 mb-3"></i>
                             <div class="font-semibold text-base mb-2 text-red-300">載入訓練紀錄失敗</div>
-                            <p class="text-sm text-[#a8a29e] mb-4">無法從 Google 取得最新數據。已顯示本地快取（如有）。</p>
+                            <p class="text-sm text-[#a8a29e] mb-4">${escapeHtml((err && err.message) ? err.message : '無法從 Google 取得最新數據')}。已顯示本地快取（如有）。</p>
                             <button onclick="retryLoadUserLogs()" 
                                     class="px-6 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-2xl text-sm font-semibold">
                                 <i class="fa-solid fa-redo mr-1.5"></i> 立即重試
@@ -4426,6 +4430,10 @@ Local Development Instructions:
                         || null;
                     if (currentUserPin) sessionStorage.setItem('currentUserPin', currentUserPin);
                 } catch (_) { currentUserPin = currentUserPin || null; }
+                if (!currentUserPin) {
+                    try { showToast('請重新登入以恢復雲端同步', 4000); } catch (_) {}
+                    setTimeout(() => { try { showLoginModal(); } catch (_) {} }, 400);
+                }
                 const display = document.getElementById('currentUserDisplay');
                 if (display) display.classList.remove('hidden');
                 const nameEl = document.getElementById('currentUserName');
