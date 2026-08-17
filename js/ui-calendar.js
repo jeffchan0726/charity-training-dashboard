@@ -96,12 +96,12 @@ function renderCalendar(year, month) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
 
+    const cutoffStr = getLocalDateString(cutoff);
     workoutHistory.forEach(w => {
         const key = normalizeDateToLocal(w.date);
-        const wd = key ? new Date(key) : new Date(w.date);
-        if (wd < cutoff) return;
+        if (!key || key < cutoffStr) return;
 
-        w.exercises.forEach(ex => {
+        (w.exercises || []).forEach(ex => {
             const cat = getExerciseCategory(ex.name);
             if (!muscleVol[cat]) muscleVol[cat] = { weightKg: 0, distanceKm: 0 };
 
@@ -283,8 +283,9 @@ function showAllWorkoutDates() {
             const d = row.getAttribute('data-date');
             const g = groups[d];
             modal.remove();
-            if (g && g.repWorkout) {
-                // Use the representative workout + its original index (same pattern as renderWorkoutHistory)
+            if (d && typeof showWorkoutDetailForDate === 'function') {
+                showWorkoutDetailForDate(d);
+            } else if (g && g.repWorkout) {
                 const realIdx = workoutHistory.indexOf(g.repWorkout);
                 showWorkoutDetail(g.repWorkout, realIdx >= 0 ? realIdx : g.repIndex);
             }

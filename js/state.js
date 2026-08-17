@@ -3,6 +3,7 @@
 // This centralizes globals to make the app more maintainable and testable.
 
 let currentUser = null;
+let currentUserPin = null;
 let workoutLogs = [];
 
 let currentWorkout = null;           // { date: 'YYYY-MM-DD', exercises: [{name, sets: [{weight, reps, notes, volume, id?, _clientLogId? }]}] }

@@ -128,32 +128,28 @@ function isValidUnfinishedWorkout(workout) {
     if (!workout || !workout.exercises || workout.exercises.length === 0) return false;
 
     let hasRealVolume = false;
+    let hasUnsynced = false;
     for (const ex of workout.exercises) {
         for (const s of (ex.sets || [])) {
             const vol = typeof calculateSetVolume === 'function'
                 ? calculateSetVolume(s, ex.name)
                 : ((s.weight || 0) * (s.reps || 0));
-            if (vol > 0) {
-                hasRealVolume = true;
-                break;
-            }
-            if ((s.duration || 0) > 0 && (s.reps || 0) > 0) {
-                hasRealVolume = true;
-                break;
-            }
+            if (vol > 0) hasRealVolume = true;
+            if ((s.duration || 0) > 0 && (s.reps || 0) > 0) hasRealVolume = true;
+            if (s._syncDirty || s._syncInFlight || !getSetCloudLogId(s)) hasUnsynced = true;
         }
-        if (hasRealVolume) break;
     }
     if (!hasRealVolume) return false;
 
-    // Only today or within last 2 hours (use startTime if available for precision)
     if (!workout.date) return false;
     const todayStr = getTodayStr();
-    if (workout.date !== todayStr) return false;
+    if (normalizeDateToLocal(workout.date) !== todayStr) return false;
+
+    if (hasUnsynced) return true;
 
     if (workout.startTime) {
         const ageHrs = (Date.now() - workout.startTime) / (1000 * 60 * 60);
-        if (ageHrs > 2) return false;
+        if (ageHrs > 8) return false;
     }
 
     return true;
@@ -191,9 +187,11 @@ function saveWorkoutData() {
             library: exerciseLibrary,
             routines: routines,
             lastPerformed: lastPerformed,
-            lastWorkoutSetName: lastWorkoutSetName || null,  // for auto "接埋" last chosen training set
+            lastWorkoutSetName: lastWorkoutSetName || null,
             lastBodyWeightKg: lastBodyWeightKg || null,
-            currentWorkout: currentWorkout || null   // persist in-progress training for resume
+            currentWorkout: currentWorkout || null,
+            pendingWorkoutSyncQueue: typeof pendingWorkoutSyncQueue !== 'undefined' ? pendingWorkoutSyncQueue : [],
+            holdTimerSettings: typeof holdTimerSettings !== 'undefined' ? holdTimerSettings : null
         };
         localStorage.setItem(getUserStorageKey(), JSON.stringify(data));
     } catch (e) { console.warn('Local storage save failed', e); }
@@ -222,8 +220,15 @@ function loadWorkoutData(options = {}) {
             exerciseLibrary = (data.library && data.library.length) ? data.library : EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
             routines = data.routines || [];
             lastPerformed = data.lastPerformed || {};
-            lastWorkoutSetName = data.lastWorkoutSetName || null;  // restore remembered training set for auto-continue ("接埋")
+            lastWorkoutSetName = data.lastWorkoutSetName || null;
             lastBodyWeightKg = data.lastBodyWeightKg != null ? parseFloat(data.lastBodyWeightKg) : null;
+            if (Array.isArray(data.pendingWorkoutSyncQueue) && typeof pendingWorkoutSyncQueue !== 'undefined') {
+                pendingWorkoutSyncQueue = data.pendingWorkoutSyncQueue;
+            }
+            if (data.holdTimerSettings && typeof holdTimerSettings !== 'undefined') {
+                holdTimerSettings.keepCountingOnScreenOff = data.holdTimerSettings.keepCountingOnScreenOff !== false;
+                holdTimerSettings.disableAutoSleep = data.holdTimerSettings.disableAutoSleep !== false;
+            }
             // Smarter restore: only restore currentWorkout from storage if it's a valid recent unfinished workout with real volume.
             // This prevents stale/old sessions from being treated as active on fresh loads.
             if (data.currentWorkout && data.currentWorkout.exercises) {
@@ -565,8 +570,207 @@ function mergeExercisesByName(exercises) {
                 : { ...s, volume: s.volume || 0 };
             merged[key].sets.push(cloned);
         });
+        merged[key] = dedupeSetsInExercise(merged[key]);
     });
     return order.map(k => merged[k]);
+}
+
+function isClientStyleLogId(id) {
+    return /^(inc_|log_|live_)/i.test(String(id || ''));
+}
+
+function getSetFingerprint(set, exName) {
+    const n = normalizeHistorySetForCompare(set || {});
+    return [
+        String(exName || '').trim().toLowerCase(),
+        n.weight, n.body_weight, n.reps, n.duration, n.incline, n.speed
+    ].join('|');
+}
+
+/** 去掉同一動作內重複 id，以及 addLog + replaceSession 殘留嘅成對重複組 */
+function collapseReplaceLeftoverSets(sets, exName) {
+    const list = Array.isArray(sets) ? sets : [];
+    const used = new Set();
+    const out = [];
+    for (let i = 0; i < list.length; i++) {
+        if (used.has(i)) continue;
+        const fp = getSetFingerprint(list[i], exName);
+        const id = getSetCloudLogId(list[i]);
+        let pair = -1;
+        for (let j = i + 1; j < list.length; j++) {
+            if (used.has(j)) continue;
+            if (getSetFingerprint(list[j], exName) !== fp) continue;
+            const id2 = getSetCloudLogId(list[j]);
+            if (id && id2 && id !== id2 &&
+                ((isClientStyleLogId(id) && !isClientStyleLogId(id2)) ||
+                 (!isClientStyleLogId(id) && isClientStyleLogId(id2)))) {
+                pair = j;
+                break;
+            }
+        }
+        out.push(list[i]);
+        if (pair >= 0) used.add(pair);
+    }
+    return out;
+}
+
+function dedupeSetsInExercise(ex) {
+    if (!ex || !Array.isArray(ex.sets)) return ex;
+    const seenIds = new Set();
+    const kept = [];
+    ex.sets.forEach(s => {
+        const id = getSetCloudLogId(s);
+        if (id) {
+            if (seenIds.has(id)) return;
+            seenIds.add(id);
+        }
+        kept.push(s);
+    });
+    ex.sets = collapseReplaceLeftoverSets(kept, ex.name);
+    return ex;
+}
+
+function dedupeWorkoutSets(workout) {
+    (workout?.exercises || []).forEach(ex => dedupeSetsInExercise(ex));
+    return workout;
+}
+
+function getLocalHistoryFromStorage() {
+    try {
+        const raw = localStorage.getItem(getUserStorageKey());
+        if (!raw) return [];
+        const data = JSON.parse(raw);
+        return Array.isArray(data.history) ? data.history : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+function mergeCloudAndLocalHistory(cloudHistory, localHistory) {
+    const cloud = (cloudHistory || []).map(w => dedupeWorkoutSets(JSON.parse(JSON.stringify(w))));
+    const local = localHistory || [];
+    const cloudSids = new Set(cloud.map(w => getWorkoutSessionId(w)).filter(Boolean));
+    const keepLocal = [];
+    local.forEach(w => {
+        const sid = getWorkoutSessionId(w);
+        const pending = (typeof pendingWorkoutSyncQueue !== 'undefined' ? pendingWorkoutSyncQueue : [])
+            .some(e => String(e.sessionId) === String(sid));
+        const hasLocalOnlySets = (w.exercises || []).some(ex =>
+            (ex.sets || []).some(s => !getSetCloudLogId(s) || s._syncDirty)
+        );
+        if (!sid) {
+            if (hasLocalOnlySets || pending) keepLocal.push(w);
+            return;
+        }
+        if (!cloudSids.has(sid) && (hasLocalOnlySets || pending)) {
+            keepLocal.push(w);
+        }
+    });
+    if (cloud.length === 0 && local.length > 0) {
+        return dedupeWorkoutHistoryBySessionId(local);
+    }
+    return dedupeWorkoutHistoryBySessionId([...keepLocal, ...cloud]);
+}
+
+function rebuildWorkoutsFromLogRows(rows) {
+    const list = Array.isArray(rows) ? rows : [];
+    const seenRowIds = new Set();
+    const uniqueRows = [];
+    list.forEach(row => {
+        if (!row) return;
+        const id = row.id != null ? String(row.id).trim() : '';
+        if (id) {
+            if (seenRowIds.has(id)) return;
+            seenRowIds.add(id);
+        }
+        uniqueRows.push(row);
+    });
+
+    const sessions = {};
+    const orphans = [];
+
+    const pushRowIntoSession = (session, row) => {
+        const exName = row.exercise;
+        if (!exName) return;
+        if (!session.notes && row.session_notes) session.notes = row.session_notes;
+        if (!session.exercises[exName]) session.exercises[exName] = { name: exName, sets: [] };
+        session.exercises[exName].sets.push(
+            typeof rebuildSetFromLogRow === 'function'
+                ? rebuildSetFromLogRow(row, exName)
+                : {
+                    weight: parseFloat(row.weight) || 0,
+                    body_weight: row.body_weight != null ? parseFloat(row.body_weight) : 0,
+                    reps: parseInt(row.reps) || 0,
+                    duration: row.duration != null ? parseInt(row.duration) : 0,
+                    incline: row.incline != null ? parseFloat(row.incline) : 0,
+                    speed: row.speed != null ? parseFloat(row.speed) : 0,
+                    notes: row.notes || '',
+                    volume: parseFloat(row.volume) || 0,
+                    id: row.id || undefined
+                }
+        );
+    };
+
+    uniqueRows.forEach(row => {
+        const date = normalizeDateToLocal(row.date);
+        const sid = String(row.session_id || row.sessionId || '').trim();
+        if (!sid) {
+            orphans.push(row);
+            return;
+        }
+        if (!sessions[sid]) {
+            sessions[sid] = {
+                id: sid,
+                date,
+                exercises: {},
+                notes: row.session_notes || ''
+            };
+        }
+        pushRowIntoSession(sessions[sid], row);
+        if (date && !sessions[sid].date) sessions[sid].date = date;
+    });
+
+    const sessionsByDate = {};
+    Object.values(sessions).forEach(s => {
+        const d = normalizeDateToLocal(s.date);
+        if (!sessionsByDate[d]) sessionsByDate[d] = [];
+        sessionsByDate[d].push(s);
+    });
+
+    orphans.forEach(row => {
+        const date = normalizeDateToLocal(row.date);
+        const exName = row.exercise;
+        if (!exName) return;
+        const sameDate = sessionsByDate[date] || [];
+        let target = null;
+        if (sameDate.length === 1) {
+            target = sameDate[0];
+        } else if (sameDate.length > 1) {
+            target = sameDate.find(s => s.exercises[exName]) || sameDate[0];
+        } else {
+            const legacyId = 'legacy_' + date;
+            if (!sessions[legacyId]) {
+                sessions[legacyId] = {
+                    id: legacyId,
+                    date,
+                    exercises: {},
+                    notes: row.session_notes || ''
+                };
+                if (!sessionsByDate[date]) sessionsByDate[date] = [];
+                sessionsByDate[date].push(sessions[legacyId]);
+            }
+            target = sessions[legacyId];
+        }
+        pushRowIntoSession(target, row);
+    });
+
+    return Object.values(sessions).map(w => {
+        w.date = normalizeDateToLocal(w.date);
+        w.id = String(w.id || '').trim();
+        w.exercises = Object.values(w.exercises).map(ex => dedupeSetsInExercise(ex));
+        if (typeof refreshWorkoutTotals === 'function') refreshWorkoutTotals(w);
+        return w;
+    }).sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 
 /** 完成訓練：以 session_id upsert，避免重複卡片 */
@@ -697,6 +901,7 @@ function buildSetLogPayload(set, exName, meta = {}) {
     payload.incline = parseFloat(set.incline) || 0;
     payload.speed = parseFloat(set.speed) || 0;
     payload.notes = set.notes || '';
+    if (meta.session_notes != null) payload.session_notes = meta.session_notes;
     if (typeof calculateSetVolume === 'function') {
         payload.volume = calculateSetVolume(set, exName);
     }
@@ -762,9 +967,10 @@ function buildWorkoutCloudDelta(workout, beforeSnapshot = null) {
             adds,
             updates,
             deletes,
-            hasChanges: adds.length > 0 || updates.length > 0 || deletes.length > 0,
+            notesChanged: !!raw.notesChanged,
+            hasChanges: adds.length > 0 || updates.length > 0 || deletes.length > 0 || !!raw.notesChanged,
             requiresFullSync: false,
-            needsFullPush: false
+            needsFullPush: !!raw.notesChanged
         };
     }
 
@@ -995,7 +1201,9 @@ function detectWorkoutPRs(workout, priorHistory = workoutHistory) {
 
 function getAllExercisesFromHistory() {
     const set = new Set();
-    workoutHistory.forEach(w => w.exercises.forEach(ex => set.add(ex.name)));
+    (workoutHistory || []).forEach(w => (w.exercises || []).forEach(ex => {
+        if (ex && ex.name) set.add(ex.name);
+    }));
     return Array.from(set).sort();
 }
 

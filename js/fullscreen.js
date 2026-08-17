@@ -41,7 +41,8 @@ function enterImmersiveMode() {
         }
 
         // Hide main navigation elements for focus (explicit JS control instead of broad CSS to prevent blank page issues)
-        const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
+        const mainNav = document.getElementById('main-top-nav')
+            || document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
         if (mainNav) mainNav.style.display = 'none';
 
         const header = document.querySelector('.charity-header');

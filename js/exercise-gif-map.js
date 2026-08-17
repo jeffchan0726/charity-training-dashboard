@@ -62,6 +62,7 @@ const EXERCISE_GIF_MAP = {
 
     // 核心
     ab_wheel_rollout: '0857',
+    dragon_flag: '0473',
     hanging_leg_raise: '0472',
     plank: '2135',
     cable_wood_chopper: '0862',

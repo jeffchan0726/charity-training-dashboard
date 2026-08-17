@@ -66,10 +66,19 @@ function renderLibraryList() {
     const searchVal = (document.getElementById('library-search')?.value || '').toLowerCase().trim();
     container.innerHTML = '';
 
-    let filtered = EXERCISES;
+    const customOnly = (exerciseLibrary || [])
+        .filter(e => e && e.name && !getExerciseByName(e.name))
+        .map(e => ({
+            id: 'custom_' + e.name,
+            name: e.name,
+            muscle_group: e.category || e.muscle_group || '其他',
+            image: '',
+            isCustom: true
+        }));
+    let filtered = [...EXERCISES, ...customOnly];
     if (currentLibraryFilter) filtered = filtered.filter(e => e.muscle_group === currentLibraryFilter);
     if (searchVal) {
-        filtered = filtered.filter(e => 
+        filtered = filtered.filter(e =>
             e.name.toLowerCase().includes(searchVal)
         );
     }
@@ -692,12 +701,15 @@ function useExerciseFromLibrary(name) {
         if (!currentWorkout.exercises.find(e => e.name === displayName)) {
             currentWorkout.exercises.push({name: displayName, sets: []});
             renderCurrentWorkout();
+            if (typeof saveWorkoutData === 'function') saveWorkoutData();
         }
     } else {
-        if (!currentWorkout) startNewWorkout();
+        if (!currentWorkout && typeof startNewWorkout === 'function') startNewWorkout();
+        if (!currentWorkout) return;
         if (!currentWorkout.exercises.find(e => e.name === displayName)) {
             currentWorkout.exercises.push({name: displayName, sets: []});
             renderCurrentWorkout();
+            if (typeof saveWorkoutData === 'function') saveWorkoutData();
         }
     }
 }

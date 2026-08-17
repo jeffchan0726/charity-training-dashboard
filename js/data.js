@@ -164,12 +164,7 @@ const DEFAULT_WORKOUT_SETS = TRAINING_DAYS.map(day => ({
 // Unified helpers - all exercises use "中文 (English)" via .name
 function getExerciseDisplay(ex) {
     if (typeof ex === 'string') {
-        const lower = ex.toLowerCase();
-        const found = EXERCISES.find(e =>
-            e.name === ex ||
-            e.name.toLowerCase() === lower ||
-            e.name.toLowerCase().includes(lower)
-        );
+        const found = getExerciseByName(ex);
         return found ? found.name : ex;
     }
     return ex && ex.name ? ex.name : ex;
@@ -177,12 +172,14 @@ function getExerciseDisplay(ex) {
 
 function getExerciseByName(name) {
     if (!name) return null;
-    const lower = name.toLowerCase().trim();
+    const raw = String(name).trim();
+    if (!raw) return null;
+    const lower = raw.toLowerCase();
     return EXERCISES.find(e =>
-        e.name === name ||
+        e.name === raw ||
         e.name.toLowerCase() === lower ||
-        e.name.toLowerCase().includes(lower) ||
-        e.id === name
+        e.id === raw ||
+        String(e.id).toLowerCase() === lower
     ) || null;
 }
 
@@ -193,7 +190,11 @@ function getExerciseImage(name) {
 
 function getMuscleGroup(name) {
     const ex = getExerciseByName(name);
-    return ex ? ex.muscle_group : '其他';
+    if (ex) return ex.muscle_group;
+    const lib = (typeof exerciseLibrary !== 'undefined' ? exerciseLibrary : []).find(e =>
+        e && e.name && String(e.name).toLowerCase() === String(name || '').toLowerCase()
+    );
+    return (lib && (lib.category || lib.muscle_group)) || '其他';
 }
 
 // 時間+次數動作（唔用重量）：平板支撐、戰繩、跳繩等 → 顯示計時器 UI

@@ -34,18 +34,24 @@ function parseAppsScriptResponse(raw) {
 
 async function callAppsScript(action, data = {}, options = {}) {
     try {
+        let pin = (typeof currentUserPin !== 'undefined' && currentUserPin) ? currentUserPin : '';
+        if (!pin) {
+            try { pin = sessionStorage.getItem('currentUserPin') || localStorage.getItem('currentUserPin') || ''; } catch (_) {}
+        }
+
         if (action === "getLogs" && currentUser) {
             const url = new URL(getAppsScriptUrl());
             url.searchParams.append("action", "getLogs");
             url.searchParams.append("user", currentUser);
+            if (pin) url.searchParams.append("pin", pin);
             const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
             return parseAppsScriptResponse(await res.json());
         }
         if (action === "getWorkoutSets" && currentUser) {
-            // Use query GET for getWorkoutSets (consistent with getLogs; backend should handle ?action=getWorkoutSets&user=xxx)
             const url = new URL(getAppsScriptUrl());
             url.searchParams.append("action", "getWorkoutSets");
             url.searchParams.append("user", currentUser);
+            if (pin) url.searchParams.append("pin", pin);
             const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
             return parseAppsScriptResponse(await res.json());
         }
@@ -54,6 +60,8 @@ async function callAppsScript(action, data = {}, options = {}) {
             return { status: 'error', message: 'APPS_SCRIPT_URL 未設定' };
         }
 
+        if (currentUser && pin && data.user == null) data.user = currentUser;
+        if (pin && data.pin == null) data.pin = pin;
         const payload = JSON.stringify({ action, ...data });
         // 必須用 text/plain，避免瀏覽器 CORS preflight（application/json 會令 GAS POST 失敗）
         const fetchOpts = {
@@ -124,13 +132,16 @@ async function backgroundSyncNewSet(exerciseName, setObj, sessionId) {
     if (!setObj._clientLogId) {
         setObj._clientLogId = 'inc_' + Date.now() + Math.random().toString(36).slice(2, 10);
     }
+    const syncGen = (setObj._syncGen || 0) + 1;
+    setObj._syncGen = syncGen;
 
     const logPayload = typeof buildSetLogPayload === 'function'
         ? buildSetLogPayload(setObj, exerciseName, {
             id: setObj._clientLogId,
             session_id: sessionId,
             date: (currentWorkout && currentWorkout.date) || getTodayStr(),
-            exercise: exerciseName
+            exercise: exerciseName,
+            session_notes: (currentWorkout && currentWorkout.notes) || ''
         })
         : {
             id: setObj._clientLogId,
@@ -155,12 +166,18 @@ async function backgroundSyncNewSet(exerciseName, setObj, sessionId) {
     };
 
     const syncTimeout = setTimeout(() => {
-        if (setObj._syncInFlight) finishBackgroundSync('error');
+        if (setObj._syncInFlight && setObj._syncGen === syncGen) finishBackgroundSync('error');
     }, 45000);
 
     callAppsScript('addLog', { user: currentUser, log: logPayload })
         .then(res => {
             clearTimeout(syncTimeout);
+            if (setObj._syncGen !== syncGen) return;
+            if (setObj._deleted) {
+                finishBackgroundSync('synced');
+                if (logPayload.id) backgroundDeleteLog(logPayload.id);
+                return;
+            }
             if (isBackendSuccess(res)) {
                 applySetSyncSuccess(setObj, logPayload.id);
                 try { saveWorkoutData(); } catch (_) {}
@@ -171,6 +188,7 @@ async function backgroundSyncNewSet(exerciseName, setObj, sessionId) {
         })
         .catch(() => {
             clearTimeout(syncTimeout);
+            if (setObj._syncGen !== syncGen) return;
             finishBackgroundSync('error');
         });
 }
@@ -284,7 +302,8 @@ async function syncWorkoutCloudDelta(delta, workout, options = {}) {
                 id: logId,
                 session_id: sessionId,
                 date: dateStr,
-                exercise: a.exercise
+                exercise: a.exercise,
+                session_notes: workout.notes || ''
             })
             : {
                 id: logId,
@@ -493,6 +512,7 @@ function buildWorkoutApiPayload(workout, notesOverride) {
         name: ex.name || '',
         sets: (ex.sets || []).map(set => {
             const row = {
+                id: set.id || set._clientLogId || undefined,
                 weight: parseFloat(set.weight) || 0,
                 reps: parseInt(set.reps) || 0,
                 notes: set.notes || ''
@@ -509,10 +529,12 @@ function buildWorkoutApiPayload(workout, notesOverride) {
         })
     }));
 
+    const notes = notesOverride != null ? notesOverride : (workout.notes || '');
     return {
         session_id: sessionId,
         date: workout.date || getLocalDateString(),
-        notes: notesOverride != null ? notesOverride : (workout.notes || ''),
+        notes,
+        session_notes: notes,
         exercises
     };
 }
@@ -575,31 +597,28 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
 
         const beforeSnap = workout._continueSnapshot || null;
         const isContinue = !!(workout.isContinuedFromToday || beforeSnap);
-
-        if (isContinue) {
-            const originalSids = [...new Set((workout._originalSessionIds || [])
+        const originalSids = isContinue
+            ? [...new Set((workout._originalSessionIds || [])
                 .map(s => String(s).trim())
                 .filter(Boolean)
-                .filter(id => id !== sid))];
-            if (originalSids.length > 0) {
-                const delRes = await deleteSessionsParallel(originalSids, syncOpts);
-                if (!delRes.ok) {
-                    console.warn('[finalizeAndSaveWorkout] delete original sessions failed:', delRes.message);
-                }
-            }
-        }
+                .filter(id => id !== sid))]
+            : [];
 
         const delta = typeof buildWorkoutCloudDelta === 'function'
             ? buildWorkoutCloudDelta(workout, beforeSnap)
             : { hasChanges: true, needsFullPush: true, requiresFullSync: false };
 
-        if (!delta.hasChanges) {
+        const notesChanged = !!(delta && delta.notesChanged)
+            || ((beforeSnap && (beforeSnap.notes || '').trim() !== (notes || workout.notes || '').trim()));
+        const mustFullPush = originalSids.length > 0 || notesChanged || !!(delta && (delta.needsFullPush || delta.requiresFullSync));
+
+        if (!delta.hasChanges && !mustFullPush) {
             try { updateGlobalSyncIndicator('synced'); } catch (_) {}
             result = { status: 'success', incremental: true, skipped: true };
             return result;
         }
 
-        if (isContinue && !delta.requiresFullSync) {
+        if (isContinue && !mustFullPush && !delta.requiresFullSync) {
             const incRes = await syncWorkoutCloudDelta(delta, workout, syncOpts);
             if (incRes === null) {
                 syncOutcome = 'error';
@@ -618,7 +637,7 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
             return result;
         }
 
-        if (!delta.needsFullPush) {
+        if (!mustFullPush && !delta.needsFullPush) {
             const incRes = await syncWorkoutCloudDelta(delta, workout, syncOpts);
             if (incRes === null) {
                 syncOutcome = 'error';
@@ -652,6 +671,12 @@ async function finalizeAndSaveWorkout(workout, notes = '') {
                     }
                 });
             });
+            if (originalSids.length > 0) {
+                const delRes = await deleteSessionsParallel(originalSids, syncOpts);
+                if (!delRes.ok) {
+                    console.warn('[finalizeAndSaveWorkout] delete extra sessions after replace failed:', delRes.message);
+                }
+            }
             try { saveWorkoutData(); } catch (_) {}
             try { updateGlobalSyncIndicator('synced'); } catch (_) {}
             result = res;
@@ -753,25 +778,28 @@ async function syncHistoryWorkoutToBackend(toPush, oldSessionIds) {
     return await pushCurrentWorkoutToBackend(toPush, syncOpts);
 }
 
-function runHistoryCloudSync(toPush, oldSessionIds, dateStr, beforeSnapshot) {
+function runHistoryCloudSync(toPush, oldSessionIds, dateStr, beforeSnapshot, isDayGroup = false) {
     (async () => {
         let syncOutcome = 'synced';
         try {
             updateGlobalSyncIndicator('syncing');
 
-            // 歷史編輯一律全量 replaceSession，避免 addLog 殘留行搞亂其他日期
             const syncRes = await syncHistoryWorkoutToBackend(toPush, oldSessionIds);
 
             if (isBackendSuccess(syncRes)) {
                 updateGlobalSyncIndicator('synced');
                 const d = normalizeDateToLocal(dateStr);
                 const sid = String(toPush.id || toPush.session_id || toPush.sessionId || '').trim();
-                if (sid) {
+                if (isDayGroup) {
+                    workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
+                } else if (sid) {
                     workoutHistory = workoutHistory.filter(w => getWorkoutSessionId(w) !== sid);
+                } else {
+                    workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
                 }
-                workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
                 const saved = JSON.parse(JSON.stringify(toPush));
                 if (sid) saved.id = sid;
+                if (typeof dedupeWorkoutSets === 'function') dedupeWorkoutSets(saved);
                 workoutHistory.unshift(saved);
                 workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
                 saveWorkoutData();

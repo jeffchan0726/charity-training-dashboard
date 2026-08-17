@@ -181,8 +181,11 @@ function deleteSet(exIdx, setIdx) {
     const deletedSet = ex.sets[setIdx];
     ex.sets.splice(setIdx, 1);
 
+    if (deletedSet && deletedSet._syncInFlight) {
+        deletedSet._deleted = true;
+    }
     const logId = deletedSet && (deletedSet.id || deletedSet._clientLogId);
-    if (currentUser && logId) {
+    if (currentUser && logId && !deletedSet._syncInFlight) {
         backgroundDeleteLog(logId);
     }
 
@@ -618,6 +621,7 @@ async function startHoldTimer(exIdx) {
     const now = Date.now();
     activeHoldTimer = {
         exIdx,
+        exName: ex.name,
         targetSeconds: target,
         startTimestamp: now,
         remaining: target,
@@ -692,8 +696,19 @@ function cancelHoldTimer(exIdx) {
     if (displayEl) displayEl.textContent = '--:--';
 }
 
+function resolveHoldTimerIndex(exIdx) {
+    if (!activeHoldTimer) return -1;
+    if (currentWorkout && activeHoldTimer.exName) {
+        const byName = currentWorkout.exercises.findIndex(e => e && e.name === activeHoldTimer.exName);
+        if (byName >= 0) return byName;
+    }
+    return activeHoldTimer.exIdx === exIdx ? exIdx : -1;
+}
+
 function stopHoldTimer(exIdx, autoRecord = true) {
-    if (!activeHoldTimer || activeHoldTimer.exIdx !== exIdx) return;
+    const resolvedIdx = resolveHoldTimerIndex(exIdx);
+    if (!activeHoldTimer || resolvedIdx < 0) return;
+    exIdx = resolvedIdx;
 
     const displayEl = document.getElementById(`hold-timer-display-${exIdx}`);
     const ex = currentWorkout && currentWorkout.exercises[exIdx];
@@ -708,8 +723,11 @@ function stopHoldTimer(exIdx, autoRecord = true) {
         activeHoldTimer.wakeLock.release().catch(() => {});
     }
 
-    const elapsed = Math.max(0, activeHoldTimer.targetSeconds - activeHoldTimer.remaining);
-    const finalDuration = elapsed > 0 ? elapsed : activeHoldTimer.targetSeconds;
+    const elapsedMs = Date.now() - (activeHoldTimer.startTimestamp || Date.now());
+    const elapsed = Math.max(0, Math.round(elapsedMs / 1000));
+    const finalDuration = autoRecord && activeHoldTimer.remaining === 0
+        ? activeHoldTimer.targetSeconds
+        : elapsed;
 
     activeHoldTimer = null;
 

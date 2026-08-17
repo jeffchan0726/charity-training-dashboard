@@ -1121,7 +1121,7 @@ function renderOverallStats() {
     EXERCISE_CATEGORIES.forEach(c => bodyPartVol[c] = { weightKg: 0, distanceKm: 0 });
 
     workoutHistory.forEach(w => {
-        w.exercises.forEach(ex => {
+        (w.exercises || []).forEach(ex => {
             const cat = getExerciseCategory(ex.name);
             ex.sets.forEach(s => {
                 const split = typeof getSetCategoryVolume === 'function'
@@ -1250,7 +1250,10 @@ function computeWeeklyVolumes(weeks = 8) {
         let weekKg = 0;
         let weekKm = 0;
         workoutHistory.forEach(w => {
-            const wd = new Date(w.date);
+            const key = normalizeDateToLocal(w.date);
+            if (!key) return;
+            const parts = key.split('-');
+            const wd = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
             const daysDiff = Math.round((now - wd) / (1000*3600*24));
             if (daysDiff >= i * 7 && daysDiff < (i + 1) * 7) {
                 const t = typeof calculateWorkoutTotals === 'function'

@@ -4,8 +4,12 @@
 
 function renderWorkoutHistory() {
     const container = document.getElementById('workout-history-list');
+    if (!container) return;
+    (workoutHistory || []).forEach(w => {
+        if (typeof dedupeWorkoutSets === 'function') dedupeWorkoutSets(w);
+    });
     container.innerHTML = '';
-    if (workoutHistory.length === 0) {
+    if (!workoutHistory || workoutHistory.length === 0) {
         container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-[#a8a29e]">尚未記錄任何訓練。請在上方開始！</div>`;
         return;
     }
@@ -95,6 +99,9 @@ function groupWorkoutsByDate(workouts = workoutHistory) {
         g.exercises = typeof mergeExercisesByName === 'function'
             ? mergeExercisesByName(allExercises)
             : allExercises;
+        (g.exercises || []).forEach(ex => {
+            if (typeof dedupeSetsInExercise === 'function') dedupeSetsInExercise(ex);
+        });
         g.totalSets = g.exercises.reduce((a, e) => a + (e.sets ? e.sets.length : 0), 0);
         const labels = [];
         g.workouts.forEach(w => {
@@ -533,7 +540,10 @@ function applyHistoryEditLocally(viewing, historyIndex, isDayGroup, dateStr) {
         delete record._isDayGroup;
         delete record._originalCount;
         delete record._sessionIds;
-        record.totalVolume = calculateWorkoutVolume(record);
+        if (typeof dedupeWorkoutSets === 'function') dedupeWorkoutSets(record);
+        record.totalVolume = typeof calculateWorkoutVolume === 'function'
+            ? calculateWorkoutVolume(record)
+            : (typeof refreshWorkoutTotals === 'function' ? refreshWorkoutTotals(record).weightKg : 0);
         workoutHistory.unshift(record);
         if (typeof dedupeWorkoutHistoryBySessionId === 'function') {
             workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
@@ -542,9 +552,12 @@ function applyHistoryEditLocally(viewing, historyIndex, isDayGroup, dateStr) {
     }
 
     let targetIdx = historyIndex;
+    const recordSid = typeof getWorkoutSessionId === 'function' ? getWorkoutSessionId(record) : (record.id || '');
     if (targetIdx < 0 || targetIdx >= workoutHistory.length ||
-        (workoutHistory[targetIdx] && normalizeDateToLocal(workoutHistory[targetIdx].date) !== d)) {
-        targetIdx = workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
+        (workoutHistory[targetIdx] && recordSid && getWorkoutSessionId(workoutHistory[targetIdx]) !== recordSid)) {
+        targetIdx = recordSid
+            ? workoutHistory.findIndex(w => getWorkoutSessionId(w) === recordSid)
+            : workoutHistory.findIndex(w => normalizeDateToLocal(w.date) === d);
     }
     delete record._isDayGroup;
     delete record._originalCount;
@@ -634,7 +647,7 @@ async function saveHistoryEdit() {
         }, 0);
 
         // 雲端同步放背景：只推送有變更的組數（updateLog / deleteLog / addLog）
-        if (currentUser) runHistoryCloudSync(toPush, oldSessionIds, d, beforeSnapshot);
+        if (currentUser) runHistoryCloudSync(toPush, oldSessionIds, d, beforeSnapshot, isDayGroup);
 
     } finally {
         isSavingHistory = false;

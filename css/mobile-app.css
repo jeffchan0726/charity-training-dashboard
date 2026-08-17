@@ -57,8 +57,10 @@ html.mobile-app {
     border-radius: 1.15rem;
 }
 
-.mobile-app #content-overview .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+@media (max-width: 767px) {
+    .mobile-app #content-overview .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
 }
 
 .mobile-app #content-overview .section-card {
@@ -150,7 +152,7 @@ html.mobile-app {
     padding: 0.35rem 0.75rem;
 }
 
-/* Training plan cards — single column feel */
-.mobile-app #content-training .grid {
+/* Training plan cards — keep the 7-day week strip */
+.mobile-app #content-training .grid:not(.grid-cols-7) {
     grid-template-columns: minmax(0, 1fr) !important;
 }
