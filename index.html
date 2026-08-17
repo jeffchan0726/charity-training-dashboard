@@ -51,7 +51,7 @@ Local Development Instructions:
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.4">
+    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.24">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body {
@@ -956,7 +956,7 @@ Local Development Instructions:
             </div>
         </div>
     </div>
-<div id="loginModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+<div id="loginModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[140]">
     <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
         <h3 class="font-bold text-xl mb-4">用戶登入</h3>
         <div class="space-y-4">
@@ -977,7 +977,7 @@ Local Development Instructions:
 </div>
 
     <!-- Add User Modal -->
-    <div id="addUserModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div id="addUserModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[140]">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-md p-5 sm:p-6 mx-4">
             <h3 class="font-bold text-xl mb-4">新增用戶</h3>
             <div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs px-3 py-2 rounded-2xl mb-4">
@@ -1250,11 +1250,11 @@ Local Development Instructions:
                             <div class="text-sm sm:text-base pt-0.5">5. 繩索過頭三頭伸展 (Cable Overhead Triceps Extension)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/seated_dumbbell_press.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <img src="images/seated_dumbbell_press.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
                             <div class="text-sm sm:text-base pt-0.5">6. 坐姿啞鈴肩推 (Seated Dumbbell Shoulder Press)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/cable_crunch.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <img src="images/cable_crunch.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
                             <div class="text-sm sm:text-base pt-0.5">7. 下斜捲腹 (Decline Crunch)</div>
                         </div>
                     </div>
@@ -1316,7 +1316,7 @@ Local Development Instructions:
                     <div>
                         <div class="flex items-center gap-x-2">
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 3</span>
-                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Legs + Shoulders + Core</span>
+                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Legs + Shoulders + Forearms + Core</span>
                         </div>
                         <div class="text-[#a8a29e] text-sm mt-0.5">腿部 + 前臂 + 肩膀 + 核心 • 7 個動作</div>
                     </div>
@@ -1332,11 +1332,11 @@ Local Development Instructions:
                             <div class="text-sm sm:text-base pt-0.5">1. 澤奇深蹲 (Zercher Squats)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/romanian_deadlift.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <img src="images/romanian_deadlift.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
                             <div class="text-sm sm:text-base pt-0.5">2. 羅馬尼亞硬拉 (Romanian Deadlift)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/standing_calf_raise.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0">
+                            <img src="images/standing_calf_raise.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
                             <div class="text-sm sm:text-base pt-0.5">3. 站姿小腿提踵 (Standing Calf Raise)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
@@ -2143,20 +2143,20 @@ Local Development Instructions:
     </div>
 
     <!-- Extracted data for architecture refactor (Option A) -->
-    <script src="js/data.js?v=2.3.9"></script>
-    <script src="js/exercise-gif-map.js?v=2.3.1"></script>
-    <script src="js/utils.js?v=2.3.18"></script>
-    <script src="js/state.js?v=2.3.14"></script>
-    <script src="js/api.js?v=2.3.22"></script>
-    <script src="js/fullscreen.js?v=2.3.7"></script>
-    <script src="js/ui.js?v=2.3.7"></script>
-    <script src="js/ui-log.js?v=2.3.11"></script>
-    <script src="js/ui-history.js?v=2.3.14"></script>
-    <script src="js/ui-calendar.js?v=2.3.7"></script>
-    <script src="js/ui-workoutsets.js?v=2.3.8"></script>
-    <script src="js/ui-library.js?v=2.3.11"></script>
-    <script src="js/ui-analysis.js?v=2.3.8"></script>
-    <script src="js/ui-yugong.js?v=2.3.23"></script>
+    <script src="js/data.js?v=2.3.24"></script>
+    <script src="js/exercise-gif-map.js?v=2.3.24"></script>
+    <script src="js/utils.js?v=2.3.24"></script>
+    <script src="js/state.js?v=2.3.24"></script>
+    <script src="js/api.js?v=2.3.24"></script>
+    <script src="js/fullscreen.js?v=2.3.24"></script>
+    <script src="js/ui.js?v=2.3.24"></script>
+    <script src="js/ui-log.js?v=2.3.24"></script>
+    <script src="js/ui-history.js?v=2.3.24"></script>
+    <script src="js/ui-calendar.js?v=2.3.24"></script>
+    <script src="js/ui-workoutsets.js?v=2.3.24"></script>
+    <script src="js/ui-library.js?v=2.3.24"></script>
+    <script src="js/ui-analysis.js?v=2.3.24"></script>
+    <script src="js/ui-yugong.js?v=2.3.24"></script>
 
     <script>
         /*
@@ -2243,7 +2243,7 @@ Local Development Instructions:
                 cloudLogsReady = false;
                 workoutHistory = [];
                 if (typeof loadWorkoutData === 'function') {
-                    loadWorkoutData({ skipHistory: true });
+                    loadWorkoutData({ skipHistory: false });
                 }
             } catch (err) {
                 console.warn('updateUIAfterLogin log refresh error (non-fatal):', err);
@@ -2311,7 +2311,10 @@ Local Development Instructions:
                 const result = await callAppsScript("login", { user: username, pin: pin });
 
                 if (result.status === "success") {
-                    currentUser = username;   // always store the normalized lowercase version
+                    currentUser = username;
+                    currentUserPin = pin;
+                    try { sessionStorage.setItem('currentUserPin', pin); } catch (_) {}
+                    try { localStorage.setItem('currentUserPin', pin); } catch (_) {}
                     localStorage.setItem('currentUser', currentUser);
                     hideLoginModal();
                     // Restore log UI structure if it was replaced by guard
@@ -2368,7 +2371,10 @@ Local Development Instructions:
                 // ultra cleanup will happen inside or below
             }
             currentUser = null;
+            currentUserPin = null;
             cloudLogsReady = false;
+            try { sessionStorage.removeItem('currentUserPin'); } catch (_) {}
+            try { localStorage.removeItem('currentUserPin'); } catch (_) {}
             localStorage.removeItem('currentUser');
             workoutLogs = [];
             const display = document.getElementById('currentUserDisplay');
@@ -2457,63 +2463,25 @@ Local Development Instructions:
                 workoutLogs = logs;
                 renderLogTable();
 
-                // === Load rich per-user data from backend and rebuild history ===
                 try {
-                    const rawSets = logs;
-                    const grouped = {};
-                    (rawSets || []).forEach(row => {
-                        const normalizedRowDate = normalizeDateToLocal(row.date);
-                        const sid = String(row.session_id || row.sessionId || (normalizedRowDate + '|' + row.exercise)).trim();
-                        if (!grouped[sid]) {
-                            grouped[sid] = {
-                                id: sid,
-                                date: normalizedRowDate,
-                                exercises: {},
-                                notes: ''
-                            };
-                        }
-                        const exName = row.exercise;
-                        if (!grouped[sid].exercises[exName]) {
-                            grouped[sid].exercises[exName] = { name: exName, sets: [] };
-                        }
-                        grouped[sid].exercises[exName].sets.push(
-                            typeof rebuildSetFromLogRow === 'function'
-                                ? rebuildSetFromLogRow(row, exName)
-                                : {
-                                    weight: parseFloat(row.weight) || 0,
-                                    body_weight: row.body_weight != null ? parseFloat(row.body_weight) : 0,
-                                    reps: parseInt(row.reps) || 0,
-                                    duration: row.duration != null ? parseInt(row.duration) : 0,
-                                    incline: row.incline != null ? parseFloat(row.incline) : 0,
-                                    speed: row.speed != null ? parseFloat(row.speed) : 0,
-                                    notes: row.notes || '',
-                                    volume: parseFloat(row.volume) || 0,
-                                    id: row.id || undefined
-                                }
-                        );
-                    });
+                    const localSnapshot = typeof getLocalHistoryFromStorage === 'function'
+                        ? getLocalHistoryFromStorage()
+                        : (Array.isArray(workoutHistory) ? JSON.parse(JSON.stringify(workoutHistory)) : []);
 
-        
-                    workoutHistory = Object.values(grouped).map(w => {
-                        // 使用 normalize 確保日期正確（即使後端偶爾返回 ISO）
-                        const normalizedDate = normalizeDateToLocal(w.date);
+                    const cloudHistory = typeof rebuildWorkoutsFromLogRows === 'function'
+                        ? rebuildWorkoutsFromLogRows(logs)
+                        : [];
 
-                        w.date = normalizedDate;
-                        w.id = String(w.id || '').trim();
-                        w.exercises = Object.values(w.exercises);
-                        if (typeof refreshWorkoutTotals === 'function') {
-                            refreshWorkoutTotals(w);
-                        } else {
-                            w.totalVolume = w.exercises.reduce((sum, ex) => {
-                                return sum + ex.sets.reduce((s, st) => s + (st.volume || 0), 0);
-                            }, 0);
-                        }
-                        return w;
-                    }).sort((a,b) => b.date.localeCompare(a.date));
+                    workoutHistory = typeof mergeCloudAndLocalHistory === 'function'
+                        ? mergeCloudAndLocalHistory(cloudHistory, localSnapshot)
+                        : (cloudHistory.length ? cloudHistory : localSnapshot);
 
                     if (typeof dedupeWorkoutHistoryBySessionId === 'function') {
                         workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
                     }
+                    (workoutHistory || []).forEach(w => {
+                        if (typeof dedupeWorkoutSets === 'function') dedupeWorkoutSets(w);
+                    });
 
                     if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
                     if (typeof saveWorkoutData === 'function') saveWorkoutData();
@@ -3189,10 +3157,14 @@ Local Development Instructions:
                 const snapshot = JSON.parse(JSON.stringify(currentWorkout));
                 if (isContinue && typeof applyContinueWorkoutFinishToLocalHistory === 'function') {
                     applyContinueWorkoutFinishToLocalHistory(snapshot);
-                    rebuildLastPerformed();
-                    saveWorkoutData();
-                    try { renderWorkoutHistory(); } catch (_) {}
+                } else if (typeof upsertWorkoutInHistory === 'function') {
+                    upsertWorkoutInHistory(snapshot);
+                } else {
+                    workoutHistory.unshift(JSON.parse(JSON.stringify(snapshot)));
                 }
+                rebuildLastPerformed();
+                saveWorkoutData();
+                try { renderWorkoutHistory(); } catch (_) {}
 
                 if (currentUser) {
                     finalizeAndSaveWorkout(snapshot, snapshot.notes || '').catch(() => {});
@@ -3227,6 +3199,7 @@ Local Development Instructions:
 
         function addExerciseToCurrentWorkout(nameFromInput = null) {
             if (!currentWorkout) startNewWorkout();
+            if (!currentWorkout) return;
             let name = nameFromInput || document.getElementById('add-exercise-input').value.trim();
             if (!name) return;
 
@@ -3282,6 +3255,14 @@ Local Development Instructions:
                 if (!librarySet.has(name)) candidates.push({ name, score: 80 });
             });
 
+            (exerciseLibrary || []).forEach(ex => {
+                const name = ex && ex.name;
+                if (!name) return;
+                if (!candidates.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+                    candidates.push({ name, score: 40 });
+                }
+            });
+
             // 3. 完整 EXERCISES 作為 fallback
             (EXERCISES || []).forEach(ex => {
                 const name = ex.name || ex;
@@ -3335,10 +3316,18 @@ Local Development Instructions:
 
             const removedName = ex.name;
 
-            // 1. 收集已同步到 Google 的 set IDs（只有成功 sync 後才會有 .id ）
-            // 尚未同步的（只有 _clientLogId 或完全沒有）就本地刪除，in-flight add 會被 Finish reconcile
+            if (typeof activeHoldTimer !== 'undefined' && activeHoldTimer &&
+                (activeHoldTimer.exIdx === exIdx || activeHoldTimer.exName === removedName)) {
+                if (typeof cancelHoldTimer === 'function') cancelHoldTimer(exIdx);
+            } else if (typeof activeHoldTimer !== 'undefined' && activeHoldTimer && activeHoldTimer.exIdx > exIdx) {
+                activeHoldTimer.exIdx -= 1;
+            }
+
             const syncedLogIds = (ex.sets || [])
-                .map(s => s.id)
+                .map(s => {
+                    if (s && s._syncInFlight) s._deleted = true;
+                    return s && s.id;
+                })
                 .filter(Boolean);
 
             // 2. 立即從本地移除 exercise（用戶體驗優先，UI 馬上更新）
@@ -3485,67 +3474,14 @@ Local Development Instructions:
 
         // updateSessionSummary, updateSessionVolume, updateLastPerformedHint, safeSet* moved to js/ui.js (A refactor)
 
-        function setRestPreset(seconds) {
-            resetRestTimer(seconds);
-            // Auto start for convenience
-            startRestTimer();
-        }
+        function setRestPreset() { /* rest timer removed */ }
 
-        function resetRestTimer(seconds = DEFAULT_REST) {
-            pauseRestTimer();
-            restTimeLeft = seconds;
-            updateTimerDisplay();
-            safeSetTextContent('timer-status', '準備就緒');
-        }
+        function resetRestTimer() { /* rest timer removed */ }
 
-        function updateTimerDisplay() {
-            const el = document.getElementById('timer-display');
-            if (!el) return;
-            const min = Math.floor(restTimeLeft / 60);
-            const sec = restTimeLeft % 60;
-            el.textContent = `${min.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;
-            if (restTimeLeft <= 10 && restTimeLeft > 0) {
-                el.classList.add('text-red-400');
-            } else {
-                el.classList.remove('text-red-400');
-            }
-        }
-
-        function startRestTimer() {
-            if (restTimerRunning) return;
-            const btn = document.getElementById('timer-start-btn');
-            if (btn) btn.textContent = 'RUNNING...';
-            restTimerRunning = true;
-            safeSetTextContent('timer-status', '休息中...');
-
-            if (restTimerInterval) clearInterval(restTimerInterval);
-            restTimerInterval = setInterval(() => {
-                restTimeLeft--;
-                updateTimerDisplay();
-                if (restTimeLeft <= 0) {
-                    clearInterval(restTimerInterval);
-                    restTimerRunning = false;
-                    safeSetInnerHTML('timer-status', `<span class="text-emerald-400 font-semibold">時間到 — 下一組！</span>`);
-                    if (btn) btn.textContent = 'START';
-                    playBeep();
-                    // Optional: vibrate on supported devices
-                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                }
-            }, 1000);
-        }
-
-        function pauseRestTimer() {
-            if (restTimerInterval) clearInterval(restTimerInterval);
-            restTimerRunning = false;
-            const btn = document.getElementById('timer-start-btn');
-            if (btn) btn.textContent = 'RESUME';
-            safeSetTextContent('timer-status', '已暫停');
-        }
-
-        function addTimeToTimer(extra) {
-            restTimeLeft += extra;
-            updateTimerDisplay();
-        }
+        function updateTimerDisplay() { /* rest timer removed */ }
+        function startRestTimer() { /* rest timer removed */ }
+        function pauseRestTimer() { /* rest timer removed */ }
+        function addTimeToTimer() { /* rest timer removed */ }
 
         function playBeep() {
             try {
@@ -4001,7 +3937,7 @@ Local Development Instructions:
             // Also offer flat CSV of all sets
             let csv = 'date,exercise,record_type,body_weight_kg,weight_kg,reps,duration,incline,speed,volume_kg_or_km,volume_unit,notes\n';
             workoutHistory.forEach(w => {
-                w.exercises.forEach(ex => {
+                (w.exercises || []).forEach(ex => {
                     const recordType = typeof getExerciseRecordType === 'function'
                         ? getExerciseRecordType(ex.name) : 'weight';
                     ex.sets.forEach(s => {
@@ -4065,7 +4001,7 @@ Local Development Instructions:
                 }
 
                 if (typeof loadWorkoutData === 'function') {
-                    loadWorkoutData({ skipHistory: !!currentUser });
+                    loadWorkoutData({ skipHistory: false });
                 }
 
                 // Guest demo seeding disabled during A refactor.
@@ -4208,7 +4144,10 @@ Local Development Instructions:
                     alert(`用戶 ${username} 已建立！`);
                     hideAddUserModal();
                     // Auto login the user after successful registration (mainstream UX)
-                    currentUser = username;   // store normalized lowercase version
+                    currentUser = username;
+                    currentUserPin = pin;
+                    try { sessionStorage.setItem('currentUserPin', pin); } catch (_) {}
+                    try { localStorage.setItem('currentUserPin', pin); } catch (_) {}
                     localStorage.setItem('currentUser', currentUser);
                     // Restore log UI structure if it was replaced by guard
                     if (typeof originalLogContent !== 'undefined' && originalLogContent) {
@@ -4481,6 +4420,12 @@ Local Development Instructions:
                 if (currentUser !== savedUser) {
                     localStorage.setItem('currentUser', currentUser);
                 }
+                try {
+                    currentUserPin = sessionStorage.getItem('currentUserPin')
+                        || localStorage.getItem('currentUserPin')
+                        || null;
+                    if (currentUserPin) sessionStorage.setItem('currentUserPin', currentUserPin);
+                } catch (_) { currentUserPin = currentUserPin || null; }
                 const display = document.getElementById('currentUserDisplay');
                 if (display) display.classList.remove('hidden');
                 const nameEl = document.getElementById('currentUserName');
@@ -4559,6 +4504,10 @@ Local Development Instructions:
                 } catch (e) {}
             }
 
+            if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            }
+
         }
 
         // Global protection: Esc key to force exit full-screen training mode if stuck
@@ -4601,7 +4550,7 @@ Local Development Instructions:
         window.onload = initialize;
     </script>
 
-    <script src="js/ui-mobile.js?v=2.3.3"></script>
+    <script src="js/ui-mobile.js?v=2.3.24"></script>
 </body>
 
 </html>
