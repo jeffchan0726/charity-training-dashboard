@@ -155,6 +155,10 @@ function addSetToExercise(exIdx) {
     updateSessionSummary();
     saveWorkoutData();
 
+    if (typeof startRestTimer === 'function' && recordType !== 'treadmill') {
+        startRestTimer(90);
+    }
+
     if (currentUser && currentWorkout && currentWorkout.id) {
         backgroundSyncNewSet(ex.name, newSet, currentWorkout.id);
     }
@@ -243,7 +247,8 @@ function renderCurrentWorkout() {
         let lastHtml = '';
         if (lastPerf && lastPerf.sets && lastPerf.sets.length) {
             const lastDate = lastPerf.date ? `（${escapeHtml(lastPerf.date)}）` : '';
-            lastHtml = `<div>上次${lastDate}：</div>`;
+            const overload = typeof suggestProgressiveOverload === 'function' ? suggestProgressiveOverload(ex.name) : '';
+            lastHtml = `<div>上次${lastDate}：${overload ? ' <span class="text-emerald-300">' + escapeHtml(overload) + '</span>' : ''}</div>`;
             lastPerf.sets.forEach((s, i) => {
                 const display = typeof formatSetDisplay === 'function'
                     ? formatSetDisplay(ex.name, s)

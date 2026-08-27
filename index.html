@@ -1287,41 +1287,54 @@ Local Development Instructions:
         <!-- Navigation -->
         <div id="main-top-nav" class="flex flex-wrap gap-1.5 sm:gap-2 mb-6 sm:mb-8 border-b border-[#44403c] pb-3 sm:pb-4 overflow-x-auto">
             <button onclick="switchTab('overview')" id="tab-overview"
-                class="nav-tab active px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">概覽</button>
-            <button onclick="switchTab('schedule')" id="tab-schedule"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">每日時間表</button>
-            <button onclick="switchTab('supplement')" id="tab-supplement"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">Supplements</button>
-            <button onclick="switchTab('training')" id="tab-training"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">訓練計劃</button>
+                class="nav-tab active px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">今日</button>
             <button onclick="switchTab('log')" id="tab-log"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">Workout Log</button>
-            <button onclick="switchTab('yugong')" id="tab-yugong"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">愚公移山</button>
-            <button onclick="switchTab('rixing')" id="tab-rixing"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">日行千里</button>
+                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">訓練</button>
             <button onclick="switchTab('calories')" id="tab-calories"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">卡路里分析</button>
+                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">飲食</button>
+            <button onclick="switchTab('millennium')" id="tab-millennium"
+                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">千年任務</button>
+            <button onclick="switchTab('me')" id="tab-me"
+                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">我</button>
         </div>
 
-        <!-- 概覽 -->
+        <!-- 今日 -->
         <div id="content-overview" class="tab-content">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-                <div class="section-card rounded-3xl p-4 sm:p-6">
-                    <div class="text-xs sm:text-sm text-[#a8a29e]">最新體重</div>
-                    <div class="text-4xl sm:text-5xl font-bold text-[#4ade80] mt-1">89.4 <span class="text-base sm:text-xl">kg</span></div>
+            <div id="overview-dashboard" class="space-y-3">
+                <div class="section-card rounded-3xl p-4 sm:p-5">
+                    <div class="text-[11px] uppercase tracking-widest text-emerald-300 font-bold">今日</div>
+                    <div id="overview-today-status" class="text-lg font-bold mt-1">載入中…</div>
+                    <p id="overview-today-sub" class="text-xs text-[#a8a29e] mt-1"></p>
+                    <div class="grid grid-cols-2 gap-2 mt-3">
+                        <button type="button" onclick="switchTab('log')" class="px-3 py-2.5 bg-emerald-600 rounded-2xl text-sm font-semibold">開始訓練</button>
+                        <button type="button" onclick="switchTab('calories')" class="px-3 py-2.5 border border-[#57534e] rounded-2xl text-sm font-semibold">記一餐</button>
+                    </div>
                 </div>
-                <div class="section-card rounded-3xl p-4 sm:p-6">
-                    <div class="text-xs sm:text-sm text-[#a8a29e]">體脂率</div>
-                    <div class="text-4xl sm:text-5xl font-bold text-[#4ade80] mt-1">24.3 <span class="text-base sm:text-xl">%</span></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="section-card rounded-3xl p-4">
+                        <div class="text-xs text-[#a8a29e]">最新體重</div>
+                        <div id="overview-weight" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                    </div>
+                    <div class="section-card rounded-3xl p-4">
+                        <div class="text-xs text-[#a8a29e]">今日熱量</div>
+                        <div id="overview-kcal" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                    </div>
+                    <div class="section-card rounded-3xl p-4">
+                        <div class="text-xs text-[#a8a29e]">今週訓練</div>
+                        <div id="overview-week-workouts" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                    </div>
+                    <div class="section-card rounded-3xl p-4">
+                        <div class="text-xs text-[#a8a29e]">移山進度</div>
+                        <div id="overview-yugong" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                    </div>
                 </div>
-                <div class="section-card rounded-3xl p-4 sm:p-6">
-                    <div class="text-xs sm:text-sm text-[#a8a29e]">骨骼肌</div>
-                    <div class="text-4xl sm:text-5xl font-bold text-[#4ade80] mt-1">35.3 <span class="text-base sm:text-xl">kg</span></div>
-                </div>
-                <div class="section-card rounded-3xl p-4 sm:p-6">
-                    <div class="text-xs sm:text-sm text-[#a8a29e]">慈善賽進度</div>
-                    <div class="text-4xl sm:text-5xl font-bold text-[#4ade80] mt-1">68%</div>
+                <div class="section-card rounded-3xl p-4">
+                    <div class="text-sm font-bold mb-2">一鍵開訓</div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="startTrainingDay(1)" class="px-2 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold">訓練日 1</button>
+                        <button type="button" onclick="startTrainingDay(2)" class="px-2 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold">訓練日 2</button>
+                        <button type="button" onclick="startTrainingDay(3)" class="px-2 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold">訓練日 3</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1498,6 +1511,7 @@ Local Development Instructions:
                     <div>
                         <div class="flex items-center gap-x-2">
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 1</span>
+                        <button type="button" onclick="event.stopPropagation(); startTrainingDay(1)" class="text-[10px] px-2 py-1 bg-emerald-600 rounded-xl text-white font-semibold">開始</button>
                             <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Chest + Triceps + Shoulders</span>
                         </div>
                         <div class="text-[#a8a29e] text-sm mt-0.5">胸部 + 三頭肌 + 肩膀 • 7 個動作</div>
@@ -1547,6 +1561,7 @@ Local Development Instructions:
                     <div>
                         <div class="flex items-center gap-x-2">
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 2</span>
+                        <button type="button" onclick="event.stopPropagation(); startTrainingDay(2)" class="text-[10px] px-2 py-1 bg-emerald-600 rounded-xl text-white font-semibold">開始</button>
                             <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Back + Biceps + Shoulders + Core</span>
                         </div>
                         <div class="text-[#a8a29e] text-sm mt-0.5">背部 + 二頭肌 + 肩膀 + 核心 • 7 個動作</div>
@@ -1596,6 +1611,7 @@ Local Development Instructions:
                     <div>
                         <div class="flex items-center gap-x-2">
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 3</span>
+                        <button type="button" onclick="event.stopPropagation(); startTrainingDay(3)" class="text-[10px] px-2 py-1 bg-emerald-600 rounded-xl text-white font-semibold">開始</button>
                             <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Legs + Shoulders + Forearms + Core</span>
                         </div>
                         <div class="text-[#a8a29e] text-sm mt-0.5">腿部 + 前臂 + 肩膀 + 核心 • 7 個動作</div>
@@ -1644,7 +1660,14 @@ Local Development Instructions:
     </div>
 
     <!-- 愚公移山 -->
-    <div id="content-yugong" class="tab-content hidden">
+    <div id="content-millennium" class="tab-content hidden">
+        <div class="flex gap-2 mb-4 overflow-x-auto">
+            <button type="button" id="mill-sub-yugong" onclick="showMillenniumPanel('yugong')"
+                class="px-4 py-2 rounded-2xl text-sm font-semibold bg-[#166534] text-white">愚公移山</button>
+            <button type="button" id="mill-sub-rixing" onclick="showMillenniumPanel('rixing')"
+                class="px-4 py-2 rounded-2xl text-sm font-semibold bg-[#292524] border border-[#44403c]">日行千里</button>
+        </div>
+    <div id="content-yugong" class="millennium-panel">
         <div class="section-card rounded-3xl p-4 sm:p-6 overflow-hidden">
             <div class="flex items-start justify-between gap-3 mb-3">
                 <div>
@@ -1736,10 +1759,81 @@ Local Development Instructions:
     </div>
 
     <!-- 日行千里 -->
-    <div id="content-rixing" class="tab-content hidden">
-        <div class="section-card rounded-3xl p-5 sm:p-8">
-            <h2 class="text-xl sm:text-2xl font-bold mb-2">日行千里</h2>
-            <p class="text-sm text-[#a8a29e]">每日有氧與里程追蹤，穩步前進。</p>
+    <div id="content-rixing" class="millennium-panel hidden">
+        <div class="section-card rounded-3xl p-5 sm:p-6">
+            <h2 class="text-xl sm:text-2xl font-bold mb-1 text-emerald-400">日行千里</h2>
+            <p class="text-sm text-[#a8a29e] mb-4">用跑步機紀錄累積里程，穩步前進。</p>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-[#292524] rounded-2xl p-4">
+                    <div class="text-[11px] text-[#a8a29e]">今日里程</div>
+                    <div id="rixing-today-km" class="text-3xl font-bold text-emerald-400 tabular-nums mt-1">0.00 km</div>
+                </div>
+                <div class="bg-[#292524] rounded-2xl p-4">
+                    <div class="text-[11px] text-[#a8a29e]">近 7 日</div>
+                    <div id="rixing-week-km" class="text-3xl font-bold text-emerald-400 tabular-nums mt-1">0.00 km</div>
+                </div>
+            </div>
+            <div id="rixing-week-bars" class="grid grid-cols-7 gap-1.5 mb-4 min-h-[72px]"></div>
+            <div class="flex gap-2 mb-3">
+                <button type="button" onclick="startCardioFromRixing()" class="flex-1 py-2.5 bg-emerald-600 rounded-2xl text-sm font-semibold">記跑步機</button>
+            </div>
+            <h3 class="text-sm font-bold mb-2">最近有氧</h3>
+            <ul id="rixing-recent-list" class="space-y-2 text-sm text-[#a8a29e]"></ul>
+        </div>
+    </div>
+    </div>
+
+    <!-- 我 -->
+    <div id="content-me" class="tab-content hidden">
+        <div class="space-y-3">
+            <div class="section-card rounded-3xl p-4">
+                <h2 class="text-lg font-bold mb-3">身體日誌</h2>
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="text-[11px] text-[#a8a29e]">體重 kg
+                        <input id="body-weight-input" type="number" step="0.1" inputmode="decimal" class="log-input w-full mt-1 px-2 py-2 rounded-xl text-sm">
+                    </label>
+                    <label class="text-[11px] text-[#a8a29e]">體脂 %
+                        <input id="body-bf-input" type="number" step="0.1" inputmode="decimal" class="log-input w-full mt-1 px-2 py-2 rounded-xl text-sm">
+                    </label>
+                    <label class="text-[11px] text-[#a8a29e]">腰圍 cm
+                        <input id="body-waist-input" type="number" step="0.1" inputmode="decimal" class="log-input w-full mt-1 px-2 py-2 rounded-xl text-sm">
+                    </label>
+                </div>
+                <button type="button" onclick="saveBodyLogEntry()" class="mt-3 w-full py-2.5 bg-emerald-600 rounded-2xl text-sm font-semibold">儲存今日身體數據</button>
+                <ul id="body-log-list" class="mt-3 space-y-1 text-xs text-[#a8a29e]"></ul>
+            </div>
+            <div class="section-card rounded-3xl p-4">
+                <h2 class="text-lg font-bold mb-2">今日打卡</h2>
+                <div id="habit-list" class="space-y-2"></div>
+            </div>
+            <div class="section-card rounded-3xl p-4">
+                <h2 class="text-lg font-bold mb-2">近 7 日熱量</h2>
+                <div id="diet-week-bars" class="grid grid-cols-7 gap-1.5 min-h-[80px]"></div>
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    <label class="text-[11px] text-[#a8a29e]">蛋白質目標 g
+                        <input id="calorie-protein-goal-input" type="number" min="40" max="300" class="log-input w-full mt-1 px-2 py-2 rounded-xl text-sm" onchange="saveProteinGoal()">
+                    </label>
+                    <button type="button" onclick="copyLastCalorieMeal()" class="self-end py-2.5 border border-[#57534e] rounded-2xl text-sm font-semibold">複製上一餐</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-2">
+                <button type="button" onclick="switchTab('training')" class="section-card rounded-3xl p-4 text-left">
+                    <div class="font-bold">訓練計劃</div>
+                    <div class="text-xs text-[#a8a29e]">每週 3 日 • 一鍵開始</div>
+                </button>
+                <button type="button" onclick="switchTab('schedule')" class="section-card rounded-3xl p-4 text-left">
+                    <div class="font-bold">每日時間表</div>
+                    <div class="text-xs text-[#a8a29e]">作息同飲食節奏</div>
+                </button>
+                <button type="button" onclick="switchTab('supplement')" class="section-card rounded-3xl p-4 text-left">
+                    <div class="font-bold">補充劑</div>
+                    <div class="text-xs text-[#a8a29e]">早／晚劑量</div>
+                </button>
+                <button type="button" onclick="exportLocalBackup()" class="section-card rounded-3xl p-4 text-left">
+                    <div class="font-bold">匯出備份</div>
+                    <div class="text-xs text-[#a8a29e]">下載本機訓練同飲食 JSON</div>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -2003,6 +2097,15 @@ Local Development Instructions:
                             <span class="mx-1">•</span>
                             <span id="session-tonnes" class="text-amber-400">0.00 t</span>
                             <span id="sync-status" class="text-[10px] ml-1 text-emerald-300/70"></span>
+                        </div>
+                    </div>
+                    <div id="rest-timer-bar" class="hidden mt-2 flex items-center justify-between gap-2 bg-[#14532d] rounded-2xl px-3 py-2">
+                        <span class="text-xs text-emerald-100">組間休息</span>
+                        <span id="rest-timer-display" class="font-bold tabular-nums text-lg text-white">1:30</span>
+                        <div class="flex gap-1">
+                            <button type="button" onclick="startRestTimer(60)" class="text-[10px] px-2 py-1 rounded-lg bg-white/10">60s</button>
+                            <button type="button" onclick="startRestTimer(90)" class="text-[10px] px-2 py-1 rounded-lg bg-white/10">90s</button>
+                            <button type="button" onclick="skipRestTimer()" class="text-[10px] px-2 py-1 rounded-lg bg-white/10">跳過</button>
                         </div>
                     </div>
                 </div>
@@ -2625,6 +2728,7 @@ Local Development Instructions:
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
     <script src="js/ui-calories.js?v=2.3.33"></script>
+    <script src="js/ui-app.js?v=2.3.34"></script>
 
     <script>
         /*
@@ -4684,14 +4788,27 @@ Local Development Instructions:
                 if (targetTab) {
                     targetTab.classList.add('active', 'bg-[#166534]', 'text-white');
                 }
+                if (tab === 'training' || tab === 'schedule' || tab === 'supplement') {
+                    const meBtn = document.getElementById('tab-me');
+                    if (meBtn) meBtn.classList.add('active', 'bg-[#166534]', 'text-white');
+                }
 
                 if (tab === 'log') {
                     ensureAllModalsExist();
                 }
 
-                if (tab === 'yugong' && typeof initYugongTab === 'function') {
-                    initYugongTab();
+                if (tab === 'millennium' || tab === 'yugong' || tab === 'rixing') {
+                    const mill = document.getElementById('content-millennium');
+                    if (mill) mill.classList.remove('hidden');
+                    const millBtn = document.getElementById('tab-millennium');
+                    if (millBtn) millBtn.classList.add('active', 'bg-[#166534]', 'text-white');
+                    if (typeof onAppTabShown === 'function') {
+                        onAppTabShown(tab === 'rixing' ? 'rixing' : (tab === 'yugong' ? 'yugong' : 'millennium'));
+                    }
                 }
+
+                if (tab === 'me' && typeof onAppTabShown === 'function') onAppTabShown('me');
+                if (tab === 'overview' && typeof onAppTabShown === 'function') onAppTabShown('overview');
 
                 if (tab === 'calories' && typeof initCaloriesTab === 'function') {
                     initCaloriesTab();
@@ -4719,7 +4836,7 @@ Local Development Instructions:
                 }
 
                 // 切換 tab 時若背景預載尚未完成，繼續拉取（唔阻塞 UI）
-                if ((tab === 'log' || tab === 'training' || tab === 'yugong') &&
+                if ((tab === 'log' || tab === 'training' || tab === 'millennium' || tab === 'yugong' || tab === 'overview') &&
                     typeof bootstrapGoogleCloudData === 'function') {
                     bootstrapGoogleCloudData().catch(() => {});
                 }
@@ -4982,8 +5099,10 @@ Local Development Instructions:
 
             try {
                 const hash = String(location.hash || '').replace(/^#/, '').split('?')[0];
-                if (hash && document.getElementById('content-' + hash) && typeof switchTab === 'function') {
-                    switchTab(hash);
+                const hashMap = { yugong: 'millennium', rixing: 'millennium' };
+                const mapped = hashMap[hash] || hash;
+                if (mapped && document.getElementById('content-' + mapped) && typeof switchTab === 'function') {
+                    switchTab(hash === 'rixing' ? 'rixing' : mapped);
                 }
             } catch (e) {}
 

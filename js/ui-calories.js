@@ -524,17 +524,23 @@ function renderCalorieResult(entry) {
         if (!entry.items || !entry.items.length) {
             itemsEl.innerHTML = '';
         } else {
-            itemsEl.innerHTML = entry.items.map(item => {
-                const portion = item.portion ? ` · ${escapeHtml(item.portion)}` : '';
+            itemsEl.innerHTML = entry.items.map((item, idx) => {
                 const src = typeof sourceLabel === 'function' ? sourceLabel(item.source) : (item.source || '');
                 const badgeClass = item.fortified ? 'calorie-source-badge fortify' : 'calorie-source-badge';
                 const badge = src ? `<span class="${badgeClass}">${escapeHtml(src)}</span>` : '';
+                const gramsVal = parseFloat(String(item.portion || '').replace(/[^\d.]/g, '')) || '';
                 return `<li class="flex items-center justify-between gap-2 text-xs bg-[#292524] border border-[#44403c] rounded-xl px-3 py-2">
                     <span class="text-[#e7e5e4] min-w-0">
-                        <span class="block truncate">${escapeHtml(item.name)}<span class="text-[#a8a29e]">${portion}</span></span>
+                        <span class="block truncate">${escapeHtml(item.name)}</span>
                         ${badge}
                     </span>
-                    <span class="tabular-nums text-emerald-400 font-semibold flex-shrink-0">${item.calories || 0} kcal</span>
+                    <span class="flex items-center gap-1 flex-shrink-0">
+                        <input type="number" min="10" max="2000" value="${gramsVal}"
+                            class="log-input w-16 px-1 py-1 rounded-lg text-xs tabular-nums"
+                            onchange="updateCalorieItemGrams(${idx}, this.value)">
+                        <span class="text-[#a8a29e]">g</span>
+                        <span class="tabular-nums text-emerald-400 font-semibold">${item.calories || 0} kcal</span>
+                    </span>
                 </li>`;
             }).join('');
         }
