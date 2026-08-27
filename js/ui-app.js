@@ -284,14 +284,50 @@ function saveBodyLogEntry() {
     else if (typeof showToast === 'function') showToast('已儲存身體數據');
 }
 
-function bodyLogMetricHtml(entry, keys) {
+function bodyLogDelta(curr, prev, key) {
+    if (!prev) return null;
+    const a = Number(curr[key]);
+    const b = Number(prev[key]);
+    if (!isFinite(a) || !isFinite(b)) return null;
+    const d = a - b;
+    if (Math.abs(d) < 0.0005) return 0;
+    return d;
+}
+
+function bodyLogDeltaClass(key, d) {
+    if (d == null || d === 0) return 'body-delta-flat';
+    const downGood = { weight: 1, bf: 1, fatKg: 1, visceral: 1, bmi: 1, obesityPct: 1, bodyAge: 1, subFatKg: 1, subFatPct: 1 };
+    const upGood = { muscleKg: 1, musclePct: 1, smmKg: 1, smmPct: 1, lbmKg: 1, waterPct: 1, waterKg: 1, bodyScore: 1, bmr: 1, proteinKg: 1, boneKg: 1 };
+    if (downGood[key]) return d < 0 ? 'body-delta-good' : 'body-delta-bad';
+    if (upGood[key]) return d > 0 ? 'body-delta-good' : 'body-delta-bad';
+    return d < 0 ? 'body-delta-good' : 'body-delta-warn';
+}
+
+function formatBodyLogDelta(key, d) {
+    if (d == null) return '';
+    if (d === 0) return '持平';
+    const sign = d > 0 ? '+' : '';
+    if (key === 'bf' || /Pct$/.test(key) || key === 'bmi' || key === 'whr' || key === 'smi') {
+        return sign + d.toFixed(1);
+    }
+    if (key === 'heartRate' || key === 'bmr' || key === 'bodyScore' || key === 'visceral' || key === 'bodyAge' || key === 'age') {
+        return sign + (Math.abs(d) >= 1 ? String(Math.round(d)) : d.toFixed(1));
+    }
+    return sign + d.toFixed(2);
+}
+
+function bodyLogMetricHtml(entry, keys, prev) {
     const fmt = typeof formatBodyMetric === 'function' ? formatBodyMetric : function (_, v) { return v; };
     const labelOf = typeof uniqueHealthFieldLabel === 'function' ? uniqueHealthFieldLabel : function (k) { return k; };
     return keys.map(function (key) {
         const val = entry[key];
         if (val == null || val === '') return '';
+        const d = bodyLogDelta(entry, prev, key);
+        const deltaHtml = d == null
+            ? ''
+            : '<span class="body-delta ' + bodyLogDeltaClass(key, d) + '">' + formatBodyLogDelta(key, d) + '</span>';
         return '<div class="body-metric"><span class="body-metric-label">' + labelOf(key) +
-            '</span><span class="body-metric-val">' + fmt(key, val) + '</span></div>';
+            '</span><span class="body-metric-val">' + fmt(key, val) + deltaHtml + '</span></div>';
     }).join('');
 }
 
@@ -300,9 +336,10 @@ function renderBodyLog() {
     const latestWrap = document.getElementById('body-latest-metrics');
     const countEl = document.getElementById('body-log-count');
     const rows = getBodyLog();
-    if (countEl) countEl.textContent = rows.length ? ('共 ' + rows.length + ' 筆') : '';
-
     const latest = rows[0];
+    const prev = rows[1];
+    if (countEl) countEl.textContent = rows.length > 1 ? '對比上一次' : (rows.length ? '最新一次' : '');
+
     if (latest) {
         const w = document.getElementById('body-weight-input');
         const b = document.getElementById('body-bf-input');
@@ -316,44 +353,29 @@ function renderBodyLog() {
         } else {
             latestWrap.classList.remove('hidden');
             const primary = (typeof UNIQUE_HEALTH_PRIMARY !== 'undefined' ? UNIQUE_HEALTH_PRIMARY : ['weight', 'bf', 'bmi', 'muscleKg']);
-            const allKeys = (typeof UNIQUE_HEALTH_FIELDS !== 'undefined' ? UNIQUE_HEALTH_FIELDS.map(function (f) { return f.key; }) : Object.keys(latest.metrics || {}));
+            const allKeys = (typeof UNIQUE_HEALTH_FIELDS !== 'undefined' ? UNIQUE_HEALTH_FIELDS.map(function (f) { return f.key; }) : []);
             const rest = allKeys.filter(function (k) {
                 return primary.indexOf(k) < 0 && k !== 'weighedAt' && k !== 'deviceMac' && latest[k] != null && latest[k] !== '';
             });
-            const extras = [];
-            if (latest.metrics) {
-                Object.keys(latest.metrics).forEach(function (h) {
-                    const mapped = typeof UNIQUE_HEALTH_HEADER_MAP !== 'undefined' && UNIQUE_HEALTH_HEADER_MAP[h];
-                    if (!mapped && latest.metrics[h] !== '' && latest.metrics[h] != null) {
-                        extras.push('<div class="body-metric"><span class="body-metric-label">' + h +
-                            '</span><span class="body-metric-val">' + latest.metrics[h] + '</span></div>');
-                    }
-                });
-            }
+            const prevLine = prev
+                ? ('上一次 ' + (prev.weighedAt || prev.date) +
+                    (prev.weight != null ? ' · ' + Number(prev.weight).toFixed(2) + ' kg' : '') +
+                    (prev.bf != null ? ' · 體脂 ' + Number(prev.bf).toFixed(1) + '%' : ''))
+                : '未有上一次紀錄，匯入多一次量度之後會自動對比';
             latestWrap.innerHTML =
-                '<div class="text-[11px] text-[#a8a29e] mb-2">' +
-                    (latest.weighedAt || latest.date) +
-                    (latest.source === 'unique-health' ? ' · Unique Health 全欄位' : ' · 手動') +
+                '<div class="text-[11px] text-[#a8a29e] mb-1">最新 ' + (latest.weighedAt || latest.date) +
+                    (latest.source === 'unique-health' ? ' · Unique Health' : ' · 手動') +
                 '</div>' +
-                '<div class="body-metric-grid">' + bodyLogMetricHtml(latest, primary) + '</div>' +
-                '<details class="mt-2">' +
-                    '<summary class="text-xs text-emerald-300 cursor-pointer">全部指標（' + (rest.length + extras.length) + '）</summary>' +
-                    '<div class="body-metric-grid mt-2">' + bodyLogMetricHtml(latest, rest) + extras.join('') + '</div>' +
-                '</details>';
+                '<div class="text-[11px] text-[#a8a29e] mb-2">' + prevLine + '</div>' +
+                '<div class="body-metric-grid">' + bodyLogMetricHtml(latest, primary, prev) + '</div>' +
+                (rest.length
+                    ? ('<details class="mt-2"><summary class="text-xs text-emerald-300 cursor-pointer">其他指標對比</summary>' +
+                        '<div class="body-metric-grid mt-2">' + bodyLogMetricHtml(latest, rest, prev) + '</div></details>')
+                    : '');
         }
     }
     if (!list) return;
-    list.innerHTML = rows.length
-        ? rows.map(function (e) {
-            const src = e.source === 'unique-health' ? 'UH' : '手動';
-            return '<li class="flex justify-between gap-2 py-1 border-b border-[#292524]">' +
-                '<span>' + (e.weighedAt || e.date) + ' · ' + src + '</span>' +
-                '<span class="text-emerald-300 tabular-nums">' +
-                    (e.weight != null ? Number(e.weight).toFixed(2) + 'kg' : '') +
-                    (e.bf != null ? ' · ' + Number(e.bf).toFixed(1) + '%' : '') +
-                '</span></li>';
-        }).join('')
-        : '<li>未有紀錄。可人手填，或匯入 Unique Health Excel。</li>';
+    list.innerHTML = '';
 }
 
 function clampProteinGoal(n) {

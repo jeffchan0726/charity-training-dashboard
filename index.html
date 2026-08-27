@@ -51,7 +51,7 @@ Local Development Instructions:
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.39">
+    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.44">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body {
@@ -1832,7 +1832,7 @@ Local Development Instructions:
                     <h2 class="text-lg font-bold">身體日誌</h2>
                     <span id="body-log-count" class="text-[11px] text-[#a8a29e]"></span>
                 </div>
-                <p class="text-[11px] text-[#a8a29e] mb-3">匯入 Unique Health 匯出嘅 xlsx，會用晒所有量度同全部欄位。</p>
+                <p class="text-[11px] text-[#a8a29e] mb-3">匯入 Unique Health Excel。只顯示最新一次，並自動同上一次對比。</p>
                 <input id="unique-health-file" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" onchange="onUniqueHealthFile(event)">
                 <button type="button" onclick="triggerUniqueHealthImport()" class="w-full py-2.5 mb-3 border border-emerald-700 text-emerald-300 rounded-2xl text-sm font-semibold">匯入 Unique Health Excel</button>
                 <div class="grid grid-cols-2 gap-2">
@@ -2778,7 +2778,7 @@ Local Development Instructions:
     <script src="js/ui-calories.js?v=2.3.41"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/unique-health.js?v=2.3.43"></script>
-    <script src="js/ui-app.js?v=2.3.43"></script>
+    <script src="js/ui-app.js?v=2.3.44"></script>
 
     <script>
         /*

@@ -307,12 +307,24 @@ html.mobile-app {
     color: #a8a29e;
 }
 .mobile-app .body-metric-val {
-    display: block;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.35rem;
     font-size: 0.82rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
     color: #e7e5e4;
 }
+.mobile-app .body-delta {
+    font-size: 0.65rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.mobile-app .body-delta-good { color: #4ade80; }
+.mobile-app .body-delta-bad { color: #f87171; }
+.mobile-app .body-delta-warn { color: #fbbf24; }
+.mobile-app .body-delta-flat { color: #a8a29e; }
 
 @media (max-width: 400px) {
     .mobile-app .app-title {
