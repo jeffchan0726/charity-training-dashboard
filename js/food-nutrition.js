@@ -1,8 +1,8 @@
 // js/food-nutrition.js
-// 認餸之後：本地香港資料庫 → USDA API → 炒餸加油 fortify
+// 認餸之後：優先用 Grok 營養數字；缺數先至 USDA。已唔再用本地食物庫。
 
-const WOK_SPOON_OIL_G = 27;       // 香港炒鑊「1 湯匙」約 30 ml ≈ 27 g
-const OIL_KCAL_PER_G = 9;         // 油脂 9 kcal/g
+const WOK_SPOON_OIL_G = 27;
+const OIL_KCAL_PER_G = 9;
 const OIL_PRESETS = {
     none: 0,
     light: 1,
@@ -26,7 +26,7 @@ function getSelectedOilMode() {
 
 function noteImpliesNoExtraOil(note) {
     const s = String(note || '');
-    return /蒸|烚|灼|涼拌|無油|冇油|唔加油|不加油|清蒸/.test(s) && !/炒|煎/.test(s);
+    return /蒸|烚|灼|涼拌|無油|冇油|唔加油|不加油|清蒸|炸|煎堆/.test(s) && !/炒/.test(s);
 }
 
 function noteImpliesLightOil(note) {
@@ -36,21 +36,46 @@ function noteImpliesLightOil(note) {
 function resolveOilSpoons(mode, note, needsOil) {
     if (!needsOil) return 0;
     if (noteImpliesNoExtraOil(note)) return 0;
-    if (mode === 'none') return 0;
-    if (noteImpliesLightOil(note) && (mode === 'auto' || mode === 'normal')) return OIL_PRESETS.light;
-    if (mode === 'auto') return OIL_PRESETS.normal;
-    return OIL_PRESETS[mode] != null ? OIL_PRESETS[mode] : OIL_PRESETS.normal;
+    if (mode === 'none' || mode === 'auto' || mode === 'normal') return 0;
+    if (noteImpliesLightOil(note) && mode === 'light') return OIL_PRESETS.light;
+    return OIL_PRESETS[mode] != null ? OIL_PRESETS[mode] : 0;
 }
 
 function itemLooksStirFry(item) {
     if (!item) return false;
     const name = String(item.name_zh || item.name || item.name_en || '');
-    // 漢堡／三文治唔算炒餸，唔好加鑊油
-    if (/漢堡|汉堡|burger|sandwich|三文治/.test(name)) return false;
+    if (/漢堡|汉堡|burger|sandwich|三文治|煎堆|芝麻球/.test(name)) return false;
     if (item.stir_fry || item.is_stir_fry) return true;
     const cooking = String(item.cooking || '').toLowerCase();
     if (cooking === 'stir_fry') return true;
     return /炒|乾炒|滑炒|爆炒/.test(name);
+}
+
+function grokItemHasNutrition(raw) {
+    const cal = Number(raw && raw.calories);
+    return isFinite(cal) && cal > 0;
+}
+
+function itemFromGrok(raw, grams) {
+    const nameZh = String(raw.name_zh || raw.name || '').trim();
+    const g = grams || estimateItemGrams(raw);
+    return {
+        id: 'grok_' + (raw.name_en || nameZh || 'item'),
+        name: nameZh || String(raw.name_en || '食物'),
+        en: String(raw.name_en || raw.en || ''),
+        grams: g,
+        calories: Math.round(Number(raw.calories) || 0),
+        protein_g: roundFoodMacro(raw.protein_g),
+        carbs_g: roundFoodMacro(raw.carbs_g),
+        fat_g: roundFoodMacro(raw.fat_g),
+        fiber_g: roundFoodMacro(raw.fiber_g),
+        sodium_mg: Math.round(Number(raw.sodium_mg) || 0),
+        source: 'grok',
+        cooking: raw.cooking,
+        stir_fry: itemLooksStirFry(raw),
+        portion: (g || 0) + ' g',
+        fromVision: nameZh || raw.name_en
+    };
 }
 
 async function resolveMealNutrition(analysis, options) {
@@ -66,23 +91,9 @@ async function resolveMealNutrition(analysis, options) {
         const nameZh = String(raw.name_zh || raw.name || '').trim();
         const nameEn = String(raw.name_en || raw.en || '').trim();
         const grams = estimateItemGrams(raw);
-        const hit = lookupHkFood(nameZh) || lookupHkFood(nameEn);
 
-        if (hit && hit.kind === 'dish') {
-            const dishGrams = hit.item.parts.reduce(function (s, p) { return s + (p.grams || 0); }, 0) || 400;
-            const scale = grams > 0 && dishGrams > 0 ? grams / dishGrams : 1;
-            expandHkDish(hit.item, scale).forEach(function (row) {
-                row.fromVision = nameZh || nameEn;
-                resolved.push(row);
-            });
-            return;
-        }
-
-        if (hit && hit.kind === 'food') {
-            const row = scaleNutrients(hit.item, grams || hit.item.typical_g || 100);
-            row.stir_fry = itemLooksStirFry(raw);
-            row.fromVision = nameZh || nameEn;
-            resolved.push(row);
+        if (grokItemHasNutrition(raw)) {
+            resolved.push(itemFromGrok(raw, grams));
             return;
         }
 
@@ -106,7 +117,7 @@ async function resolveMealNutrition(analysis, options) {
             const rows = (usdaRes && usdaRes.foods) || [];
             usdaQueries.forEach(function (q, i) {
                 const u = rows[i];
-                if (u && u.calories != null) {
+                if (u && !u.unmatched && Number(u.calories) > 0) {
                     resolved.push({
                         id: 'usda_' + i,
                         name: q.name_zh || u.description || q.name_en,
@@ -136,9 +147,9 @@ async function resolveMealNutrition(analysis, options) {
     }
 
     const mealName = String((analysis && analysis.meal_name) || '');
-    const needsOil = !/漢堡|汉堡|burger|sandwich|三文治/.test(mealName) && (
+    const grokCovered = resolved.some(function (it) { return it && it.source === 'grok'; });
+    const needsOil = !grokCovered && !/漢堡|汉堡|burger|sandwich|三文治|煎堆|芝麻球/.test(mealName) && (
         visionItems.some(itemLooksStirFry) ||
-        resolved.some(function (it) { return it && it.stir_fry && it.dishId; }) ||
         /炒|乾炒|滑炒|爆炒/.test(mealName)
     );
     const spoons = resolveOilSpoons(oilMode, note, needsOil);
@@ -170,6 +181,13 @@ async function resolveMealNutrition(analysis, options) {
         acc.fat_g += Number(it.fat_g) || 0;
         return acc;
     }, { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 });
+
+    if (!totals.calories && analysis && analysis.totals && Number(analysis.totals.calories) > 0) {
+        totals.calories = Math.round(Number(analysis.totals.calories) || 0);
+        totals.protein_g = roundFoodMacro(analysis.totals.protein_g);
+        totals.carbs_g = roundFoodMacro(analysis.totals.carbs_g);
+        totals.fat_g = roundFoodMacro(analysis.totals.fat_g);
+    }
 
     totals.calories = Math.round(totals.calories);
     totals.protein_g = roundFoodMacro(totals.protein_g);
@@ -212,6 +230,7 @@ function estimateItemGrams(raw) {
 }
 
 function sourceLabel(src) {
+    if (src === 'grok' || src === 'grok-4.6') return 'Grok 營養';
     if (src === 'hk-cfs-fcd6') return '香港成分表第6版';
     if (src === 'usda-sr') return 'USDA';
     if (src === 'hk-local-recipe') return '本地組合';
@@ -227,4 +246,9 @@ function cameraScaleHint(camera) {
     if (q === 'good' && has) return { ok: true, text: '已用筷子／碗口作尺。' };
     if (has) return { ok: true, text: '見到尺，份量信心中等。' };
     return { ok: false, text: '相片缺少筷子或碗口，份量容易唔準。' };
+}
+
+function roundFoodMacro(n) {
+    const v = Number(n) || 0;
+    return Math.round(v * 10) / 10;
 }

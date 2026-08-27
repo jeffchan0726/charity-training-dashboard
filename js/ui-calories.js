@@ -343,9 +343,9 @@ async function analyzeCaloriePhoto() {
             return;
         }
 
-        setCalorieBusy(true, '對緊香港／USDA 資料庫…');
+        setCalorieBusy(true, '用 Grok 核對營養…');
         if (typeof resolveMealNutrition !== 'function') {
-            showCalorieError('本地食物資料庫未載入，請重新整理');
+            showCalorieError('營養模組未載入，請重新整理');
             return;
         }
         const nutrition = await resolveMealNutrition(analysis, {
@@ -514,7 +514,7 @@ function renderCalorieResult(entry) {
     }
     const engineEl = document.getElementById('calorie-engine-hint');
     if (engineEl) {
-        const eng = entry.engine === 'grok-4.6' ? '認餸：Grok'
+        const eng = entry.engine === 'grok-4.6' ? '認餸＋營養：Grok'
             : entry.engine === 'qwen3-vl' ? '認餸：Qwen3-VL（後備）'
             : '';
         const oil = entry.oilSpoons > 0 ? ` · 已加炒餸油 ${entry.oilSpoons} 湯匙` : '';
