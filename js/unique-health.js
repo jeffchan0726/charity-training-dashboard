@@ -72,29 +72,93 @@ const UNIQUE_HEALTH_PRIMARY = [
 const UNIQUE_HEALTH_HEADER_MAP = {};
 UNIQUE_HEALTH_FIELDS.forEach(function (f) {
     UNIQUE_HEALTH_HEADER_MAP[f.header] = f;
+    UNIQUE_HEALTH_HEADER_MAP[normalizeUniqueHeader(f.header)] = f;
 });
+
+function normalizeUniqueHeader(h) {
+    return String(h || '')
+        .replace(/^\uFEFF/, '')
+        .replace(/\s+/g, '')
+        .replace(/[（(]/g, '(')
+        .replace(/[）)]/g, ')')
+        .replace(/\(kg\)|\(cm\)|kg|cm|％|%/gi, '')
+        .replace(/次\/min/gi, '')
+        .toLowerCase();
+}
+
+function matchUniqueHealthField(header) {
+    if (!header) return null;
+    if (UNIQUE_HEALTH_HEADER_MAP[header]) return UNIQUE_HEALTH_HEADER_MAP[header];
+    const n = normalizeUniqueHeader(header);
+    if (UNIQUE_HEALTH_HEADER_MAP[n]) return UNIQUE_HEALTH_HEADER_MAP[n];
+
+    const rules = [
+        { key: 'weighedAt', tests: ['稱重時間', '称重时间', '測量時間', '测量时间', '稱重', '称重'] },
+        { key: 'bf', tests: ['體脂率', '体脂率', '體脂', '体脂'] },
+        { key: 'weight', tests: ['體重', '体重'], skip: ['標準', '标准', '理想', '控制', '去脂'] },
+        { key: 'bmi', tests: ['bmi'] },
+        { key: 'muscleKg', tests: ['肌肉量'], skip: ['左', '右', '軀', '躯', '手', '腳', '脚', '腿', '臂'] },
+        { key: 'musclePct', tests: ['肌肉率'], skip: ['左', '右', '軀', '躯', '手', '腳', '脚', '腿', '臂', '骨骼'] },
+        { key: 'smmKg', tests: ['骨骼肌量'] },
+        { key: 'smmPct', tests: ['骨骼肌率'] },
+        { key: 'visceral', tests: ['內臟脂肪', '内脏脂肪'] },
+        { key: 'bmr', tests: ['bmr', '基礎代謝', '基础代谢'] },
+        { key: 'waterPct', tests: ['體水分率', '体水分率'] },
+        { key: 'waterKg', tests: ['水分量'] },
+        { key: 'fatKg', tests: ['脂肪量'], skip: ['皮下', '左', '右', '軀', '躯', '控制'] },
+        { key: 'heartRate', tests: ['心率'] },
+        { key: 'bodyScore', tests: ['身體得分', '身体得分'] },
+        { key: 'heightCm', tests: ['身高'] },
+        { key: 'age', tests: ['年齡', '年龄'] }
+    ];
+    for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i];
+        const skip = rule.skip && rule.skip.some(function (s) { return header.indexOf(s) >= 0; });
+        if (skip) continue;
+        if (rule.tests.some(function (t) { return n.indexOf(normalizeUniqueHeader(t)) >= 0 || header.indexOf(t) >= 0; })) {
+            return UNIQUE_HEALTH_FIELDS.find(function (f) { return f.key === rule.key; }) || { key: rule.key, label: rule.key };
+        }
+    }
+    return UNIQUE_HEALTH_FIELDS.find(function (f) {
+        return n === normalizeUniqueHeader(f.header) || n.indexOf(normalizeUniqueHeader(f.label)) >= 0;
+    }) || null;
+}
 
 function uniqueHealthNum(v) {
     if (v == null || v === '') return null;
+    if (v instanceof Date && !isNaN(v.getTime())) return v.getTime();
     if (typeof v === 'number' && !isNaN(v)) return v;
-    const n = parseFloat(String(v).replace(/,/g, ''));
-    return isNaN(n) ? String(v) : n;
+    const n = parseFloat(String(v).replace(/,/g, '').replace(/[^\d.\-]/g, ''));
+    return isNaN(n) ? null : n;
 }
 
 function uniqueHealthWeighedAt(v) {
     if (v == null || v === '') return '';
-    if (typeof v === 'number' && typeof XLSX !== 'undefined' && XLSX.SSF) {
+    if (v instanceof Date && !isNaN(v.getTime())) {
+        const p = function (n) { return String(n).padStart(2, '0'); };
+        return v.getFullYear() + '-' + p(v.getMonth() + 1) + '-' + p(v.getDate()) + ' ' +
+            p(v.getHours()) + ':' + p(v.getMinutes()) + ':' + p(v.getSeconds());
+    }
+    if (typeof v === 'number' && v > 20000 && v < 80000 && typeof XLSX !== 'undefined' && XLSX.SSF) {
         try {
             const parsed = XLSX.SSF.parse_date_code(v);
             if (parsed) {
                 const p = function (n) { return String(n).padStart(2, '0'); };
                 return parsed.y + '-' + p(parsed.m) + '-' + p(parsed.d) + ' ' +
-                    p(parsed.H) + ':' + p(parsed.M) + ':' + p(Math.floor(parsed.S || 0));
+                    p(parsed.H || 0) + ':' + p(parsed.M || 0) + ':' + p(Math.floor(parsed.S || 0));
             }
         } catch (e) {}
     }
-    const s = String(v).trim().replace('T', ' ');
-    return s.length >= 19 ? s.slice(0, 19) : s;
+    const s = String(v).trim().replace('T', ' ').replace(/\//g, '-');
+    const m = s.match(/(\d{4}-\d{1,2}-\d{1,2})(?:\s+(\d{1,2}:\d{1,2}(?::\d{1,2})?))?/);
+    if (m) {
+        const d = m[1].split('-').map(function (x, i) { return i === 0 ? x : String(x).padStart(2, '0'); }).join('-');
+        const t = (m[2] || '00:00:00');
+        const tp = t.split(':').map(function (x) { return String(x).padStart(2, '0'); });
+        while (tp.length < 3) tp.push('00');
+        return d + ' ' + tp.join(':');
+    }
+    return s;
 }
 
 function parseUniqueHealthObjects(rows) {
@@ -102,30 +166,116 @@ function parseUniqueHealthObjects(rows) {
     return rows.map(function (row) {
         const rec = { source: 'unique-health', metrics: {} };
         Object.keys(row).forEach(function (header) {
+            if (String(header).indexOf('__EMPTY') === 0) return;
             const raw = row[header];
             rec.metrics[header] = raw;
-            const field = UNIQUE_HEALTH_HEADER_MAP[header];
+            const field = matchUniqueHealthField(header);
             if (!field) return;
-            rec[field.key] = field.key === 'weighedAt' || field.key === 'deviceMac' || field.key === 'bodyType'
-                ? (field.key === 'weighedAt' ? uniqueHealthWeighedAt(raw) : (raw == null ? '' : String(raw)))
-                : uniqueHealthNum(raw);
+            if (field.key === 'weighedAt') rec.weighedAt = uniqueHealthWeighedAt(raw);
+            else if (field.key === 'deviceMac' || field.key === 'bodyType') rec[field.key] = raw == null ? '' : String(raw);
+            else rec[field.key] = uniqueHealthNum(raw);
         });
         const at = rec.weighedAt || '';
-        rec.date = at.slice(0, 10);
+        rec.date = (at.match(/^\d{4}-\d{2}-\d{2}/) || [])[0] || '';
         rec.time = at.slice(11, 19);
         rec.id = 'uh_' + at.replace(/[^\d]/g, '');
-        rec.weight = rec.weight != null ? Number(rec.weight) : null;
-        rec.bf = rec.bf != null ? Number(rec.bf) : null;
+        if (rec.weight != null) rec.weight = Number(rec.weight);
+        if (rec.bf != null) rec.bf = Number(rec.bf);
+        if (isNaN(rec.weight)) rec.weight = null;
+        if (isNaN(rec.bf)) rec.bf = null;
         return rec;
-    }).filter(function (r) { return r.date && (r.weight || r.bf); });
+    }).filter(function (r) {
+        const w = r.weight;
+        const okWeight = w != null && w > 20 && w < 400;
+        const okBf = r.bf != null && r.bf > 1 && r.bf < 80;
+        return r.date && (okWeight || okBf);
+    });
+}
+
+function uniqueHealthHeaderRowIndex(aoa) {
+    const max = Math.min(aoa.length, 12);
+    let best = -1;
+    let bestScore = 0;
+    for (let i = 0; i < max; i++) {
+        const row = aoa[i] || [];
+        let score = 0;
+        row.forEach(function (cell) {
+            const s = String(cell || '');
+            if (/稱重|称重|測量時間|测量时间/.test(s)) score += 5;
+            if (/體脂|体脂/.test(s)) score += 4;
+            if (/體重|体重/.test(s)) score += 3;
+            if (/BMI/i.test(s)) score += 1;
+        });
+        if (score > bestScore) {
+            bestScore = score;
+            best = i;
+        }
+    }
+    return bestScore >= 5 ? best : (bestScore >= 3 ? best : 0);
+}
+
+function aoaToObjects(aoa) {
+    const hi = uniqueHealthHeaderRowIndex(aoa);
+    const headers = (aoa[hi] || []).map(function (h, i) { return String(h || '').trim() || ('col' + i); });
+    const out = [];
+    for (let r = hi + 1; r < aoa.length; r++) {
+        const line = aoa[r] || [];
+        if (!line.some(function (c) { return c !== '' && c != null; })) continue;
+        const obj = {};
+        headers.forEach(function (h, i) { obj[h] = line[i]; });
+        out.push(obj);
+    }
+    return out;
 }
 
 function parseUniqueHealthWorkbook(wb) {
-    const name = (wb.SheetNames || []).find(function (n) { return String(n).indexOf('身體') >= 0; }) || wb.SheetNames[0];
-    const sheet = wb.Sheets[name];
-    if (!sheet) return [];
-    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
-    return parseUniqueHealthObjects(rows);
+    if (!wb || !wb.SheetNames || !wb.SheetNames.length) return [];
+    const names = wb.SheetNames.slice();
+    names.sort(function (a, b) {
+        const sa = /身體|身体|數據|数据/.test(a) ? 0 : 1;
+        const sb = /身體|身体|數據|数据/.test(b) ? 0 : 1;
+        return sa - sb;
+    });
+    let best = [];
+    names.forEach(function (name) {
+        const sheet = wb.Sheets[name];
+        if (!sheet) return;
+        const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+        const rows = aoaToObjects(aoa);
+        const parsed = parseUniqueHealthObjects(rows);
+        if (parsed.length > best.length) best = parsed;
+    });
+    return best;
+}
+
+function decodeUniqueHealthText(buf) {
+    const utf8 = new TextDecoder('utf-8').decode(buf);
+    if (/稱重|称重|體重|体重|體脂|体脂/.test(utf8) && utf8.indexOf('\uFFFD') < 0) return utf8;
+    const encodings = ['gbk', 'gb18030', 'big5'];
+    for (let i = 0; i < encodings.length; i++) {
+        try {
+            const t = new TextDecoder(encodings[i]).decode(buf);
+            if (/稱重|称重|體重|体重|體脂|体脂/.test(t)) return t;
+        } catch (e) {}
+    }
+    return utf8;
+}
+
+function parseUniqueHealthBuffer(buf) {
+    if (typeof XLSX === 'undefined') return [];
+    const attempts = [];
+    try { attempts.push(XLSX.read(buf, { type: 'array', cellDates: true })); } catch (e) {}
+    try { attempts.push(XLSX.read(buf, { type: 'array' })); } catch (e) {}
+    try {
+        const text = decodeUniqueHealthText(buf);
+        attempts.push(XLSX.read(text, { type: 'string' }));
+    } catch (e) {}
+    let best = [];
+    attempts.forEach(function (wb) {
+        const parsed = parseUniqueHealthWorkbook(wb);
+        if (parsed.length > best.length) best = parsed;
+    });
+    return best;
 }
 
 function triggerUniqueHealthImport() {
@@ -145,10 +295,9 @@ function onUniqueHealthFile(ev) {
     reader.onload = function (e) {
         try {
             const data = new Uint8Array(e.target.result);
-            const wb = XLSX.read(data, { type: 'array', cellDates: true });
-            const incoming = parseUniqueHealthWorkbook(wb);
+            const incoming = parseUniqueHealthBuffer(data);
             if (!incoming.length) {
-                if (typeof showToast === 'function') showToast('檔案冇有效量度（要有稱重時間同體重／體脂）');
+                if (typeof showToast === 'function') showToast('認唔到 Unique Health 欄位。請用 App 入面「匯出 Excel／身體數據」嗰個 xlsx');
                 return;
             }
             mergeUniqueHealthRecords(incoming);
