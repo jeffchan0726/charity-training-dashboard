@@ -1,0 +1,13 @@
+agent-tools/
+mcps/
+Thumbs.db
+.DS_Store
+*.log
+
+# Accidental nested copies
+css/css/
+js/js/
+images/images/
+
+# Backend source is deployed in Apps Script, not the public repo
+Google_Apps_Script.txt
