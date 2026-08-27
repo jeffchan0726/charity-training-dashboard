@@ -15,8 +15,9 @@ function enterImmersiveMode() {
             if (!immersivePanelOriginalParent) {
                 immersivePanelOriginalParent = panel.parentNode;
             }
-            if (immersivePanelOriginalParent && panel.parentNode !== document.body) {
-                document.body.appendChild(panel);
+            const shell = document.getElementById('app-shell') || document.body;
+            if (immersivePanelOriginalParent && panel.parentNode !== shell) {
+                shell.appendChild(panel);
             }
             // Ensure it pops to full viewport (CSS rules handle most, but force important styles)
             panel.style.position = 'fixed';

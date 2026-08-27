@@ -1,12 +1,45 @@
-/* Mobile-only app shell — 手機用戶專用 UI */
+/* Mobile-only app shell — 全程手機風格，電腦都用同一套畫面 */
 
 html.mobile-app {
     -webkit-tap-highlight-color: transparent;
+    background: #0c0a09;
 }
 
 .mobile-app body {
     overscroll-behavior-y: none;
     padding-bottom: 0;
+    margin: 0;
+    background: #0c0a09;
+    color: #e7e5e4;
+}
+
+#app-shell {
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    min-height: 100svh;
+    background: #1c1917;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* fixed 層跟住手機欄置中，唔好用 transform 以免 sticky 頁頭失效 */
+.mobile-app .fixed.inset-0,
+.mobile-app #live-log-panel {
+    max-width: 430px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100%;
+}
+
+@media (min-width: 431px) {
+    #app-shell {
+        box-shadow: 0 0 0 1px #292524, 0 24px 80px rgba(0, 0, 0, 0.55);
+        min-height: 100dvh;
+    }
 }
 
 /* ── Compact header ── */
@@ -58,20 +91,8 @@ html.mobile-app {
     border-radius: 1.15rem;
 }
 
-@media (max-width: 767px) {
-    .mobile-app #content-overview .overview-stats-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-}
-
-@media (max-width: 400px) {
-    .mobile-app .app-title {
-        font-size: 0.92rem;
-    }
-    .mobile-app .app-header-btn {
-        min-width: 36px;
-        padding: 0.35rem 0.55rem;
-    }
+.mobile-app #content-overview .overview-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
 .mobile-app #content-overview .section-card {
@@ -80,6 +101,45 @@ html.mobile-app {
 
 .mobile-app #content-overview .text-4xl {
     font-size: 1.75rem !important;
+}
+
+/* Tailwind sm/md/lg 係跟視窗闊度，唔跟 App 欄。全程鎖死手機排版。 */
+.mobile-app .sm\:flex-row {
+    flex-direction: column !important;
+}
+.mobile-app .sm\:items-center {
+    align-items: stretch !important;
+}
+.mobile-app .sm\:justify-between {
+    justify-content: flex-start !important;
+}
+.mobile-app .sm\:w-auto {
+    width: 100% !important;
+}
+.mobile-app .sm\:grid-cols-2,
+.mobile-app .sm\:grid-cols-3,
+.mobile-app .md\:grid-cols-4,
+.mobile-app .lg\:grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+}
+.mobile-app .md\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.mobile-app .max-w-7xl {
+    max-width: none !important;
+}
+.mobile-app .sm\:px-6 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+}
+.mobile-app .sm\:p-8 {
+    padding: 1.25rem !important;
+}
+.mobile-app .sm\:text-2xl {
+    font-size: 1.25rem !important;
+}
+.mobile-app .sm\:max-w-md {
+    max-width: 100% !important;
 }
 
 /* Analysis: full-width stacked controls */
@@ -117,24 +177,34 @@ html.mobile-app {
     margin-bottom: 0.15rem;
 }
 
-/* Modals: bottom-sheet feel on phone */
+/* Modals stay inside the phone column */
+.mobile-app [id$="Modal"].fixed {
+    align-items: flex-end !important;
+}
+
 .mobile-app #loginModal > div,
 .mobile-app #addUserModal > div,
-.mobile-app #exerciseDetailModal > div {
+.mobile-app #exerciseDetailModal > div,
+.mobile-app #finishModal > div,
+.mobile-app #historyEditModal > div,
+.mobile-app #unfinishedWorkoutModal > div,
+.mobile-app #routinesModal > div,
+.mobile-app #workoutSetModal > div,
+.mobile-app #libraryModal > div,
+.mobile-app #customExerciseModal > div,
+.mobile-app #addLogModal > div {
     margin-bottom: 0;
     max-height: 92dvh;
     overflow-y: auto;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 1.25rem 1.25rem 0 0 !important;
 }
 
 .mobile-app #exerciseDetailModal {
     align-items: flex-end !important;
-}
-
-.mobile-app #exerciseDetailModal > div {
-    border-radius: 1.25rem 1.25rem 0 0 !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    margin: 0 !important;
 }
 
 /* Scrollable chips hide scrollbar visually */
@@ -146,15 +216,10 @@ html.mobile-app {
     display: none;
 }
 
-/* Disable hover lift on touch devices */
-@media (hover: none) {
-    .exercise-card:hover {
-        transform: none;
-        box-shadow: none;
-    }
-    .perf-card:hover {
-        transform: none;
-    }
+.mobile-app .exercise-card:hover,
+.mobile-app .perf-card:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .mobile-app .time-range-btn {
@@ -190,6 +255,10 @@ html.mobile-app {
     height: 80px;
 }
 
+.mobile-app .calorie-ring-wrap {
+    grid-template-columns: auto 1fr;
+}
+
 .mobile-app .calorie-entry-row {
     padding: 0.55rem 0.6rem;
 }
@@ -215,4 +284,24 @@ html.mobile-app {
 
 .mobile-app #main-top-nav .nav-tab {
     flex-shrink: 0;
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    font-size: 0.75rem !important;
+}
+
+@media (max-width: 400px) {
+    .mobile-app .app-title {
+        font-size: 0.92rem;
+    }
+    .mobile-app .app-header-btn {
+        min-width: 36px;
+        padding: 0.35rem 0.55rem;
+    }
+    .mobile-app .calorie-ring-wrap {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        text-align: center;
+    }
 }
