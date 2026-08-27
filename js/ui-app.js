@@ -116,17 +116,17 @@ function renderOverviewDashboard() {
     const weightEl = document.getElementById('overview-weight');
     if (weightEl) {
         const w = (latest && latest.weight) || (typeof lastBodyWeightKg === 'number' ? lastBodyWeightKg : null);
-        weightEl.innerHTML = w ? (w + ' <span class="text-base">kg</span>') : '—';
+        weightEl.innerHTML = w ? (w + ' <span class="text-base font-medium text-[#a8a29e]">kg</span>') : '<span class="text-xl text-[#a8a29e]">未有</span>';
     }
     const kcalEl = document.getElementById('overview-kcal');
-    if (kcalEl) kcalEl.innerHTML = Math.round(kcalToday) + ' <span class="text-base">/ ' + goal + '</span>';
+    if (kcalEl) kcalEl.innerHTML = Math.round(kcalToday) + ' <span class="text-base font-medium text-[#a8a29e]">/ ' + goal + '</span>';
     const weekEl = document.getElementById('overview-week-workouts');
-    if (weekEl) weekEl.textContent = weekWorkouts + ' 日';
+    if (weekEl) weekEl.innerHTML = weekWorkouts + ' <span class="text-base font-medium text-[#a8a29e]">日</span>';
     const yugongEl = document.getElementById('overview-yugong');
     if (yugongEl && typeof getYugongStats === 'function') {
         const st = getYugongStats();
         yugongEl.textContent = (st.progressPct || 0).toFixed(1) + '%';
-    } else if (yugongEl) yugongEl.textContent = '—';
+    } else if (yugongEl) yugongEl.innerHTML = '<span class="text-xl text-[#a8a29e]">0%</span>';
 
     const statusEl = document.getElementById('overview-today-status');
     const subEl = document.getElementById('overview-today-sub');
@@ -138,9 +138,9 @@ function renderOverviewDashboard() {
         else statusEl.textContent = '今日未訓練';
     }
     if (subEl) {
-        subEl.textContent = rest
-            ? '恢復日。可以行下、伸展，或者記一餐。'
-            : ('蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + goal + ' kcal');
+        if (!currentUser) subEl.textContent = '登入之後就可以記訓練同飲食。';
+        else if (rest) subEl.textContent = '恢復日。可以行下、伸展，或者記一餐。';
+        else subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + goal + ' kcal';
     }
     markTrainingRestDay();
 }
@@ -446,6 +446,14 @@ function onAppTabShown(tab) {
 function loadAppPrefs() {
     const n = parseInt(localStorage.getItem(getAppStorageKey('proteinGoal')), 10);
     if (n >= 40 && n <= 300) calorieDailyProteinGoal = n;
+}
+
+function refreshAppShell() {
+    loadAppPrefs();
+    renderOverviewDashboard();
+    renderBodyLog();
+    renderHabits();
+    renderDietWeekBars();
 }
 
 loadAppPrefs();

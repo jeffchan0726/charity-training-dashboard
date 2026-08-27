@@ -41,6 +41,8 @@ function enterImmersiveMode() {
         }
 
         // Hide main navigation elements for focus (explicit JS control instead of broad CSS to prevent blank page issues)
+        const chrome = document.getElementById('app-chrome');
+        if (chrome) chrome.style.display = 'none';
         const mainNav = document.getElementById('main-top-nav')
             || document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
         if (mainNav) mainNav.style.display = 'none';
@@ -122,7 +124,9 @@ function exitImmersiveMode() {
         }
 
         // Restore main navigation and header (explicit, to match simplified CSS)
-        const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
+        const chrome = document.getElementById('app-chrome');
+        if (chrome) chrome.style.display = '';
+        const mainNav = document.getElementById('main-top-nav');
         if (mainNav) mainNav.style.display = '';
 
         const header = document.querySelector('.charity-header');
@@ -172,8 +176,12 @@ function exitImmersiveMode() {
                 if (rec) rec.classList.add('hidden');
             }
         }
-        const mainNav = document.querySelector('.flex.flex-wrap.gap-1\\.5.sm\\:gap-2.mb-6');
+        const chrome = document.getElementById('app-chrome');
+        if (chrome) chrome.style.display = '';
+        const mainNav = document.getElementById('main-top-nav');
         if (mainNav) mainNav.style.display = '';
+        const header = document.querySelector('.charity-header');
+        if (header) header.style.display = '';
         const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
         if (topHeader) topHeader.style.display = '';
         const subNav = document.getElementById('log-sub-nav');

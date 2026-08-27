@@ -51,7 +51,7 @@ Local Development Instructions:
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.33">
+    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.35">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body {
@@ -121,6 +121,26 @@ Local Development Instructions:
         .nav-tab.active {
             background-color: #166534;
             color: white;
+        }
+        #app-chrome {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: #1c1917;
+        }
+        #main-top-nav {
+            background: #1c1917;
+            -webkit-overflow-scrolling: touch;
+        }
+        #rest-timer-bar.hidden { display: none !important; }
+        #rest-timer-bar:not(.hidden) { display: flex; }
+        .me-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: #a8a29e;
+            margin-bottom: 0.75rem;
         }
 
         .exercise-card {
@@ -875,6 +895,13 @@ Local Development Instructions:
             gap: 1rem;
             align-items: center;
         }
+        @media (max-width: 380px) {
+            .calorie-ring-wrap {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+            }
+        }
         .calorie-ring {
             --pct: 0;
             width: 118px;
@@ -1192,10 +1219,11 @@ Local Development Instructions:
 
 <body class="bg-[#1c1917] text-[#e7e5e4]">
 
-    <!-- Header (mobile-compact) -->
-    <div id="app-header" class="charity-header text-white sticky top-0 z-50">
-        <div class="app-header-inner max-w-lg mx-auto px-4">
-            <div class="flex items-center justify-between gap-2">
+    <!-- Header + tabs stay together so nav never slides under the title bar -->
+    <div id="app-chrome">
+    <div id="app-header" class="charity-header text-white">
+        <div class="app-header-inner max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between gap-2 overflow-hidden">
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
                     <i class="fa-solid fa-heart text-xl shrink-0"></i>
                     <div class="min-w-0">
@@ -1230,6 +1258,23 @@ Local Development Instructions:
                         <i id="initial-sync-icon" class="fa-solid fa-cloud-download-alt text-[9px] sm:text-[10px]"></i>
                         <span id="initial-sync-text" class="hidden text-[9px] sm:text-[10px] leading-none"></span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <div class="bg-[#1c1917] border-b border-[#44403c]">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-2">
+                <div id="main-top-nav" class="flex flex-nowrap gap-1.5 sm:gap-2 pb-3 overflow-x-auto">
+                    <button onclick="switchTab('overview')" id="tab-overview"
+                        class="nav-tab active px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">今日</button>
+                    <button onclick="switchTab('log')" id="tab-log"
+                        class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">訓練</button>
+                    <button onclick="switchTab('calories')" id="tab-calories"
+                        class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">飲食</button>
+                    <button onclick="switchTab('millennium')" id="tab-millennium"
+                        class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">千年任務</button>
+                    <button onclick="switchTab('me')" id="tab-me"
+                        class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">我</button>
                 </div>
             </div>
         </div>
@@ -1284,48 +1329,34 @@ Local Development Instructions:
     </div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-8 sm:pb-12">
 
-        <!-- Navigation -->
-        <div id="main-top-nav" class="flex flex-wrap gap-1.5 sm:gap-2 mb-6 sm:mb-8 border-b border-[#44403c] pb-3 sm:pb-4 overflow-x-auto">
-            <button onclick="switchTab('overview')" id="tab-overview"
-                class="nav-tab active px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">今日</button>
-            <button onclick="switchTab('log')" id="tab-log"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">訓練</button>
-            <button onclick="switchTab('calories')" id="tab-calories"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">飲食</button>
-            <button onclick="switchTab('millennium')" id="tab-millennium"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">千年任務</button>
-            <button onclick="switchTab('me')" id="tab-me"
-                class="nav-tab px-3.5 sm:px-6 py-2 sm:py-3 rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap">我</button>
-        </div>
-
         <!-- 今日 -->
         <div id="content-overview" class="tab-content">
             <div id="overview-dashboard" class="space-y-3">
                 <div class="section-card rounded-3xl p-4 sm:p-5">
                     <div class="text-[11px] uppercase tracking-widest text-emerald-300 font-bold">今日</div>
-                    <div id="overview-today-status" class="text-lg font-bold mt-1">載入中…</div>
+                    <div id="overview-today-status" class="text-lg font-bold mt-1">登入開始今日訓練</div>
                     <p id="overview-today-sub" class="text-xs text-[#a8a29e] mt-1"></p>
                     <div class="grid grid-cols-2 gap-2 mt-3">
                         <button type="button" onclick="switchTab('log')" class="px-3 py-2.5 bg-emerald-600 rounded-2xl text-sm font-semibold">開始訓練</button>
                         <button type="button" onclick="switchTab('calories')" class="px-3 py-2.5 border border-[#57534e] rounded-2xl text-sm font-semibold">記一餐</button>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="overview-stats-grid grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div class="section-card rounded-3xl p-4">
                         <div class="text-xs text-[#a8a29e]">最新體重</div>
-                        <div id="overview-weight" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                        <div id="overview-weight" class="text-3xl font-bold text-[#4ade80] mt-1"><span class="text-xl text-[#a8a29e]">未有</span></div>
                     </div>
                     <div class="section-card rounded-3xl p-4">
                         <div class="text-xs text-[#a8a29e]">今日熱量</div>
-                        <div id="overview-kcal" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                        <div id="overview-kcal" class="text-3xl font-bold text-[#4ade80] mt-1">0 <span class="text-base font-medium text-[#a8a29e]">/ 2000</span></div>
                     </div>
                     <div class="section-card rounded-3xl p-4">
                         <div class="text-xs text-[#a8a29e]">今週訓練</div>
-                        <div id="overview-week-workouts" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                        <div id="overview-week-workouts" class="text-3xl font-bold text-[#4ade80] mt-1">0 <span class="text-base font-medium text-[#a8a29e]">日</span></div>
                     </div>
                     <div class="section-card rounded-3xl p-4">
                         <div class="text-xs text-[#a8a29e]">移山進度</div>
-                        <div id="overview-yugong" class="text-3xl font-bold text-[#4ade80] mt-1">—</div>
+                        <div id="overview-yugong" class="text-3xl font-bold text-[#4ade80] mt-1">0%</div>
                     </div>
                 </div>
                 <div class="section-card rounded-3xl p-4">
@@ -1341,59 +1372,60 @@ Local Development Instructions:
 
         <!-- 每日時間表 -->
         <div id="content-schedule" class="tab-content hidden">
+            <button type="button" class="me-back-btn" onclick="switchTab('me')"><i class="fa-solid fa-chevron-left"></i> 返回我</button>
             <div class="section-card rounded-3xl p-5 sm:p-8">
                 <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">每日時間表</h2>
                 <div class="space-y-3 sm:space-y-4 text-sm">
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
                         <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">04:30</div>
-                        <div class="flex-1"><strong>起床</strong> — 每朝3隻雞蛋+喝咖啡 +Supplements+沖蛋白shake</div>
+                        <div class="flex-1"><strong>起床</strong> — 每朝 3 隻雞蛋 + 咖啡 + 補充劑 + 沖蛋白</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">4:40-4:45am</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">04:40–04:45</div>
                         <div class="flex-1"><strong>準備出門</strong> — 檢查水瓶（至少1.5L）、搖搖杯、毛巾、耳機</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">4:45-7:00am</div>
-                        <div class="flex-1"><strong>到達Gym+暖身+跑步機+重訓</strong> — 10分鐘動態暖身：手臂畫圈、腿擺動、髖關節打開、深蹲10次、原地慢跑</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">04:45–07:00</div>
+                        <div class="flex-1"><strong>到達健身室 + 暖身 + 跑步機 + 重訓</strong> — 10分鐘動態暖身：手臂畫圈、腿擺動、髖關節打開、深蹲10次、原地慢跑</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">7:00-7:25am</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">07:00–07:25</div>
                         <div class="flex-1"><strong>伸展 + 回家</strong> — 5分鐘靜態伸展</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">7:25am-12:00pm</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">07:25–12:00</div>
                         <div class="flex-1"><strong>回家/沖涼/上班</strong> — 每小時喝水200-300ml（目標12:00前喝1.5L）</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">12:00-13:00pm</div>
-                        <div class="flex-1"><strong>午餐（Lunch box）</strong> — 300g 雜菜 + 200g 蘑菇 + 150g 粟米 + 200g 瘦肉/雞胸/豆腐 + 少量糙米</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">12:00–13:00</div>
+                        <div class="flex-1"><strong>午餐（便當）</strong> — 300g 雜菜 + 200g 蘑菇 + 150g 粟米 + 200g 瘦肉/雞胸/豆腐 + 少量糙米</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">13:00-6:00pm</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">13:00–18:00</div>
                         <div class="flex-1"><strong>繼續工作</strong> — 每小時喝水200ml</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">6:00-7:00pm</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">18:00–19:00</div>
                         <div class="flex-1"><strong>回家/沖涼/休息</strong> — 熱水澡放鬆肌肉 + 補水（全日目標3-4L）</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">7:00-7:30pm</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">19:00–19:30</div>
                         <div class="flex-1"><strong>晚餐</strong> — 200g 白飯/糙米 + 250g 清蒸魚 + 300g 生菜/青菜</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">7:30-7:45pm</div>
-                        <div class="flex-1"><strong>Supplements</strong> — Biotin 10,000 mcg 1粒 + Omega-3 3粒 + NOW Daily Vits 1粒 + Zinc 30mg 1粒</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">19:30–19:45</div>
+                        <div class="flex-1"><strong>晚餐補充劑</strong> — Biotin 10,000 mcg 1粒 + Omega-3 3粒 + NOW Daily Vits 1粒 + Zinc 30mg 1粒</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">7:45-8:50pm</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">19:45–20:50</div>
                         <div class="flex-1"><strong>放鬆時間</strong> — 避免藍光、輕鬆活動</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">8:50-9:00pm</div>
-                        <div class="flex-1"><strong>睡前Supplements + 準備</strong> — Magnesium Glycinate 400mg（2粒） + CoQ10 200mg 1粒 刷牙、關燈</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">20:50–21:00</div>
+                        <div class="flex-1"><strong>睡前補充劑 + 準備</strong> — Magnesium Glycinate 400mg（2粒） + CoQ10 200mg 1粒；刷牙、關燈</div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-start gap-y-0.5 sm:gap-x-4">
-                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">9:00pm</div>
+                        <div class="w-20 sm:w-28 font-mono text-[#a8a29e] text-xs sm:text-sm shrink-0">21:00</div>
                         <div class="flex-1"><strong>入睡</strong> — 確保7.5小時優質睡眠</div>
                     </div>
                 </div>
@@ -1402,13 +1434,14 @@ Local Development Instructions:
 
     <!-- Supplements -->
     <div id="content-supplement" class="tab-content hidden">
+            <button type="button" class="me-back-btn" onclick="switchTab('me')"><i class="fa-solid fa-chevron-left"></i> 返回我</button>
         <div class="section-card rounded-3xl p-5 sm:p-8">
-            <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Supplements時間表</h2>
+            <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">補充劑時間表</h2>
             <div class="overflow-x-auto -mx-1 px-1">
                 <table class="w-full text-sm min-w-[420px]">
                     <thead>
                         <tr class="border-b border-[#57534e]">
-                            <th class="py-2 sm:py-3 text-left pr-3">Supplements</th>
+                            <th class="py-2 sm:py-3 text-left pr-3">補充劑</th>
                             <th class="py-2 sm:py-3 px-2">時間</th>
                             <th class="py-2 sm:py-3 px-2">劑量</th>
                         </tr>
@@ -1436,22 +1469,22 @@ Local Development Instructions:
                         </tr>
                         <tr>
                             <td class="py-2 pr-3">Biotin 生物素</td>
-                            <td class="py-2 px-2 whitespace-nowrap">隨餐(Dinner)</td>
+                            <td class="py-2 px-2 whitespace-nowrap">晚餐隨餐</td>
                             <td class="py-2 px-2 whitespace-nowrap">1粒</td>
                         </tr>
                         <tr>
                             <td class="py-2 pr-3">Omega-3 Fish Oil</td>
-                            <td class="py-2 px-2 whitespace-nowrap">隨餐(Dinner)</td>
+                            <td class="py-2 px-2 whitespace-nowrap">晚餐隨餐</td>
                             <td class="py-2 px-2 whitespace-nowrap">3粒</td>
                         </tr>
                         <tr>
                             <td class="py-2 pr-3">NOW Daily Vits 多維</td>
-                            <td class="py-2 px-2 whitespace-nowrap">隨餐(Dinner)</td>
+                            <td class="py-2 px-2 whitespace-nowrap">晚餐隨餐</td>
                             <td class="py-2 px-2 whitespace-nowrap">1粒</td>
                         </tr>
                         <tr>
                             <td class="py-2 pr-3">Zinc Picolinate</td>
-                            <td class="py-2 px-2 whitespace-nowrap">隨餐(Dinner)</td>
+                            <td class="py-2 px-2 whitespace-nowrap">晚餐隨餐</td>
                             <td class="py-2 px-2 whitespace-nowrap">1粒</td>
                         </tr>
                         <tr>
@@ -1476,6 +1509,7 @@ Local Development Instructions:
          靜態展示內容（非功能按鈕，expand/collapse 只是 viewing helper）。
          ID 正確 content-training，nav button 觸發 switchTab('training')。 -->
     <div id="content-training" class="tab-content hidden">
+            <button type="button" class="me-back-btn" onclick="switchTab('me')"><i class="fa-solid fa-chevron-left"></i> 返回我</button>
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 sm:mb-6 gap-3">
             <h2 class="text-xl sm:text-2xl font-bold">每週 3 日訓練計劃 <span class="text-base font-normal text-[#a8a29e]">（單擊展開）</span></h2>
             <div class="flex gap-2">
@@ -1507,17 +1541,19 @@ Local Development Instructions:
         <div class="space-y-4" id="training-sessions">
             <!-- Session 1 -->
             <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
-                <button onclick="toggleSession(this)" class="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
+                <div class="flex items-center gap-2 pr-3">
+                <button type="button" onclick="toggleSession(this)" class="flex-1 min-w-0 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
                     <div>
-                        <div class="flex items-center gap-x-2">
+                        <div class="flex items-center gap-x-2 flex-wrap">
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 1</span>
-                        <button type="button" onclick="event.stopPropagation(); startTrainingDay(1)" class="text-[10px] px-2 py-1 bg-emerald-600 rounded-xl text-white font-semibold">開始</button>
-                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Chest + Triceps + Shoulders</span>
+                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">胸・三頭・肩</span>
                         </div>
                         <div class="text-[#a8a29e] text-sm mt-0.5">胸部 + 三頭肌 + 肩膀 • 7 個動作</div>
                     </div>
                     <i class="fa-solid fa-chevron-down text-xl text-[#a8a29e] transition-transform duration-200"></i>
                 </button>
+                <button type="button" onclick="startTrainingDay(1)" class="shrink-0 text-xs px-3 py-2 bg-emerald-600 rounded-xl text-white font-semibold min-h-[40px]">開始</button>
+                </div>
                 <div class="session-content hidden px-4 sm:px-6 pb-5 sm:pb-6">
                     <div class="mb-4 text-xs bg-[#292524] inline-block px-3 py-1 rounded-2xl text-emerald-300">
                         建議：每動作 3 組 • 8-12 次 • 休息 60-90 秒
@@ -1544,11 +1580,11 @@ Local Development Instructions:
                             <div class="text-sm sm:text-base pt-0.5">5. 繩索過頭三頭伸展 (Cable Overhead Triceps Extension)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/seated_dumbbell_press.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
+                            <img src="images/lateral_raises.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" alt="坐姿啞鈴肩推">
                             <div class="text-sm sm:text-base pt-0.5">6. 坐姿啞鈴肩推 (Seated Dumbbell Shoulder Press)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/cable_crunch.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
+                            <img src="images/ab_wheel_rollout.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" alt="下斜捲腹">
                             <div class="text-sm sm:text-base pt-0.5">7. 下斜捲腹 (Decline Crunch)</div>
                         </div>
                     </div>
@@ -1557,17 +1593,19 @@ Local Development Instructions:
 
             <!-- Session 2 -->
             <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
-                <button onclick="toggleSession(this)" class="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
+                <div class="flex items-center gap-2 pr-3">
+                <button type="button" onclick="toggleSession(this)" class="flex-1 min-w-0 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
                     <div>
-                        <div class="flex items-center gap-x-2">
+                        <div class="flex items-center gap-x-2 flex-wrap">
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 2</span>
-                        <button type="button" onclick="event.stopPropagation(); startTrainingDay(2)" class="text-[10px] px-2 py-1 bg-emerald-600 rounded-xl text-white font-semibold">開始</button>
-                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Back + Biceps + Shoulders + Core</span>
+                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">背・二頭・肩・核心</span>
                         </div>
                         <div class="text-[#a8a29e] text-sm mt-0.5">背部 + 二頭肌 + 肩膀 + 核心 • 7 個動作</div>
                     </div>
                     <i class="fa-solid fa-chevron-down text-xl text-[#a8a29e] transition-transform duration-200"></i>
                 </button>
+                <button type="button" onclick="startTrainingDay(2)" class="shrink-0 text-xs px-3 py-2 bg-emerald-600 rounded-xl text-white font-semibold min-h-[40px]">開始</button>
+                </div>
                 <div class="session-content hidden px-4 sm:px-6 pb-5 sm:pb-6">
                     <div class="mb-4 text-xs bg-[#292524] inline-block px-3 py-1 rounded-2xl text-emerald-300">
                         建議：每動作 3 組 • 8-12 次 • 休息 60-90 秒
@@ -1607,17 +1645,19 @@ Local Development Instructions:
 
             <!-- Session 3 -->
             <div class="section-card rounded-3xl overflow-hidden border border-[#44403c]">
-                <button onclick="toggleSession(this)" class="w-full px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
+                <div class="flex items-center gap-2 pr-3">
+                <button type="button" onclick="toggleSession(this)" class="flex-1 min-w-0 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between text-left hover:bg-[#252321] transition-colors">
                     <div>
-                        <div class="flex items-center gap-x-2">
+                        <div class="flex items-center gap-x-2 flex-wrap">
                             <span class="font-bold text-lg sm:text-xl text-emerald-400">訓練日 3</span>
-                        <button type="button" onclick="event.stopPropagation(); startTrainingDay(3)" class="text-[10px] px-2 py-1 bg-emerald-600 rounded-xl text-white font-semibold">開始</button>
-                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">Legs + Shoulders + Forearms + Core</span>
+                            <span class="text-xs px-2.5 py-0.5 bg-emerald-900/60 text-emerald-300 rounded-full">腿・前臂・肩・核心</span>
                         </div>
                         <div class="text-[#a8a29e] text-sm mt-0.5">腿部 + 前臂 + 肩膀 + 核心 • 7 個動作</div>
                     </div>
                     <i class="fa-solid fa-chevron-down text-xl text-[#a8a29e] transition-transform duration-200"></i>
                 </button>
+                <button type="button" onclick="startTrainingDay(3)" class="shrink-0 text-xs px-3 py-2 bg-emerald-600 rounded-xl text-white font-semibold min-h-[40px]">開始</button>
+                </div>
                 <div class="session-content hidden px-4 sm:px-6 pb-5 sm:pb-6">
                     <div class="mb-4 text-xs bg-[#292524] inline-block px-3 py-1 rounded-2xl text-emerald-300">
                         建議：每動作 3 組 • 8-12 次 • 休息 60-90 秒
@@ -1628,11 +1668,11 @@ Local Development Instructions:
                             <div class="text-sm sm:text-base pt-0.5">1. 澤奇深蹲 (Zercher Squats)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/romanian_deadlift.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
+                            <img src="images/deadlift.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" alt="羅馬尼亞硬拉">
                             <div class="text-sm sm:text-base pt-0.5">2. 羅馬尼亞硬拉 (Romanian Deadlift)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
-                            <img src="images/standing_calf_raise.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" onerror="this.style.display='none'">
+                            <img src="images/zercher_squats.jpg" class="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-xl flex-shrink-0" alt="站姿小腿提踵">
                             <div class="text-sm sm:text-base pt-0.5">3. 站姿小腿提踵 (Standing Calf Raise)</div>
                         </div>
                         <div class="exercise-card bg-[#292524] p-3 rounded-2xl flex gap-3 sm:gap-4">
@@ -1656,7 +1696,7 @@ Local Development Instructions:
             </div>
         </div>
 
-        <div class="mt-5 text-xs text-[#a8a29e] px-1">* 記得每次訓練前做 10 分鐘動態暖身，訓練後做伸展。使用 Workout Log 記錄你的進度。</div>
+        <div class="mt-5 text-xs text-[#a8a29e] px-1">* 記得每次訓練前做 10 分鐘動態暖身，訓練後做伸展。用「訓練」頁記錄進度。</div>
     </div>
 
     <!-- 愚公移山 -->
@@ -2014,7 +2054,11 @@ Local Development Instructions:
             <section class="calorie-capture">
                 <div class="flex items-center justify-between gap-2 mb-3">
                     <h3 class="text-sm font-bold">今日紀錄</h3>
-                    <span id="calorie-entry-count" class="text-[11px] text-[#a8a29e]"></span>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="copyLastCalorieMeal()"
+                            class="text-[11px] px-2.5 py-1 rounded-xl border border-[#44403c] text-[#a8a29e] hover:border-emerald-600 hover:text-emerald-300">複製上一餐</button>
+                        <span id="calorie-entry-count" class="text-[11px] text-[#a8a29e]"></span>
+                    </div>
                 </div>
                 <div id="calorie-today-empty" class="text-xs text-[#a8a29e] py-6 text-center">未有紀錄。影張相開始記低今日食咗咩。</div>
                 <ul id="calorie-today-list" class="space-y-2"></ul>
@@ -2027,7 +2071,7 @@ Local Development Instructions:
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div>
                 <h3 class="font-bold text-lg sm:text-xl">訓練日誌 <span id="logUserName" class="text-[#4ade80]"></span></h3>
-                <p class="text-[10px] sm:text-xs text-[#a8a29e]">快速記錄 • 慈善噸數追蹤</p>
+                <p class="text-[10px] sm:text-xs text-[#a8a29e]">即時記組 • 慈善噸數追蹤</p>
             </div>
         </div>
 
@@ -2216,7 +2260,7 @@ Local Development Instructions:
                         <button data-range="12w" onclick="setAnalysisTimeRange('12w')" 
                                 class="time-range-btn px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">12 週</button>
                         <button data-range="all" onclick="setAnalysisTimeRange('all')" 
-                                class="time-range-btn active px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">All Time</button>
+                                class="time-range-btn active px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">全部</button>
                         <button onclick="resetAnalysisToAllTime()" 
                                 class="px-3 py-1 text-[#a8a29e] hover:text-white text-xs flex-shrink-0">重置</button>
                     </div>
@@ -2232,8 +2276,8 @@ Local Development Instructions:
                     <!-- Primary trend chart (Volume / 距離 / 總支撐時間) -->
                     <div>
                         <div class="flex items-baseline justify-between mb-1.5 px-1">
-                            <div id="analysis-chart-primary-title" class="text-sm font-semibold">訓練量趨勢 (Volume)</div>
-                            <div class="text-[10px] text-[#a8a29e]">Bar + Line</div>
+                            <div id="analysis-chart-primary-title" class="text-sm font-semibold">訓練量趨勢</div>
+                            <div class="text-[10px] text-[#a8a29e]">柱狀 + 線</div>
                         </div>
                         <div class="bg-[#1f1c1a] rounded-2xl p-2 border border-[#44403c]">
                             <canvas id="chart-volume-trend" style="height: 260px; width: 100%;"></canvas>
@@ -2284,7 +2328,7 @@ Local Development Instructions:
                                     <th class="py-2 px-3 text-left">日期</th>
                                     <th class="py-2 px-2 text-center">重量</th>
                                     <th class="py-2 px-2 text-center">次數</th>
-                                    <th class="py-2 px-2 text-center">Volume</th>
+                                    <th class="py-2 px-2 text-center">訓練量</th>
                                     <th class="py-2 px-2 text-center">e1RM</th>
                                     <th class="py-2 px-3 text-left">備註</th>
                                 </tr>
@@ -2324,11 +2368,11 @@ Local Development Instructions:
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div class="log-card rounded-3xl p-5">
-                    <div class="section-header mb-3">Body Part Volume Distribution (Lifetime)</div>
+                    <div class="section-header mb-3">終身肌群訓練量分佈</div>
                     <canvas id="chart-bodypart" height="140"></canvas>
                 </div>
                 <div class="log-card rounded-3xl p-5">
-                    <div class="section-header mb-3">Recent Volume Trend (Last 8 Weeks)</div>
+                    <div class="section-header mb-3">近 8 週訓練量趨勢</div>
                     <canvas id="chart-weekly-volume" height="140"></canvas>
                 </div>
             </div>
@@ -2419,7 +2463,7 @@ Local Development Instructions:
             <div class="flex justify-between items-start p-5 sm:p-7 pb-3 border-b border-[#57534e] flex-shrink-0 bg-[#1c1917] sticky top-0 z-10">
                 <div>
                     <h3 class="font-bold text-2xl text-emerald-400">訓練完成！🎉</h3>
-                    <div class="text-base text-white/80">Training Complete!</div>
+                    <div class="text-sm text-white/70">已完成呢節訓練</div>
                     <div id="finish-date" class="text-xs text-[#a8a29e] mt-0.5"></div>
                 </div>
                 <button onclick="hideFinishModal()" class="text-[#a8a29e] hover:text-white text-2xl leading-none mt-1">×</button>
@@ -2591,7 +2635,7 @@ Local Development Instructions:
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-lg p-5 sm:p-6 mx-4 max-h-[88vh] overflow-auto">
             <div class="flex justify-between items-center mb-4">
                 <div>
-                    <h3 class="font-bold text-lg">Workout Sets（訓練組合）</h3>
+                    <h3 class="font-bold text-lg">訓練組合</h3>
                     <div class="text-xs text-[#a8a29e]">自訂你的快速訓練組合，資料存於後端</div>
                 </div>
                 <button onclick="hideWorkoutSetModal()" class="text-[#a8a29e] hover:text-white text-xl leading-none">×</button>
@@ -2599,7 +2643,7 @@ Local Development Instructions:
 
             <!-- Editor form -->
             <div class="mb-4 p-3 bg-[#292524] rounded-2xl border border-[#57534e]">
-                <div class="text-xs text-[#a8a29e] mb-1">Set 名稱（可自訂）</div>
+                <div class="text-xs text-[#a8a29e] mb-1">組合名稱（可自訂）</div>
                 <input id="wset-name" class="log-input w-full px-3 py-2 rounded-2xl text-sm mb-3" placeholder="例如：Chest + Triceps（胸部 + 三頭肌）">
 
                 <div class="text-xs text-[#a8a29e] mb-1">包含的動作（點擊 × 移除）</div>
@@ -2615,16 +2659,16 @@ Local Development Instructions:
                 </div>
                 <div class="flex gap-2 mt-3">
                     <button onclick="saveCurrentWorkoutSet()" 
-                            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">儲存 Set</button>
+                            class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">儲存組合</button>
                     <button onclick="deleteCurrentEditingSet()" id="wset-delete-btn"
-                            class="px-3 py-2 text-red-400 hover:bg-red-900/30 border border-red-900/50 rounded-2xl text-sm hidden">刪除此 Set</button>
+                            class="px-3 py-2 text-red-400 hover:bg-red-900/30 border border-red-900/50 rounded-2xl text-sm hidden">刪除此組合</button>
                     <button onclick="clearWorkoutSetForm()" 
                             class="px-3 py-2 border border-[#57534e] rounded-2xl text-sm hover:bg-[#3f3a36]">新增/清除</button>
                 </div>
             </div>
 
             <!-- Existing custom sets list (only user-created; fixed presets are always shown in the bar above) -->
-            <div class="text-xs text-[#a8a29e] mb-1">你嘅自訂 Workout Sets（點擊「編輯」管理，訓練中可直接喺 Bar 點擊固定預設或自訂 Set 載入）</div>
+            <div class="text-xs text-[#a8a29e] mb-1">你嘅自訂訓練組合（撳「編輯」管理；訓練中可喺上面快速列直接載入）</div>
             <div id="wset-existing-list" class="space-y-2 text-sm max-h-[220px] overflow-auto"></div>
 
             <div class="mt-4 text-[10px] text-[#a8a29e]">
@@ -2673,7 +2717,7 @@ Local Development Instructions:
         </div>
 
         <div class="px-4 py-3 border-b border-[#57534e]">
-          <div class="text-xs text-[#a8a29e] mb-1.5 font-medium">肌肉重點（綠色 highlight）</div>
+          <div class="text-xs text-[#a8a29e] mb-1.5 font-medium">肌肉重點（綠色標示）</div>
           <div id="detail-muscle-diagram" class="flex flex-wrap gap-1.5"></div>
         </div>
 
@@ -2716,7 +2760,7 @@ Local Development Instructions:
     <script src="js/utils.js?v=2.3.25"></script>
     <script src="js/state.js?v=2.3.26"></script>
     <script src="js/api.js?v=2.3.25"></script>
-    <script src="js/fullscreen.js?v=2.3.24"></script>
+    <script src="js/fullscreen.js?v=2.3.35"></script>
     <script src="js/ui.js?v=2.3.24"></script>
     <script src="js/ui-log.js?v=2.3.24"></script>
     <script src="js/ui-history.js?v=2.3.24"></script>
@@ -2728,7 +2772,7 @@ Local Development Instructions:
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
     <script src="js/ui-calories.js?v=2.3.33"></script>
-    <script src="js/ui-app.js?v=2.3.34"></script>
+    <script src="js/ui-app.js?v=2.3.35"></script>
 
     <script>
         /*
@@ -2818,6 +2862,10 @@ Local Development Instructions:
                     loadWorkoutData({ skipHistory: false });
                 }
                 if (typeof renderCaloriesTab === 'function') renderCaloriesTab();
+                if (typeof loadAppPrefs === 'function') loadAppPrefs();
+                if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
+                if (typeof renderBodyLog === 'function') renderBodyLog();
+                if (typeof renderHabits === 'function') renderHabits();
             } catch (err) {
                 console.warn('updateUIAfterLogin log refresh error (non-fatal):', err);
             }
@@ -2899,6 +2947,7 @@ Local Development Instructions:
                     if (typeof bootstrapGoogleCloudData === 'function') {
                         await bootstrapGoogleCloudData();
                     }
+                    if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                     try {
                         if (typeof showLogSubSection === 'function') showLogSubSection('history');
                     } catch (err) {
@@ -2984,6 +3033,8 @@ Local Development Instructions:
             if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
             if (typeof renderOverallStats === 'function') renderOverallStats();
             if (typeof renderCaloriesTab === 'function') renderCaloriesTab();
+            if (typeof loadAppPrefs === 'function') loadAppPrefs();
+            if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
             // Clear the dynamic sets bar
             const bar = document.getElementById('workout-sets-bar');
             if (bar) bar.innerHTML = '';
@@ -4736,6 +4787,7 @@ Local Development Instructions:
                     if (typeof bootstrapGoogleCloudData === 'function') {
                         await bootstrapGoogleCloudData();
                     }
+                    if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                     try {
                         if (typeof showLogSubSection === 'function') showLogSubSection('history');
                     } catch (err) {
@@ -4861,7 +4913,7 @@ Local Development Instructions:
                             <div class="section-card rounded-3xl p-8 text-center">
                                 <i class="fa-solid fa-lock text-4xl text-emerald-400 mb-4"></i>
                                 <h3 class="font-bold text-xl mb-2">需要登入</h3>
-                                <p class="text-[#a8a29e] mb-4">請登入以使用訓練日誌，記錄您的訓練並追蹤慈善影響。</p>
+                                <p class="text-[#a8a29e] mb-4">請登入先至用訓練日誌，記低組數同慈善噸數。</p>
                                 <button onclick="showLoginModal()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">登入 / 註冊</button>
                             </div>
                         `;
@@ -4922,8 +4974,10 @@ Local Development Instructions:
         } catch (e) {}
 
         function toggleSession(buttonEl) {
-            const content = buttonEl.nextElementSibling;
-            const icon = buttonEl.querySelector('.fa-chevron-down, .fa-chevron-up');
+            const card = buttonEl.closest('.section-card');
+            const content = (card && card.querySelector('.session-content')) || buttonEl.nextElementSibling;
+            const icon = buttonEl.querySelector('.fa-chevron-down, .fa-chevron-up')
+                || (card && card.querySelector('.fa-chevron-down, .fa-chevron-up'));
             if (!content || !icon) return;
             const isHidden = content.classList.toggle('hidden');
             if (isHidden) {
@@ -5098,6 +5152,8 @@ Local Development Instructions:
             isInitializing = false;
 
             try {
+                if (typeof loadAppPrefs === 'function') loadAppPrefs();
+                if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                 const hash = String(location.hash || '').replace(/^#/, '').split('?')[0];
                 const hashMap = { yugong: 'millennium', rixing: 'millennium' };
                 const mapped = hashMap[hash] || hash;
@@ -5151,8 +5207,12 @@ Local Development Instructions:
                         }
                     }
                     // Restore key elements
+                    const chrome = document.getElementById('app-chrome');
+                    if (chrome) chrome.style.display = '';
                     const mainNav = document.getElementById('main-top-nav');
                     if (mainNav) mainNav.style.display = '';
+                    const topHdr = document.querySelector('.charity-header');
+                    if (topHdr) topHdr.style.display = '';
                     const topHeader = document.querySelector('#content-log > .flex.flex-col.sm\\:flex-row');
                     if (topHeader) topHeader.style.display = '';
                     const subNav = document.getElementById('log-sub-nav');

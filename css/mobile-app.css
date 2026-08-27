@@ -28,6 +28,7 @@ html.mobile-app {
 
 .mobile-app .app-header-actions {
     gap: 0.35rem;
+    flex-shrink: 0;
 }
 
 .mobile-app .app-header-btn {
@@ -58,8 +59,18 @@ html.mobile-app {
 }
 
 @media (max-width: 767px) {
-    .mobile-app #content-overview .grid {
+    .mobile-app #content-overview .overview-stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .mobile-app .app-title {
+        font-size: 0.92rem;
+    }
+    .mobile-app .app-header-btn {
+        min-width: 36px;
+        padding: 0.35rem 0.55rem;
     }
 }
 
@@ -190,4 +201,18 @@ html.mobile-app {
 
 .mobile-app .calorie-action-btn {
     min-height: 46px;
+}
+
+.mobile-app #app-chrome {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.mobile-app #main-top-nav {
+    flex-wrap: nowrap;
+    margin-bottom: 0;
+    padding-bottom: 0.65rem;
+}
+
+.mobile-app #main-top-nav .nav-tab {
+    flex-shrink: 0;
 }
