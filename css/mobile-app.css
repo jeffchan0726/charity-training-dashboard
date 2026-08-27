@@ -291,6 +291,16 @@ html.mobile-app {
     font-size: 0.75rem !important;
 }
 
+.mobile-app .body-metric-section {
+    margin-top: 0.7rem;
+}
+.mobile-app .body-metric-heading {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #86efac;
+    margin-bottom: 0.4rem;
+}
 .mobile-app .body-metric-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

@@ -393,15 +393,25 @@ function uniqueHealthFieldLabel(key) {
 function formatBodyMetric(key, val) {
     if (val == null || val === '') return '—';
     if (typeof val !== 'number') return String(val);
-    const pct = /Pct$|bf|bmi|whr|smi/.test(key);
-    const kg = /Kg$|weight/.test(key);
-    if (key === 'weight' || key === 'bf') {
-        return key === 'bf' ? val.toFixed(1) + '%' : val.toFixed(2) + ' kg';
-    }
+    if (key === 'bf') return val.toFixed(1) + '%';
+    if (key === 'weight') return val.toFixed(2) + ' kg';
     if (key === 'heartRate') return Math.round(val) + ' bpm';
     if (key === 'bmr') return Math.round(val) + ' kcal';
-    if (key === 'visceral' || key === 'bodyAge' || key === 'bodyScore' || key === 'age') return String(val);
-    if (pct) return (Math.abs(val) >= 100 ? val.toFixed(1) : val.toFixed(1)) + '%';
-    if (kg) return val.toFixed(2) + ' kg';
+    if (key === 'bmi') return val.toFixed(1);
+    if (key === 'whr' || key === 'smi') return val.toFixed(2);
+    if (key === 'visceral' || key === 'bodyAge' || key === 'bodyScore' || key === 'age' ||
+        key === 'healthLevel' || key === 'obesityLevel' || key === 'bodyType') {
+        return String(val);
+    }
+    if (/Pct$/i.test(key) || key === 'obesityPct' || key === 'subFatPct') return val.toFixed(1) + '%';
+    if (/Kg/i.test(key)) return val.toFixed(2) + ' kg';
     return Number.isInteger(val) ? String(val) : String(Math.round(val * 100) / 100);
 }
+
+const BODY_LOG_SECTIONS = [
+    { title: '基本', keys: ['weight', 'bf', 'bmi', 'lbmKg', 'bodyScore', 'bodyAge', 'heartRate', 'heightCm', 'age'] },
+    { title: '體成分', keys: ['muscleKg', 'musclePct', 'smmKg', 'smmPct', 'fatKg', 'visceral', 'waterKg', 'waterPct', 'proteinKg', 'proteinPct', 'boneKg', 'mineralKg', 'subFatKg', 'subFatPct'] },
+    { title: '代謝／控制', keys: ['bmr', 'obesityPct', 'fatControlKg', 'weightControlKg', 'muscleControlKg', 'standardWeightKg', 'idealWeightKg', 'bodyCellKg', 'ecwKg', 'icwKg', 'healthLevel', 'obesityLevel', 'bodyType', 'smi', 'whr'] },
+    { title: '分段脂肪', keys: ['fatKgLeftArm', 'fatKgRightArm', 'fatKgLeftLeg', 'fatKgRightLeg', 'fatKgTrunk', 'fatPctLeftArm', 'fatPctRightArm', 'fatPctLeftLeg', 'fatPctRightLeg', 'fatPctTrunk'] },
+    { title: '分段肌肉', keys: ['muscleKgLeftArm', 'muscleKgRightArm', 'muscleKgLeftLeg', 'muscleKgRightLeg', 'muscleKgTrunk', 'musclePctLeftArm', 'musclePctRightArm', 'musclePctLeftLeg', 'musclePctRightLeg', 'musclePctTrunk'] }
+];

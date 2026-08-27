@@ -307,7 +307,8 @@ function formatBodyLogDelta(key, d) {
     if (d == null) return '';
     if (d === 0) return '持平';
     const sign = d > 0 ? '+' : '';
-    if (key === 'bf' || /Pct$/.test(key) || key === 'bmi' || key === 'whr' || key === 'smi') {
+    if (key === 'whr' || key === 'smi') return sign + d.toFixed(2);
+    if (key === 'bf' || /Pct$/.test(key) || key === 'obesityPct') {
         return sign + d.toFixed(1);
     }
     if (key === 'heartRate' || key === 'bmr' || key === 'bodyScore' || key === 'visceral' || key === 'bodyAge' || key === 'age') {
@@ -352,27 +353,26 @@ function renderBodyLog() {
             latestWrap.classList.add('hidden');
         } else {
             latestWrap.classList.remove('hidden');
-            const skip = { weighedAt: 1 };
-            const allKeys = (typeof UNIQUE_HEALTH_FIELDS !== 'undefined'
+            const sections = (typeof BODY_LOG_SECTIONS !== 'undefined' ? BODY_LOG_SECTIONS : [
+                { title: '', keys: ['weight', 'bf', 'bmi', 'muscleKg'] }
+            ]);
+            const used = { weighedAt: 1, deviceMac: 1 };
+            const blocks = sections.map(function (sec) {
+                const html = bodyLogMetricHtml(latest, sec.keys, prev);
+                sec.keys.forEach(function (k) { used[k] = 1; });
+                if (!html) return '';
+                return '<div class="body-metric-section"><div class="body-metric-heading">' + sec.title + '</div>' +
+                    '<div class="body-metric-grid">' + html + '</div></div>';
+            }).join('');
+            const leftoverKeys = (typeof UNIQUE_HEALTH_FIELDS !== 'undefined'
                 ? UNIQUE_HEALTH_FIELDS.map(function (f) { return f.key; })
-                : Object.keys(latest)).filter(function (k) { return !skip[k]; });
-            const extras = [];
-            if (latest.metrics) {
-                Object.keys(latest.metrics).forEach(function (h) {
-                    const mapped = typeof matchUniqueHealthField === 'function' && matchUniqueHealthField(h);
-                    if (mapped) return;
-                    const raw = latest.metrics[h];
-                    if (raw === '' || raw == null) return;
-                    const prevRaw = prev && prev.metrics ? prev.metrics[h] : null;
-                    const d = (prevRaw !== '' && prevRaw != null && isFinite(Number(raw)) && isFinite(Number(prevRaw)))
-                        ? Number(raw) - Number(prevRaw) : null;
-                    const deltaHtml = d == null
-                        ? ''
-                        : '<span class="body-delta ' + bodyLogDeltaClass('', d) + '">' + formatBodyLogDelta('', d) + '</span>';
-                    extras.push('<div class="body-metric"><span class="body-metric-label">' + h +
-                        '</span><span class="body-metric-val">' + raw + deltaHtml + '</span></div>');
-                });
-            }
+                : []).filter(function (k) {
+                return !used[k] && latest[k] != null && latest[k] !== '';
+            });
+            const leftover = leftoverKeys.length
+                ? ('<div class="body-metric-section"><div class="body-metric-heading">其他</div>' +
+                    '<div class="body-metric-grid">' + bodyLogMetricHtml(latest, leftoverKeys, prev) + '</div></div>')
+                : '';
             const prevLine = prev
                 ? ('上一次 ' + (prev.weighedAt || prev.date) +
                     (prev.weight != null ? ' · ' + Number(prev.weight).toFixed(2) + ' kg' : '') +
@@ -383,11 +383,13 @@ function renderBodyLog() {
                     (latest.source === 'unique-health' ? ' · Unique Health 全部欄位' : ' · 手動') +
                 '</div>' +
                 '<div class="text-[11px] text-[#a8a29e] mb-2">' + prevLine + '</div>' +
-                '<div class="body-metric-grid">' + bodyLogMetricHtml(latest, allKeys, prev) + extras.join('') + '</div>';
+                blocks + leftover;
         }
     }
-    if (!list) return;
-    list.innerHTML = '';
+    if (list) {
+        list.innerHTML = latest ? '' : '<li>未有紀錄。可人手填，或匯入 Unique Health Excel。</li>';
+        list.classList.toggle('hidden', !!latest);
+    }
 }
 
 function clampProteinGoal(n) {
