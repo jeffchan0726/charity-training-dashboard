@@ -11,5 +11,6 @@ images/images/
 
 # Backend source is deployed in Apps Script, not the public repo
 Google_Apps_Script.txt
+README.md
 _gh_batch_*.json
 _one_*.json
