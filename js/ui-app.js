@@ -253,13 +253,12 @@ function saveBodyLogEntry() {
     const todayStr = typeof getTodayStr === 'function' ? getTodayStr() : new Date().toISOString().slice(0, 10);
     const weight = parseFloat(document.getElementById('body-weight-input')?.value) || 0;
     const bf = parseFloat(document.getElementById('body-bf-input')?.value) || 0;
-    const waist = parseFloat(document.getElementById('body-waist-input')?.value) || 0;
-    if (!weight && !bf && !waist) {
+    if (!weight && !bf) {
         if (typeof showToast === 'function') showToast('請至少填一項');
         return;
     }
     const list = getBodyLog().filter(function (e) { return e.date !== todayStr; });
-    list.unshift({ date: todayStr, weight: weight || null, bf: bf || null, waist: waist || null });
+    list.unshift({ date: todayStr, weight: weight || null, bf: bf || null });
     localStorage.setItem(getAppStorageKey('bodyLog'), JSON.stringify(list.slice(0, 90)));
     if (weight && typeof rememberBodyWeightKg === 'function') rememberBodyWeightKg(weight);
     else if (weight) lastBodyWeightKg = weight;
@@ -276,18 +275,15 @@ function renderBodyLog() {
         ? rows.map(function (e) {
             return '<li>' + e.date + ' · ' +
                 (e.weight ? e.weight + 'kg ' : '') +
-                (e.bf ? e.bf + '% ' : '') +
-                (e.waist ? e.waist + 'cm' : '') + '</li>';
+                (e.bf ? e.bf + '%' : '') + '</li>';
         }).join('')
         : '<li>未有紀錄</li>';
     const latest = rows[0];
     if (latest) {
         const w = document.getElementById('body-weight-input');
         const b = document.getElementById('body-bf-input');
-        const wa = document.getElementById('body-waist-input');
         if (w && !w.value && latest.weight) w.value = latest.weight;
         if (b && !b.value && latest.bf) b.value = latest.bf;
-        if (wa && !wa.value && latest.waist) wa.value = latest.waist;
     }
 }
 
