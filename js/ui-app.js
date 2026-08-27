@@ -344,43 +344,6 @@ function renderBodyLog() {
         : '<li>未有紀錄。可人手填，或匯入 Unique Health Excel。</li>';
 }
 
-const HABIT_ITEMS = [
-    { id: 'train', label: '完成訓練或主動休息' },
-    { id: 'protein', label: '蛋白／早餐補充劑' },
-    { id: 'water', label: '喝水達標' },
-    { id: 'dinner_sup', label: '晚餐補充劑' },
-    { id: 'sleep_sup', label: '睡前鎂／CoQ10' },
-    { id: 'photo_meal', label: '至少記一餐' }
-];
-
-function getHabitsToday() {
-    const todayStr = typeof getTodayStr === 'function' ? getTodayStr() : new Date().toISOString().slice(0, 10);
-    try {
-        const raw = localStorage.getItem(getAppStorageKey('habits_' + todayStr));
-        return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
-}
-
-function toggleHabit(id) {
-    const todayStr = typeof getTodayStr === 'function' ? getTodayStr() : new Date().toISOString().slice(0, 10);
-    const map = getHabitsToday();
-    map[id] = !map[id];
-    localStorage.setItem(getAppStorageKey('habits_' + todayStr), JSON.stringify(map));
-    renderHabits();
-}
-
-function renderHabits() {
-    const wrap = document.getElementById('habit-list');
-    if (!wrap) return;
-    const map = getHabitsToday();
-    wrap.innerHTML = HABIT_ITEMS.map(function (h) {
-        const on = !!map[h.id];
-        return '<label class="flex items-center gap-2 text-sm bg-[#292524] rounded-xl px-3 py-2">' +
-            '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="toggleHabit(\'' + h.id + '\')">' +
-            '<span>' + h.label + '</span></label>';
-    }).join('');
-}
-
 function renderDietWeekBars() {
     const el = document.getElementById('diet-week-bars');
     if (!el) return;
@@ -485,7 +448,6 @@ function onAppTabShown(tab) {
     if (tab === 'millennium') showMillenniumPanel('yugong');
     if (tab === 'me') {
         renderBodyLog();
-        renderHabits();
         renderDietWeekBars();
     }
     if (tab === 'yugong') {
@@ -505,7 +467,6 @@ function refreshAppShell() {
     loadAppPrefs();
     renderOverviewDashboard();
     renderBodyLog();
-    renderHabits();
     renderDietWeekBars();
 }
 

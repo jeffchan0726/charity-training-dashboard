@@ -1848,10 +1848,6 @@ Local Development Instructions:
                 <ul id="body-log-list" class="mt-3 space-y-1 text-xs text-[#a8a29e]"></ul>
             </div>
             <div class="section-card rounded-3xl p-4">
-                <h2 class="text-lg font-bold mb-2">今日打卡</h2>
-                <div id="habit-list" class="space-y-2"></div>
-            </div>
-            <div class="section-card rounded-3xl p-4">
                 <h2 class="text-lg font-bold mb-2">近 7 日熱量</h2>
                 <div id="diet-week-bars" class="grid grid-cols-7 gap-1.5 min-h-[80px]"></div>
                 <div class="grid grid-cols-2 gap-2 mt-3">
@@ -2780,7 +2776,7 @@ Local Development Instructions:
     <script src="js/ui-calories.js?v=2.3.33"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/unique-health.js?v=2.3.40"></script>
-    <script src="js/ui-app.js?v=2.3.39"></script>
+    <script src="js/ui-app.js?v=2.3.41"></script>
 
     <script>
         /*
@@ -2873,7 +2869,6 @@ Local Development Instructions:
                 if (typeof loadAppPrefs === 'function') loadAppPrefs();
                 if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                 if (typeof renderBodyLog === 'function') renderBodyLog();
-                if (typeof renderHabits === 'function') renderHabits();
             } catch (err) {
                 console.warn('updateUIAfterLogin log refresh error (non-fatal):', err);
             }
