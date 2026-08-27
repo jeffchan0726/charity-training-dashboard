@@ -158,7 +158,7 @@ html.mobile-app {
 }
 
 .mobile-app #content-calories .calorie-dropzone {
-    min-height: 180px;
+    min-height: 200px;
 }
 
 .mobile-app #calorie-preview-img {
@@ -166,7 +166,17 @@ html.mobile-app {
 }
 
 .mobile-app #calorie-today-total {
-    font-size: 1.75rem !important;
+    font-size: 1.15rem !important;
+}
+
+.mobile-app .calorie-ring {
+    width: 104px;
+    height: 104px;
+}
+
+.mobile-app .calorie-ring-inner {
+    width: 80px;
+    height: 80px;
 }
 
 .mobile-app .calorie-entry-row {
@@ -176,4 +186,8 @@ html.mobile-app {
 .mobile-app .calorie-oil-choice {
     font-size: 0.65rem;
     min-height: 40px;
+}
+
+.mobile-app .calorie-action-btn {
+    min-height: 46px;
 }

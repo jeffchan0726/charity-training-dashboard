@@ -51,7 +51,7 @@ Local Development Instructions:
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.27">
+    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.33">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         body {
@@ -840,13 +840,68 @@ Local Development Instructions:
             color: #fff;
         }
 
-        .calorie-today-card {
-            background: #292524;
-            border: 1px solid #44403c;
+        .calorie-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+        .calorie-hero {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(120% 80% at 0% 0%, rgba(74, 222, 128, 0.18), transparent 55%),
+                linear-gradient(180deg, #1c1917 0%, #0c0a09 100%);
+            border: 1px solid #3f3a36;
+            border-radius: 1.6rem;
+            padding: 1.15rem 1.1rem 1.25rem;
+        }
+        .calorie-hero-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.85rem;
+        }
+        .calorie-kicker {
+            font-size: 0.68rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #86efac;
+            font-weight: 700;
+        }
+        .calorie-ring-wrap {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+        .calorie-ring {
+            --pct: 0;
+            width: 118px;
+            height: 118px;
+            border-radius: 50%;
+            background:
+                conic-gradient(#4ade80 calc(var(--pct) * 1%), #292524 0);
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .calorie-ring.over {
+            background: conic-gradient(#f87171 calc(var(--pct) * 1%), #292524 0);
+        }
+        .calorie-ring-inner {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            background: #0c0a09;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         .calorie-progress-track {
             height: 8px;
-            background: #44403c;
+            background: #292524;
             border-radius: 999px;
             overflow: hidden;
         }
@@ -861,17 +916,26 @@ Local Development Instructions:
             background: linear-gradient(90deg, #b45309, #f87171);
         }
         .calorie-macro-chip {
-            background: #1c1917;
+            background: rgba(28, 25, 23, 0.85);
             border: 1px solid #44403c;
-            border-radius: 0.9rem;
-            padding: 0.45rem 0.25rem;
+            border-radius: 1rem;
+            padding: 0.55rem 0.35rem;
+            text-align: center;
+        }
+        .calorie-capture {
+            background: #1c1917;
+            border: 1px solid #3f3a36;
+            border-radius: 1.6rem;
+            padding: 0.9rem;
         }
         .calorie-dropzone {
             position: relative;
-            min-height: 200px;
+            min-height: 220px;
             border: 1.5px dashed #57534e;
-            border-radius: 1.15rem;
-            background: #292524;
+            border-radius: 1.25rem;
+            background:
+                radial-gradient(80% 70% at 50% 20%, rgba(22, 101, 52, 0.22), transparent 60%),
+                #141210;
             overflow: hidden;
             cursor: pointer;
             display: flex;
@@ -880,24 +944,37 @@ Local Development Instructions:
         }
         .calorie-dropzone.has-image {
             border-style: solid;
-            border-color: #166534;
+            border-color: #4ade80;
+            min-height: 240px;
         }
         #calorie-preview-img {
             width: 100%;
-            max-height: 280px;
+            max-height: 300px;
             object-fit: contain;
             background: #0c0a09;
             display: block;
         }
         .calorie-dropzone-placeholder {
             text-align: center;
-            padding: 1.5rem 1rem;
+            padding: 1.6rem 1rem;
             color: #e7e5e4;
+        }
+        .calorie-cam-orb {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 0.75rem;
+            border-radius: 1.25rem;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(180deg, #166534, #14532d);
+            box-shadow: 0 10px 24px rgba(22, 101, 52, 0.35);
+            color: #bbf7d0;
+            font-size: 1.45rem;
         }
         .calorie-analyzing-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(12, 10, 9, 0.72);
+            background: rgba(12, 10, 9, 0.78);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -905,6 +982,7 @@ Local Development Instructions:
             gap: 0.5rem;
             color: #e7e5e4;
             font-size: 0.85rem;
+            backdrop-filter: blur(4px);
         }
         .calorie-analyzing-overlay.hidden,
         #calorie-goal-edit.hidden,
@@ -928,30 +1006,73 @@ Local Development Instructions:
         #calorie-goal-edit:not(.hidden) {
             display: flex;
         }
-        .calorie-confidence-badge {
-            font-size: 0.65rem;
-            padding: 0.2rem 0.55rem;
-            border-radius: 999px;
+        .calorie-action-btn {
+            min-height: 48px;
+            border-radius: 1rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .calorie-action-primary {
+            background: linear-gradient(180deg, #22c55e, #15803d);
+            color: #fff;
+        }
+        .calorie-action-ghost {
             background: #292524;
             border: 1px solid #57534e;
+            color: #e7e5e4;
+        }
+        .calorie-advanced {
+            border-top: 1px solid #3f3a36;
+            margin-top: 0.85rem;
+            padding-top: 0.35rem;
+        }
+        .calorie-advanced > summary {
+            list-style: none;
+            cursor: pointer;
             color: #a8a29e;
+            font-size: 0.75rem;
+            padding: 0.55rem 0;
+            font-weight: 600;
+        }
+        .calorie-advanced > summary::-webkit-details-marker { display: none; }
+        .calorie-confidence-badge {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            background: rgba(22, 101, 52, 0.35);
+            border: 1px solid #4ade80;
+            color: #bbf7d0;
             white-space: nowrap;
+        }
+        .calorie-result-card {
+            background:
+                linear-gradient(180deg, rgba(22, 101, 52, 0.16), transparent 42%),
+                #1c1917;
+            border: 1px solid #3f3a36;
+            border-radius: 1.6rem;
+            padding: 1.1rem;
+        }
+        .calorie-result-kcal-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.4rem;
+            margin: 0.35rem 0 0.9rem;
         }
         .calorie-entry-row {
             display: flex;
             align-items: center;
             gap: 0.7rem;
-            background: #292524;
-            border: 1px solid #44403c;
-            border-radius: 1rem;
-            padding: 0.65rem 0.75rem;
+            background: #1c1917;
+            border: 1px solid #3f3a36;
+            border-radius: 1.15rem;
+            padding: 0.7rem 0.8rem;
         }
         .calorie-entry-thumb {
-            width: 48px;
-            height: 48px;
-            border-radius: 0.7rem;
+            width: 52px;
+            height: 52px;
+            border-radius: 0.9rem;
             object-fit: cover;
-            background: #1c1917;
+            background: #0c0a09;
             flex-shrink: 0;
         }
         .calorie-entry-delete {
@@ -985,13 +1106,16 @@ Local Development Instructions:
             font-size: 0.6rem;
             padding: 0.1rem 0.4rem;
             border-radius: 999px;
-            border: 1px solid #57534e;
-            color: #a8a29e;
+            border: 1px solid #4ade80;
+            color: #86efac;
             white-space: nowrap;
         }
         .calorie-source-badge.fortify {
             border-color: #fbbf24;
             color: #fbbf24;
+        }
+        #calorie-result-items li {
+            background: #141210 !important;
         }
         .perf-card {
             background: #292524;
@@ -1622,61 +1746,68 @@ Local Development Instructions:
     <!-- 卡路里分析：影食物相估計熱量 -->
     <div id="content-calories" class="tab-content hidden">
         <div id="calories-login-gate" class="section-card rounded-3xl p-8 text-center hidden">
-            <i class="fa-solid fa-lock text-4xl text-emerald-400 mb-4"></i>
-            <h3 class="font-bold text-xl mb-2">需要登入</h3>
-            <p class="text-[#a8a29e] mb-4">登入之後就可以影食物相，分析卡路里同記錄今日攝取。</p>
-            <button onclick="showLoginModal()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">登入 / 註冊</button>
+            <div class="calorie-cam-orb mx-auto mb-4"><i class="fa-solid fa-lock"></i></div>
+            <h3 class="font-bold text-xl mb-2">登入先至影相記餐</h3>
+            <p class="text-[#a8a29e] mb-4">登入之後就可以影碟、估卡路里，同記錄今日食咗咩。</p>
+            <button onclick="showLoginModal()" class="calorie-action-btn calorie-action-primary px-6">登入 / 註冊</button>
         </div>
 
-        <div id="calories-main" class="space-y-4">
-            <div class="section-card rounded-3xl p-4 sm:p-6">
-                <div class="flex items-start justify-between gap-3 mb-4">
+        <div id="calories-main" class="calorie-shell">
+            <section class="calorie-hero">
+                <div class="calorie-hero-top">
                     <div>
-                        <h2 class="text-xl sm:text-2xl font-bold text-emerald-400">卡路里分析</h2>
-                        <p class="text-xs sm:text-sm text-[#a8a29e]">本地香港成分表第 6 版 + USDA · Grok 認餸</p>
+                        <div class="calorie-kicker">今日營養</div>
+                        <h2 class="text-xl font-bold text-white mt-0.5">卡路里分析</h2>
+                        <p class="text-xs text-[#a8a29e] mt-0.5">影相 → Grok 認餸同估熱量</p>
                     </div>
-                    <span class="text-2xl" aria-hidden="true">🍽️</span>
+                    <button type="button" onclick="downloadCalorieExcel()"
+                        class="text-[11px] px-2.5 py-1.5 rounded-xl border border-[#44403c] text-[#a8a29e] hover:border-emerald-600 hover:text-emerald-300">
+                        <i class="fa-solid fa-file-excel mr-1"></i>Excel
+                    </button>
                 </div>
-
-                <div class="calorie-today-card rounded-2xl p-3.5 sm:p-4 mb-4">
-                    <div class="flex items-end justify-between gap-2 mb-2">
-                        <div>
-                            <div class="text-[11px] text-[#a8a29e]">今日攝取</div>
-                            <div class="mt-0.5">
-                                <span id="calorie-today-total" class="text-3xl font-bold text-emerald-400 tabular-nums">0</span>
-                                <span class="text-sm text-[#a8a29e]"> / </span>
-                                <button type="button" id="calorie-goal-edit-btn" onclick="toggleCalorieGoalEdit()"
-                                    class="text-sm text-[#a8a29e] underline decoration-dotted underline-offset-2" title="改每日目標">
-                                    <span id="calorie-today-goal" class="tabular-nums">2000</span> kcal
-                                </button>
+                <div class="calorie-ring-wrap">
+                    <div id="calorie-today-ring" class="calorie-ring" style="--pct:0" aria-hidden="true">
+                        <div class="calorie-ring-inner">
+                            <span id="calorie-today-total" class="text-xl font-bold text-emerald-400 tabular-nums leading-none">0</span>
+                            <span class="text-[10px] text-[#a8a29e] mt-1">kcal</span>
+                        </div>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-end justify-between gap-2">
+                            <button type="button" id="calorie-goal-edit-btn" onclick="toggleCalorieGoalEdit()"
+                                class="text-xs text-[#a8a29e] underline decoration-dotted underline-offset-2" title="改每日目標">
+                                目標 <span id="calorie-today-goal" class="tabular-nums">2000</span> kcal
+                            </button>
+                            <div id="calorie-today-remain" class="text-xs text-[#a8a29e]">仲剩 2000 kcal</div>
+                        </div>
+                        <div id="calorie-goal-edit" class="hidden items-center gap-2 mt-2">
+                            <input id="calorie-goal-input" type="number" min="800" max="6000" step="50" inputmode="numeric"
+                                class="log-input w-28 px-3 py-1.5 rounded-2xl text-sm" aria-label="每日卡路里目標">
+                            <button type="button" onclick="saveCalorieGoal()" class="px-3 py-1.5 bg-emerald-600 rounded-2xl text-xs font-semibold">儲存</button>
+                            <button type="button" onclick="toggleCalorieGoalEdit(false)" class="px-3 py-1.5 border border-[#57534e] rounded-2xl text-xs">取消</button>
+                        </div>
+                        <div class="calorie-progress-track mt-2 mb-3" aria-hidden="true">
+                            <div id="calorie-progress-bar" class="calorie-progress-bar" style="width:0%"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5">
+                            <div class="calorie-macro-chip">
+                                <div class="text-[10px] text-[#a8a29e]">蛋白質</div>
+                                <div id="calorie-today-protein" class="text-sm font-semibold tabular-nums text-sky-300">0 g</div>
+                            </div>
+                            <div class="calorie-macro-chip">
+                                <div class="text-[10px] text-[#a8a29e]">碳水</div>
+                                <div id="calorie-today-carbs" class="text-sm font-semibold tabular-nums text-amber-300">0 g</div>
+                            </div>
+                            <div class="calorie-macro-chip">
+                                <div class="text-[10px] text-[#a8a29e]">脂肪</div>
+                                <div id="calorie-today-fat" class="text-sm font-semibold tabular-nums text-rose-300">0 g</div>
                             </div>
                         </div>
-                        <div id="calorie-today-remain" class="text-xs text-[#a8a29e] text-right">仲剩 2000 kcal</div>
-                    </div>
-                    <div id="calorie-goal-edit" class="hidden flex items-center gap-2 mb-2">
-                        <input id="calorie-goal-input" type="number" min="800" max="6000" step="50" inputmode="numeric"
-                            class="log-input w-28 px-3 py-1.5 rounded-2xl text-sm" aria-label="每日卡路里目標">
-                        <button type="button" onclick="saveCalorieGoal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-xs font-semibold">儲存</button>
-                        <button type="button" onclick="toggleCalorieGoalEdit(false)" class="px-3 py-1.5 border border-[#57534e] rounded-2xl text-xs">取消</button>
-                    </div>
-                    <div class="calorie-progress-track mb-3" aria-hidden="true">
-                        <div id="calorie-progress-bar" class="calorie-progress-bar" style="width:0%"></div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="calorie-macro-chip">
-                            <div class="text-[10px] text-[#a8a29e]">蛋白質</div>
-                            <div id="calorie-today-protein" class="text-sm font-semibold tabular-nums text-sky-300">0 g</div>
-                        </div>
-                        <div class="calorie-macro-chip">
-                            <div class="text-[10px] text-[#a8a29e]">碳水</div>
-                            <div id="calorie-today-carbs" class="text-sm font-semibold tabular-nums text-amber-300">0 g</div>
-                        </div>
-                        <div class="calorie-macro-chip">
-                            <div class="text-[10px] text-[#a8a29e]">脂肪</div>
-                            <div id="calorie-today-fat" class="text-sm font-semibold tabular-nums text-rose-300">0 g</div>
-                        </div>
                     </div>
                 </div>
+            </section>
+
+            <section class="calorie-capture">
 
                 <input id="calorie-camera-input" type="file" accept="image/*" capture="environment" class="hidden" aria-hidden="true">
                 <input id="calorie-gallery-input" type="file" accept="image/jpeg,image/png,image/webp,image/*" class="hidden" aria-hidden="true">
@@ -1684,127 +1815,116 @@ Local Development Instructions:
                 <div id="calorie-dropzone" class="calorie-dropzone" onclick="triggerCalorieGallery()">
                     <img id="calorie-preview-img" alt="食物預覽" class="hidden">
                     <div id="calorie-dropzone-placeholder" class="calorie-dropzone-placeholder">
-                        <i class="fa-solid fa-camera text-2xl text-emerald-400 mb-2"></i>
-                        <div class="font-semibold text-sm">45° 頂視影碟</div>
-                        <div class="text-[11px] text-[#a8a29e] mt-1">筷子或碗口要入鏡，用嚟估份量</div>
+                        <div class="calorie-cam-orb"><i class="fa-solid fa-camera"></i></div>
+                        <div class="font-bold text-base">影張餸相開始</div>
+                        <div class="text-[12px] text-[#a8a29e] mt-1.5 leading-relaxed">斜 45° 由上望落<br>筷子或碗口入鏡會準啲</div>
                     </div>
                     <div id="calorie-analyzing-overlay" class="calorie-analyzing-overlay hidden">
                         <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i>
-                        <span>分析緊熱量…</span>
+                        <span>Grok 認緊餸…</span>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 mt-3">
-                    <button type="button" onclick="triggerCalorieCamera()"
-                        class="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl text-sm font-semibold">
+                    <button type="button" onclick="triggerCalorieCamera()" class="calorie-action-btn calorie-action-primary">
                         <i class="fa-solid fa-camera mr-1.5"></i> 影相
                     </button>
-                    <button type="button" onclick="triggerCalorieGallery()"
-                        class="px-3 py-2.5 border border-[#57534e] hover:border-emerald-600 rounded-2xl text-sm font-semibold">
+                    <button type="button" onclick="triggerCalorieGallery()" class="calorie-action-btn calorie-action-ghost">
                         <i class="fa-solid fa-images mr-1.5"></i> 相簿
                     </button>
                 </div>
 
-                <div class="calorie-shot-tips mt-3 text-[11px] text-[#a8a29e] leading-relaxed">
-                    <div class="font-semibold text-[#e7e5e4] mb-1">影相要點</div>
-                    <ul class="list-disc pl-4 space-y-0.5">
-                        <li>斜約 45° 由上望落成碟</li>
-                        <li>放一雙筷子，或者露出碗口／碟邊做尺</li>
-                        <li>燈光夠，唔好遮住餸</li>
-                    </ul>
-                </div>
-
-                <fieldset class="mt-3">
-                    <legend class="text-[11px] text-[#a8a29e] mb-1.5">炒餸鑊油（1 湯匙 ≈ 240 kcal，否則一定低估）</legend>
-                    <div class="grid grid-cols-2 gap-1.5">
-                        <label class="calorie-oil-choice">
-                            <input type="radio" name="calorie-oil-mode" value="none"> 無額外油
-                        </label>
-                        <label class="calorie-oil-choice">
-                            <input type="radio" name="calorie-oil-mode" value="light"> 少油 1 匙
-                        </label>
-                        <label class="calorie-oil-choice">
-                            <input type="radio" name="calorie-oil-mode" value="normal" checked> 普通 1.5 匙
-                        </label>
-                        <label class="calorie-oil-choice">
-                            <input type="radio" name="calorie-oil-mode" value="heavy"> 多油 2 匙
-                        </label>
-                    </div>
-                </fieldset>
-
-                <label class="mt-3 flex items-start gap-2 text-[11px] text-[#a8a29e]">
-                    <input id="calorie-depth-toggle" type="checkbox" class="mt-0.5">
-                    <span>冇筷子／碗口先開深度輔助（MiDaS，實驗，較慢）</span>
-                </label>
-
                 <label class="block mt-3">
-                    <span class="text-[11px] text-[#a8a29e]">備註（可選，例如「兩人份」「少油」「蒸」）</span>
-                    <input id="calorie-note-input" type="text" maxlength="80" placeholder="例如：少飯、少油、唔計湯"
-                        class="log-input w-full mt-1 px-4 py-2 rounded-2xl">
+                    <span class="text-[11px] text-[#a8a29e]">備註（可選）</span>
+                    <input id="calorie-note-input" type="text" maxlength="80" placeholder="例如：少飯、少油、兩人份、蒸"
+                        class="log-input w-full mt-1 px-4 py-2.5 rounded-2xl">
                 </label>
 
                 <div class="flex gap-2 mt-3">
                     <button type="button" id="calorie-analyze-btn" onclick="analyzeCaloriePhoto()" disabled
-                        class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-2xl text-sm font-semibold">
-                        <i class="fa-solid fa-bolt mr-1.5"></i> 分析卡路里
+                        class="calorie-action-btn calorie-action-primary flex-1">
+                        <i class="fa-solid fa-bolt mr-1.5"></i> 分析呢餐
                     </button>
                     <button type="button" id="calorie-clear-btn" onclick="clearCaloriePhoto()"
-                        class="px-4 py-2.5 border border-[#57534e] rounded-2xl text-sm hidden">清除</button>
+                        class="calorie-action-btn calorie-action-ghost px-4 hidden">清除</button>
                 </div>
-                <p class="text-[10px] text-[#a8a29e] mt-2">中菜營養優先香港食物成分表第 6 版；西式走 USDA。AI 只認餸，唔亂填熱量。唔係醫療建議。</p>
-            </div>
 
-            <div id="calorie-error" class="hidden section-card rounded-3xl p-4 text-sm text-red-300 border border-red-900/50"></div>
+                <details class="calorie-advanced">
+                    <summary>進階：影相提示、額外鑊油、深度輔助</summary>
+                    <div class="calorie-shot-tips text-[11px] text-[#a8a29e] leading-relaxed mb-3">
+                        <ul class="list-disc pl-4 space-y-0.5">
+                            <li>斜約 45° 由上望落成碟</li>
+                            <li>放筷子，或者露出碗口／碟邊做尺</li>
+                            <li>燈光夠，唔好遮住餸</li>
+                        </ul>
+                    </div>
+                    <fieldset>
+                        <legend class="text-[11px] text-[#a8a29e] mb-1.5">額外鑊油（Grok 已計入煮法，通常唔使加）</legend>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <label class="calorie-oil-choice">
+                                <input type="radio" name="calorie-oil-mode" value="none" checked> 唔額外加油
+                            </label>
+                            <label class="calorie-oil-choice">
+                                <input type="radio" name="calorie-oil-mode" value="light"> 少油 1 匙
+                            </label>
+                            <label class="calorie-oil-choice">
+                                <input type="radio" name="calorie-oil-mode" value="normal"> 普通 1.5 匙
+                            </label>
+                            <label class="calorie-oil-choice">
+                                <input type="radio" name="calorie-oil-mode" value="heavy"> 多油 2 匙
+                            </label>
+                        </div>
+                    </fieldset>
+                    <label class="mt-3 flex items-start gap-2 text-[11px] text-[#a8a29e]">
+                        <input id="calorie-depth-toggle" type="checkbox" class="mt-0.5">
+                        <span>冇筷子／碗口先開深度輔助（實驗，較慢）</span>
+                    </label>
+                </details>
+            </section>
 
-            <div id="calorie-result" class="hidden section-card rounded-3xl p-4 sm:p-6">
-                <div class="flex items-start justify-between gap-3 mb-3">
+            <div id="calorie-error" class="hidden rounded-2xl p-4 text-sm text-red-300 bg-red-950/40 border border-red-900/50"></div>
+
+            <section id="calorie-result" class="calorie-result-card hidden">
+                <div class="flex items-start justify-between gap-3">
                     <div>
-                        <div class="text-[11px] text-[#a8a29e]">估計結果</div>
-                        <h3 id="calorie-result-name" class="text-lg font-bold"></h3>
+                        <div class="calorie-kicker">呢餐估計</div>
+                        <h3 id="calorie-result-name" class="text-lg font-bold mt-0.5"></h3>
                     </div>
                     <span id="calorie-result-confidence" class="calorie-confidence-badge"></span>
                 </div>
-                <div class="flex items-end gap-2 mb-4">
-                    <div id="calorie-result-kcal" class="text-4xl font-bold text-emerald-400 tabular-nums leading-none">—</div>
+                <div class="calorie-result-kcal-row">
+                    <div id="calorie-result-kcal" class="text-5xl font-black text-emerald-400 tabular-nums leading-none">—</div>
                     <div class="text-sm text-[#a8a29e] pb-1">kcal</div>
                 </div>
-                <div class="grid grid-cols-3 gap-2 mb-4">
+                <div class="grid grid-cols-3 gap-2 mb-3">
                     <div class="calorie-macro-chip">
                         <div class="text-[10px] text-[#a8a29e]">蛋白質</div>
-                        <div id="calorie-result-protein" class="text-sm font-semibold tabular-nums">—</div>
+                        <div id="calorie-result-protein" class="text-sm font-semibold tabular-nums text-sky-300">—</div>
                     </div>
                     <div class="calorie-macro-chip">
                         <div class="text-[10px] text-[#a8a29e]">碳水</div>
-                        <div id="calorie-result-carbs" class="text-sm font-semibold tabular-nums">—</div>
+                        <div id="calorie-result-carbs" class="text-sm font-semibold tabular-nums text-amber-300">—</div>
                     </div>
                     <div class="calorie-macro-chip">
                         <div class="text-[10px] text-[#a8a29e]">脂肪</div>
-                        <div id="calorie-result-fat" class="text-sm font-semibold tabular-nums">—</div>
+                        <div id="calorie-result-fat" class="text-sm font-semibold tabular-nums text-rose-300">—</div>
                     </div>
                 </div>
-                <p id="calorie-scale-hint" class="text-[11px] text-[#a8a29e] mb-2"></p>
-                <p id="calorie-engine-hint" class="text-[11px] text-[#a8a29e] mb-2"></p>
+                <p id="calorie-scale-hint" class="text-[11px] text-[#a8a29e] mb-1"></p>
+                <p id="calorie-engine-hint" class="text-[11px] text-[#a8a29e] mb-3"></p>
                 <ul id="calorie-result-items" class="space-y-1.5 mb-3"></ul>
-                <p id="calorie-result-notes" class="text-xs text-[#a8a29e] mb-2"></p>
+                <p id="calorie-result-notes" class="text-xs text-[#a8a29e] mb-1"></p>
                 <p id="calorie-result-tips" class="text-xs text-emerald-300/90"></p>
-            </div>
+            </section>
 
-            <div class="section-card rounded-3xl p-4 sm:p-6">
+            <section class="calorie-capture">
                 <div class="flex items-center justify-between gap-2 mb-3">
-                    <h3 class="text-sm font-bold flex items-center gap-1.5">
-                        <span>📒</span> 今日紀錄
-                    </h3>
-                    <div class="flex items-center gap-2">
-                        <span id="calorie-entry-count" class="text-[11px] text-[#a8a29e]"></span>
-                        <button type="button" onclick="downloadCalorieExcel()"
-                            class="text-[10px] sm:text-xs px-2.5 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 hover:text-emerald-300 text-[#a8a29e]">
-                            <i class="fa-solid fa-file-excel mr-1"></i>下載 Excel
-                        </button>
-                    </div>
+                    <h3 class="text-sm font-bold">今日紀錄</h3>
+                    <span id="calorie-entry-count" class="text-[11px] text-[#a8a29e]"></span>
                 </div>
-                <div id="calorie-today-empty" class="text-xs text-[#a8a29e] py-4 text-center">未有紀錄。影張相開始記低今日食咗咩。</div>
+                <div id="calorie-today-empty" class="text-xs text-[#a8a29e] py-6 text-center">未有紀錄。影張相開始記低今日食咗咩。</div>
                 <ul id="calorie-today-list" class="space-y-2"></ul>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -2502,9 +2622,9 @@ Local Development Instructions:
     <script src="js/ui-library.js?v=2.3.24"></script>
     <script src="js/ui-analysis.js?v=2.3.24"></script>
     <script src="js/ui-yugong.js?v=2.3.24"></script>
-    <script src="js/food-nutrition.js?v=2.3.32"></script>
+    <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
-    <script src="js/ui-calories.js?v=2.3.32"></script>
+    <script src="js/ui-calories.js?v=2.3.33"></script>
 
     <script>
         /*

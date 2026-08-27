@@ -592,6 +592,11 @@ function renderCalorieTodaySummary() {
         bar.style.width = `${pct}%`;
         bar.classList.toggle('over', remain < 0);
     }
+    const ring = document.getElementById('calorie-today-ring');
+    if (ring) {
+        ring.style.setProperty('--pct', String(Math.min(100, pct)));
+        ring.classList.toggle('over', remain < 0);
+    }
     if (pEl) pEl.textContent = `${formatMacro(Math.round(totals.protein * 10) / 10)} g`;
     if (cEl) cEl.textContent = `${formatMacro(Math.round(totals.carbs * 10) / 10)} g`;
     if (fEl) fEl.textContent = `${formatMacro(Math.round(totals.fat * 10) / 10)} g`;
