@@ -156,3 +156,24 @@ html.mobile-app {
 .mobile-app #content-training .grid:not(.grid-cols-7) {
     grid-template-columns: minmax(0, 1fr) !important;
 }
+
+.mobile-app #content-calories .calorie-dropzone {
+    min-height: 180px;
+}
+
+.mobile-app #calorie-preview-img {
+    max-height: 220px;
+}
+
+.mobile-app #calorie-today-total {
+    font-size: 1.75rem !important;
+}
+
+.mobile-app .calorie-entry-row {
+    padding: 0.55rem 0.6rem;
+}
+
+.mobile-app .calorie-oil-choice {
+    font-size: 0.65rem;
+    min-height: 40px;
+}
