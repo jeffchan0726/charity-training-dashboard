@@ -263,7 +263,14 @@ function saveBodyLogEntry() {
     const list = getBodyLog().filter(function (e) {
         return e.date !== todayStr || e.source === 'unique-health';
     });
-    list.unshift({ date: todayStr, weight: weight || null, bf: bf || null, source: 'manual' });
+    const entry = {
+        id: 'manual_' + todayStr,
+        date: todayStr,
+        weight: weight || null,
+        bf: bf || null,
+        source: 'manual'
+    };
+    list.unshift(entry);
     list.sort(function (a, b) {
         return String(b.weighedAt || b.date || '').localeCompare(String(a.weighedAt || a.date || ''));
     });
@@ -273,7 +280,8 @@ function saveBodyLogEntry() {
     renderBodyLog();
     applyAutoProteinGoal();
     renderOverviewDashboard();
-    if (typeof showToast === 'function') showToast('已儲存身體數據');
+    if (typeof syncBodyLogToSheet === 'function') syncBodyLogToSheet([entry]);
+    else if (typeof showToast === 'function') showToast('已儲存身體數據');
 }
 
 function bodyLogMetricHtml(entry, keys) {

@@ -301,7 +301,7 @@ function onUniqueHealthFile(ev) {
                 return;
             }
             mergeUniqueHealthRecords(incoming);
-            if (typeof showToast === 'function') showToast('已匯入 ' + incoming.length + ' 筆 Unique Health 全部欄位');
+            if (typeof showToast === 'function') showToast('已匯入本機 ' + incoming.length + ' 筆 Unique Health 紀錄');
         } catch (err) {
             console.error(err);
             if (typeof showToast === 'function') showToast('匯入失敗，請用 Unique Health 匯出嘅 xlsx');
@@ -310,7 +310,8 @@ function onUniqueHealthFile(ev) {
     reader.readAsArrayBuffer(file);
 }
 
-function mergeUniqueHealthRecords(incoming) {
+function mergeUniqueHealthRecords(incoming, options) {
+    options = options || {};
     const list = getBodyLog();
     const byId = {};
     list.forEach(function (e) {
@@ -318,6 +319,8 @@ function mergeUniqueHealthRecords(incoming) {
         byId[e.id || ('x_' + id)] = e;
     });
     incoming.forEach(function (rec) {
+        if (!rec) return;
+        if (!rec.id) rec.id = 'uh_' + String(rec.weighedAt || rec.date || '').replace(/[^\d]/g, '');
         byId[rec.id] = rec;
     });
     const merged = Object.keys(byId).map(function (k) { return byId[k]; });
@@ -333,6 +336,53 @@ function mergeUniqueHealthRecords(incoming) {
     renderBodyLog();
     if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
     if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
+    if (options.sync !== false) syncBodyLogToSheet(incoming);
+}
+
+function isBodyLogUserLoggedIn() {
+    return typeof currentUser !== 'undefined' && !!currentUser;
+}
+
+function syncBodyLogToSheet(entries) {
+    if (!entries || !entries.length) return;
+    if (!isBodyLogUserLoggedIn() || typeof callAppsScript !== 'function') {
+        if (typeof showToast === 'function') showToast('已存本機。登入後先至寫入 Google Sheet');
+        return;
+    }
+    const payload = entries.map(function (e) {
+        return {
+            id: e.id,
+            weighedAt: e.weighedAt,
+            date: e.date,
+            time: e.time,
+            source: e.source,
+            weight: e.weight,
+            bf: e.bf,
+            createdAt: e.createdAt || Date.now(),
+            record: e
+        };
+    });
+    callAppsScript('saveBodyLogEntries', { entries: payload }).then(function (res) {
+        if (res && res.status === 'error') {
+            if (typeof showToast === 'function') {
+                showToast('Google Sheet 未能寫入：' + (res.message || '請重新部署 Apps Script'));
+            }
+            return;
+        }
+        if (typeof showToast === 'function') {
+            showToast('已寫入 Google Sheet（' + (res.saved || entries.length) + ' 筆身體數據）');
+        }
+    }).catch(function () {
+        if (typeof showToast === 'function') showToast('Google Sheet 未能寫入，本機紀錄仍然保留');
+    });
+}
+
+function loadBodyLogsFromSheet() {
+    if (!isBodyLogUserLoggedIn() || typeof callAppsScript !== 'function') return;
+    callAppsScript('getBodyLogs', {}).then(function (res) {
+        if (!res || res.status === 'error' || !Array.isArray(res.entries)) return;
+        mergeUniqueHealthRecords(res.entries, { sync: false });
+    }).catch(function () {});
 }
 
 function uniqueHealthFieldLabel(key) {

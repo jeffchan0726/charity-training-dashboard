@@ -880,6 +880,14 @@ async function bootstrapGoogleCloudData(options = {}) {
             );
         }
 
+        if (currentUser && typeof loadBodyLogsFromSheet === 'function') {
+            tasks.push(
+                Promise.resolve(loadBodyLogsFromSheet()).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] body log failed:', err);
+                })
+            );
+        }
+
         await Promise.all(tasks);
 
         if (typeof primeYugongTabFromPrefetch === 'function') {
