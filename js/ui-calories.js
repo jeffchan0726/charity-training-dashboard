@@ -396,6 +396,11 @@ function formatCalorieApiError(result) {
     if (/unknown action/i.test(msg) || /invalid action/i.test(msg)) {
         return '後端尚未更新。請將最新 Google_Apps_Script.txt 部署做新版本，並加入 XAI_API_KEY（Grok 認餸）。';
     }
+    if (/無法解析/.test(msg)) {
+        return msg.indexOf('重新部署') !== -1
+            ? msg
+            : (msg + ' 請將最新 Google_Apps_Script.txt 貼去 Apps Script 並新增一個部署版本。');
+    }
     if (/incorrect api key|無效|xai- 開頭/i.test(msg)) {
         return 'Grok 金鑰無效。去 https://console.x.ai 開一把新 API key（通常以 xai- 開頭），貼去 Apps Script → 專案設定 → 指令碼屬性 → XAI_API_KEY。USDA / api.data.gov 嗰把唔能認餸。';
     }
