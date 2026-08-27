@@ -22,7 +22,7 @@ recomp-challenge/
 │   ├── ui-analysis.js         # 分析頁 (per-exercise analysis, charts, overall stats, insights)
 │   ├── ui-calories.js         # 卡路里分析 UI
 │   ├── food-db-hk.js          # 本地香港食物成分表第 6 版 + USDA 對照
-│   ├── food-nutrition.js      # 配對、份量、炒餵加油、USDA 後備
+│   ├── food-nutrition.js      # 配對、份量、炒餘加油、USDA 後備
 │   └── food-depth.js          # 可選 MiDaS 深度輔助
 ├── css/
 │   ├── input.css              # Tailwind 來源
@@ -38,12 +38,12 @@ recomp-challenge/
 
 ## 卡路里分析（食物影相）
 
-流程：**Grok 認餵** → **本地香港食物成分表第 6 版**（中菜優先）→ 未匹配再查 **USDA API（免費）** → 炒／煎餵預設加 1–1.5 鍋湯勺油（約 240–360 kcal）。
+流程：**Grok 認餘** → **本地香港食物成分表第 6 版**（中菜優先）→ 未匹配再查 **USDA API（免費）** → 炒／煎餘預設加 1–1.5 鑼湯匙油（約 240–360 kcal）。
 
-影相：約 45° 頂視，筷子或碗口入鏡做尺。冇尺可選 MiDaS 深度輔助（實驗）。
+影相：約 45° 頂視，筷子或碗口入鏡做尺。内尺可選 MiDaS 深度輔助（實驗）。
 
 1. 將最新 `Google_Apps_Script.txt` 貼去 Apps Script，**新增一個部署版本**。
 2. 指令碼屬性：
-   - `XAI_API_KEY`：Grok 認餵（必須，[console.x.ai](https://console.x.ai)）
-   - 可選 `USDA_API_KEY`（[api.data.gov](https://api.data.gov)）；冇就用 DEMO_KEY
+   - `XAI_API_KEY`：Grok 認餘（必須，[console.x.ai](https://console.x.ai)）
+   - 可選 `USDA_API_KEY`（[api.data.gov](https://api.data.gov)）；内就用 DEMO_KEY
 3. 登入 app 打開「卡路里分析」。相片只用於當次識別，唔會存去 Sheet。
