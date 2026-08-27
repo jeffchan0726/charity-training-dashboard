@@ -14,3 +14,7 @@ Google_Apps_Script.txt
 README.md
 _gh_batch_*.json
 _one_*.json
+
+# Personal Unique Health / body exports
+*.xlsx
+~$*.xlsx

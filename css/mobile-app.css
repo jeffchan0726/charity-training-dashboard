@@ -291,6 +291,29 @@ html.mobile-app {
     font-size: 0.75rem !important;
 }
 
+.mobile-app .body-metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.45rem 0.6rem;
+}
+.mobile-app .body-metric {
+    background: #292524;
+    border-radius: 0.75rem;
+    padding: 0.45rem 0.55rem;
+}
+.mobile-app .body-metric-label {
+    display: block;
+    font-size: 0.62rem;
+    color: #a8a29e;
+}
+.mobile-app .body-metric-val {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: #e7e5e4;
+}
+
 @media (max-width: 400px) {
     .mobile-app .app-title {
         font-size: 0.92rem;
