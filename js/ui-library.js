@@ -95,7 +95,7 @@ function renderLibraryList() {
         div.onclick = () => showExerciseDetail(ex.name);
         div.innerHTML = `
             <div class="relative bg-[#1c1917]">
-                <img src="${sanitizeUrl(ex.image)}" class="w-full h-32 object-contain" loading="lazy" onerror="this.style.display='none';">
+                <img src="${sanitizeUrl(typeof resolveExerciseImage === 'function' ? resolveExerciseImage(ex.image, ex.muscle_group || ex.category) : ex.image)}" class="w-full h-32 object-contain bg-white" loading="lazy" onerror="this.onerror=null;this.src='images/icon.jpeg';">
                 <div class="absolute top-1 right-1 bg-black/50 text-[9px] px-1 rounded">${escapeHtml(ex.muscle_group)}</div>
             </div>
             <div class="p-2 flex-1">

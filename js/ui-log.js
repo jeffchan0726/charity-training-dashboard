@@ -257,7 +257,7 @@ function renderCurrentWorkout() {
             });
         }
 
-        const imgSrc = sanitizeUrl(getExerciseImage(ex.name));
+        const imgSrc = sanitizeUrl(getExerciseImage(ex.name) || 'images/icon.jpeg');
         const muscle = escapeHtml(getMuscleGroup(ex.name));
         const exNameAttr = escapeAttr(ex.name);
         const exNameHtml = escapeHtml(ex.name);
@@ -308,7 +308,7 @@ function renderCurrentWorkout() {
                     <img src="${imgSrc}" 
                          class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer exercise-detail-trigger"
                          data-exercise-name="${exNameAttr}"
-                         onerror="this.style.display='none';">
+                         onerror="this.onerror=null;this.src='images/icon.jpeg';">
                     
                     <div class="flex-1 min-w-0 pr-14">
                         <div class="font-semibold text-sm leading-tight cursor-pointer exercise-detail-trigger" data-exercise-name="${exNameAttr}">${exNameHtml}</div>

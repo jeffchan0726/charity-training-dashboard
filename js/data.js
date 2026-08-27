@@ -183,9 +183,93 @@ function getExerciseByName(name) {
     ) || null;
 }
 
+const LOCAL_EXERCISE_IMAGES = {
+    'images/ab_wheel_rollout.jpg': 1,
+    'images/bayesian_cable_curls.jpg': 1,
+    'images/cable_overhead_triceps.jpg': 1,
+    'images/deadlift.jpg': 1,
+    'images/dragon_flag.jpg': 1,
+    'images/finger_curls.jpg': 1,
+    'images/flat_dumbbell_press.jpg': 1,
+    'images/incline_dumbbell_press.jpg': 1,
+    'images/lateral_raises.jpg': 1,
+    'images/lower_chest_cable_fly.jpg': 1,
+    'images/preacher_curls.jpg': 1,
+    'images/pull_ups.jpg': 1,
+    'images/rear_delt_raises.jpg': 1,
+    'images/reverse_forearm_curl.jpg': 1,
+    'images/seated_cable_row.jpg': 1,
+    'images/tricep_rope_pushdown.jpg': 1,
+    'images/wood_chopper.jpg': 1,
+    'images/zercher_squats.jpg': 1,
+    'images/icon.jpeg': 1
+};
+
+const EXERCISE_IMAGE_FALLBACK = {
+    'images/seated_dumbbell_press.jpg': 'images/lateral_raises.jpg',
+    'images/cable_crunch.jpg': 'images/ab_wheel_rollout.jpg',
+    'images/romanian_deadlift.jpg': 'images/deadlift.jpg',
+    'images/standing_calf_raise.jpg': 'images/zercher_squats.jpg',
+    'images/barbell_bench_press.jpg': 'images/flat_dumbbell_press.jpg',
+    'images/cable_crossover.jpg': 'images/lower_chest_cable_fly.jpg',
+    'images/chest_dips.jpg': 'images/flat_dumbbell_press.jpg',
+    'images/machine_chest_press.jpg': 'images/flat_dumbbell_press.jpg',
+    'images/barbell_row.jpg': 'images/seated_cable_row.jpg',
+    'images/lat_pulldown.jpg': 'images/pull_ups.jpg',
+    'images/dumbbell_row.jpg': 'images/seated_cable_row.jpg',
+    'images/incline_bench_row.jpg': 'images/seated_cable_row.jpg',
+    'images/t_bar_row.jpg': 'images/seated_cable_row.jpg',
+    'images/face_pulls.jpg': 'images/rear_delt_raises.jpg',
+    'images/barbell_back_squat.jpg': 'images/zercher_squats.jpg',
+    'images/goblet_squat.jpg': 'images/zercher_squats.jpg',
+    'images/walking_lunges.jpg': 'images/zercher_squats.jpg',
+    'images/bulgarian_split_squat.jpg': 'images/zercher_squats.jpg',
+    'images/leg_press.jpg': 'images/zercher_squats.jpg',
+    'images/leg_curl.jpg': 'images/zercher_squats.jpg',
+    'images/leg_extension.jpg': 'images/zercher_squats.jpg',
+    'images/hip_thrust.jpg': 'images/zercher_squats.jpg',
+    'images/barbell_curl.jpg': 'images/preacher_curls.jpg',
+    'images/hammer_curls.jpg': 'images/bayesian_cable_curls.jpg',
+    'images/skull_crushers.jpg': 'images/cable_overhead_triceps.jpg',
+    'images/overhead_press.jpg': 'images/lateral_raises.jpg',
+    'images/arnold_press.jpg': 'images/lateral_raises.jpg',
+    'images/cable_lateral_raise.jpg': 'images/lateral_raises.jpg',
+    'images/barbell_shrugs.jpg': 'images/rear_delt_raises.jpg',
+    'images/hanging_leg_raise.jpg': 'images/dragon_flag.jpg',
+    'images/plank.jpg': 'images/ab_wheel_rollout.jpg',
+    'images/farmer_carry.jpg': 'images/deadlift.jpg',
+    'images/battle_ropes.jpg': 'images/wood_chopper.jpg',
+    'images/burpees.jpg': 'images/zercher_squats.jpg',
+    'images/rowing_machine.jpg': 'images/seated_cable_row.jpg',
+    'images/jump_rope.jpg': 'images/icon.jpeg',
+    'images/treadmill.jpg': 'images/icon.jpeg'
+};
+
+const MUSCLE_IMAGE_FALLBACK = {
+    '胸部': 'images/flat_dumbbell_press.jpg',
+    '背部': 'images/seated_cable_row.jpg',
+    '腿部': 'images/zercher_squats.jpg',
+    '手臂': 'images/preacher_curls.jpg',
+    '肩膀': 'images/lateral_raises.jpg',
+    '核心': 'images/ab_wheel_rollout.jpg',
+    '全身': 'images/deadlift.jpg',
+    '有氧': 'images/icon.jpeg'
+};
+
+function resolveExerciseImage(src, muscleGroup) {
+    if (src && LOCAL_EXERCISE_IMAGES[src]) return src;
+    if (src && EXERCISE_IMAGE_FALLBACK[src]) return EXERCISE_IMAGE_FALLBACK[src];
+    return MUSCLE_IMAGE_FALLBACK[muscleGroup] || 'images/icon.jpeg';
+}
+
+EXERCISES.forEach(function (ex) {
+    ex.image = resolveExerciseImage(ex.image, ex.muscle_group);
+});
+
 function getExerciseImage(name) {
     const ex = getExerciseByName(name);
-    return ex ? ex.image : '';
+    if (!ex) return 'images/icon.jpeg';
+    return resolveExerciseImage(ex.image, ex.muscle_group);
 }
 
 function getMuscleGroup(name) {
