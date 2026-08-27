@@ -75,4 +75,10 @@ let holdTimerSettings = {
     disableAutoSleep: true
 };
 
+// Calorie photo analysis (local per-user log)
+let calorieLogEntries = [];
+let calorieDailyGoalKcal = 2000;
+let caloriePendingImage = null; // compressed data URL awaiting analysis
+let calorieAnalyzeInFlight = false;
+
 // Add any other top-level state vars here as we extract more modules.
