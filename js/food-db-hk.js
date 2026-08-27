@@ -152,9 +152,9 @@ const HK_FOODS = [
     _f('avocado', ['牛油果'], 'avocado', [160, 2.0, 8.5, 14.7, 6.7, 7], { typical_g: 100, source: 'usda-sr', cooking: 'raw' }),
     _f('oats', ['燕麥', '燕麥片'], 'oats cooked', [71, 2.5, 12.0, 1.5, 1.7, 4], { typical_g: 200, source: 'usda-sr', cooking: 'boiled' }),
     _f('cheeseburger', ['芝士漢堡', '芝士汉堡', '漢堡', '汉堡', '漢堡包', '芝士漢堡包'], 'cheeseburger', [263, 15.0, 22.0, 14.0, 1.2, 510], { typical_g: 220, source: 'usda-sr', cooking: 'ready' }),
-    _f('hamburger_bun', ['芝麻包', '漢堡包麵', 'sesame bun'], 'hamburger bun sesame', [270, 8.5, 50.0, 4.0, 2.0, 490], { typical_g: 50, source: 'usda-sr' }),
+    _f('hamburger_bun', ['芝麻漢堡包', '芝麻包', '漢堡包麵', 'sesame bun'], 'hamburger bun sesame', [270, 8.5, 50.0, 4.0, 2.0, 490], { typical_g: 50, source: 'usda-sr' }),
     _f('beef_patty', ['漢堡扒', '牛肉餅', '漢堡肉餅'], 'beef patty cooked', [247, 25.0, 0, 16.0, 0, 70], { typical_g: 90, source: 'usda-sr', cooking: 'pan_fry' }),
-    _f('cheddar', ['車打芝士', '芝士片', '車打'], 'cheddar cheese', [403, 23.0, 1.3, 33.0, 0, 621], { typical_g: 20, source: 'usda-sr' }),
+    _f('cheddar', ['芝士', '車打芝士', '芝士片', '車打'], 'cheddar cheese', [403, 23.0, 1.3, 33.0, 0, 621], { typical_g: 20, source: 'usda-sr' }),
     _f('mayonnaise', ['蛋黃醬', '美乃滋', 'mayo'], 'mayonnaise', [680, 1.0, 0.6, 75.0, 0, 635], { typical_g: 15, source: 'usda-sr' })
 ];
 
