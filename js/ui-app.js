@@ -140,7 +140,10 @@ function renderOverviewDashboard() {
     if (subEl) {
         if (!currentUser) subEl.textContent = '登入之後就可以記訓練同飲食。';
         else if (rest) subEl.textContent = '恢復日。可以行下、伸展，或者記一餐。';
-        else subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + goal + ' kcal';
+        else {
+            applyAutoProteinGoal();
+            subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + goal + ' kcal';
+        }
     }
     markTrainingRestDay();
 }
@@ -268,6 +271,7 @@ function saveBodyLogEntry() {
     if (weight && typeof rememberBodyWeightKg === 'function') rememberBodyWeightKg(weight);
     else if (weight) lastBodyWeightKg = weight;
     renderBodyLog();
+    applyAutoProteinGoal();
     renderOverviewDashboard();
     if (typeof showToast === 'function') showToast('已儲存身體數據');
 }
@@ -344,6 +348,51 @@ function renderBodyLog() {
         : '<li>未有紀錄。可人手填，或匯入 Unique Health Excel。</li>';
 }
 
+function clampProteinGoal(n) {
+    const g = Math.round(Number(n) / 5) * 5;
+    if (g < 40) return 40;
+    if (g > 300) return 300;
+    return g;
+}
+
+function getLatestBodyForProtein() {
+    const latest = (getBodyLog() || [])[0] || {};
+    const weight = Number(latest.weight) || (typeof lastBodyWeightKg === 'number' ? lastBodyWeightKg : 0);
+    const bf = Number(latest.bf);
+    let lbm = Number(latest.lbmKg);
+    if (!(lbm >= 30 && lbm <= 150) && weight >= 30 && bf > 0 && bf < 70) {
+        lbm = weight * (1 - bf / 100);
+    }
+    return { weight: weight, bf: bf, lbm: lbm };
+}
+
+function getAutoProteinGoal() {
+    const b = getLatestBodyForProtein();
+    if (b.lbm >= 30 && b.lbm <= 150) {
+        return {
+            grams: clampProteinGoal(b.lbm * 2.2),
+            note: '去脂體重 ' + b.lbm.toFixed(1) + ' kg × 2.2'
+        };
+    }
+    if (b.weight >= 30 && b.weight <= 250) {
+        return {
+            grams: clampProteinGoal(b.weight * 1.8),
+            note: '體重 ' + b.weight.toFixed(1) + ' kg × 1.8'
+        };
+    }
+    return { grams: 150, note: '未有體重，暫用 150 g' };
+}
+
+function applyAutoProteinGoal() {
+    const auto = getAutoProteinGoal();
+    calorieDailyProteinGoal = auto.grams;
+    const gEl = document.getElementById('calorie-protein-goal-display');
+    const nEl = document.getElementById('calorie-protein-goal-note');
+    if (gEl) gEl.textContent = auto.grams + ' g';
+    if (nEl) nEl.textContent = auto.note;
+    return auto;
+}
+
 function renderDietWeekBars() {
     const el = document.getElementById('diet-week-bars');
     if (!el) return;
@@ -363,17 +412,7 @@ function renderDietWeekBars() {
         const h = Math.round((d.kcal / max) * 72);
         return '<div class="flex flex-col items-center justify-end gap-1"><div class="w-full bg-emerald-500/80 rounded-t" style="height:' + h + 'px"></div><span class="text-[9px] text-[#a8a29e]">' + d.lab + '</span></div>';
     }).join('');
-    const pIn = document.getElementById('calorie-protein-goal-input');
-    if (pIn) pIn.value = String(calorieDailyProteinGoal);
-}
-
-function saveProteinGoal() {
-    const n = parseInt(document.getElementById('calorie-protein-goal-input')?.value, 10);
-    if (n >= 40 && n <= 300) {
-        calorieDailyProteinGoal = n;
-        localStorage.setItem(getAppStorageKey('proteinGoal'), String(n));
-        if (typeof showToast === 'function') showToast('蛋白質目標 ' + n + ' g');
-    }
+    applyAutoProteinGoal();
 }
 
 function copyLastCalorieMeal() {
@@ -459,8 +498,7 @@ function onAppTabShown(tab) {
 }
 
 function loadAppPrefs() {
-    const n = parseInt(localStorage.getItem(getAppStorageKey('proteinGoal')), 10);
-    if (n >= 40 && n <= 300) calorieDailyProteinGoal = n;
+    applyAutoProteinGoal();
 }
 
 function refreshAppShell() {

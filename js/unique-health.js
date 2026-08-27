@@ -331,6 +331,7 @@ function mergeUniqueHealthRecords(incoming) {
         else lastBodyWeightKg = latest.weight;
     }
     renderBodyLog();
+    if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
     if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
 }
 

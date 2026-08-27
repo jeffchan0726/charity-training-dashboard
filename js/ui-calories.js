@@ -603,7 +603,12 @@ function renderCalorieTodaySummary() {
         ring.style.setProperty('--pct', String(Math.min(100, pct)));
         ring.classList.toggle('over', remain < 0);
     }
-    if (pEl) pEl.textContent = `${formatMacro(Math.round(totals.protein * 10) / 10)} g`;
+    if (pEl) {
+        if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
+        const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
+        const pNow = formatMacro(Math.round(totals.protein * 10) / 10);
+        pEl.textContent = pGoal ? `${pNow} / ${pGoal} g` : `${pNow} g`;
+    }
     if (cEl) cEl.textContent = `${formatMacro(Math.round(totals.carbs * 10) / 10)} g`;
     if (fEl) fEl.textContent = `${formatMacro(Math.round(totals.fat * 10) / 10)} g`;
     if (countEl) countEl.textContent = todayEntries.length ? `${todayEntries.length} 餐` : '';
