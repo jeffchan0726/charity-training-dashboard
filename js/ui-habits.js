@@ -394,9 +394,7 @@ function renderMorningChecklist() {
             '</div>';
     }).join('');
     const rest = [
-        { id: 'egg3', label: '雞蛋 3隻', sub: '234 kcal · 19g 蛋白', quickId: 'egg3' },
-        { id: 'morningSupp', label: '朝早補充劑', sub: 'Collagen · Creatine · D3', habit: true },
-        { id: 'carnitine', label: 'L-Carnitine 訓練前', sub: '訓練前食 1 份', habit: true, suppId: 'carnitine' }
+        { id: 'egg3', label: '雞蛋 3隻', sub: '234 kcal · 19g 蛋白', quickId: 'egg3' }
     ].map(function (it) {
         const on = it.suppId
             ? isSuppChecked(it.suppId)
