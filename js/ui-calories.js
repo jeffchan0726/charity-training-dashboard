@@ -16,7 +16,7 @@ const QUICK_FOODS = [
     { id: 'egg1', name: '雞蛋 1隻', icon: '🥚', calories: 78, protein_g: 6.3, carbs_g: 0.6, fat_g: 5.3, portion: '1 隻（大）' },
     { id: 'egg3', name: '雞蛋 3隻', icon: '🥚', calories: 234, protein_g: 18.9, carbs_g: 1.8, fat_g: 15.9, portion: '3 隻（大）' },
     { id: 'whey', name: '蛋白粉 1 scoop', icon: '🥤', calories: 120, protein_g: 24, carbs_g: 3, fat_g: 1.5, portion: '30 g' },
-    { id: 'coffee', name: '黑咖啡', icon: '☕', calories: 5, protein_g: 0.3, carbs_g: 0, fat_g: 0, portion: '1 杯' },
+    { id: 'coffee', name: '黑咖啡', icon: '☕', calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, portion: '1 杯' },
     { id: 'chicken150', name: '雞胸 150g', icon: '🍗', calories: 248, protein_g: 46.5, carbs_g: 0, fat_g: 5.4, portion: '150 g' },
     { id: 'rice200', name: '白飯 200g', icon: '🍚', calories: 260, protein_g: 4.4, carbs_g: 57, fat_g: 0.4, portion: '200 g' }
 ];
