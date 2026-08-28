@@ -122,6 +122,23 @@ Local Development Instructions:
             background-color: #166534;
             color: white;
         }
+        html, body {
+            background: #0c0a09;
+        }
+        #app-shell {
+            width: 100%;
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            background: #1c1917;
+            overflow-x: hidden;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .tab-content.hidden {
+            display: none !important;
+        }
         #app-chrome {
             position: sticky;
             top: 0;
@@ -5162,8 +5179,12 @@ Local Development Instructions:
                 const hash = String(location.hash || '').replace(/^#/, '').split('?')[0];
                 const hashMap = { yugong: 'millennium', rixing: 'millennium' };
                 const mapped = hashMap[hash] || hash;
-                if (mapped && document.getElementById('content-' + mapped) && typeof switchTab === 'function') {
-                    switchTab(hash === 'rixing' ? 'rixing' : mapped);
+                if (typeof switchTab === 'function') {
+                    if (mapped && document.getElementById('content-' + mapped)) {
+                        switchTab(hash === 'rixing' ? 'rixing' : mapped);
+                    } else {
+                        switchTab('overview');
+                    }
                 }
             } catch (e) {}
 
