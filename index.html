@@ -1849,7 +1849,7 @@ Local Development Instructions:
                     <h2 class="text-lg font-bold">身體日誌</h2>
                     <span id="body-log-count" class="text-[11px] text-[#a8a29e]"></span>
                 </div>
-                <p class="text-[11px] text-[#a8a29e] mb-3">匯入 Unique Health Excel。只顯示最新一次，並自動同上一次對比。</p>
+                <p class="text-[11px] text-[#a8a29e] mb-3">資料只存 Google Sheet。登入後匯入 Unique Health Excel，只顯示最新一次並同上一次對比。</p>
                 <input id="unique-health-file" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" onchange="onUniqueHealthFile(event)">
                 <button type="button" onclick="triggerUniqueHealthImport()" class="w-full py-2.5 mb-3 border border-emerald-700 text-emerald-300 rounded-2xl text-sm font-semibold">匯入 Unique Health Excel</button>
                 <div class="grid grid-cols-2 gap-2">
@@ -2794,8 +2794,8 @@ Local Development Instructions:
     <script src="js/food-depth.js?v=2.3.27"></script>
     <script src="js/ui-calories.js?v=2.3.41"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="js/unique-health.js?v=2.3.46"></script>
-    <script src="js/ui-app.js?v=2.3.47"></script>
+    <script src="js/unique-health.js?v=2.3.48"></script>
+    <script src="js/ui-app.js?v=2.3.48"></script>
 
     <script>
         /*
@@ -3055,8 +3055,11 @@ Local Development Instructions:
             if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
             if (typeof renderOverallStats === 'function') renderOverallStats();
             if (typeof renderCaloriesTab === 'function') renderCaloriesTab();
+            if (typeof setBodyLog === 'function') setBodyLog([]);
+            else if (typeof bodyLogCache !== 'undefined') bodyLogCache = [];
             if (typeof loadAppPrefs === 'function') loadAppPrefs();
             if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
+            if (typeof renderBodyLog === 'function') renderBodyLog();
             // Clear the dynamic sets bar
             const bar = document.getElementById('workout-sets-bar');
             if (bar) bar.innerHTML = '';

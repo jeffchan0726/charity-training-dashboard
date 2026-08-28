@@ -279,6 +279,11 @@ function parseUniqueHealthBuffer(buf) {
 }
 
 function triggerUniqueHealthImport() {
+    if (typeof currentUser === 'undefined' || !currentUser) {
+        if (typeof showToast === 'function') showToast('請先登入，身體日誌只存 Google Sheet');
+        if (typeof showLoginModal === 'function') showLoginModal();
+        return;
+    }
     const el = document.getElementById('unique-health-file');
     if (el) el.click();
 }
@@ -301,7 +306,7 @@ function onUniqueHealthFile(ev) {
                 return;
             }
             mergeUniqueHealthRecords(incoming);
-            if (typeof showToast === 'function') showToast('已匯入本機 ' + incoming.length + ' 筆 Unique Health 紀錄');
+            if (typeof showToast === 'function') showToast('已讀取 ' + incoming.length + ' 筆，正在寫入 Google Sheet');
         } catch (err) {
             console.error(err);
             if (typeof showToast === 'function') showToast('匯入失敗，請用 Unique Health 匯出嘅 xlsx');
@@ -327,7 +332,8 @@ function mergeUniqueHealthRecords(incoming, options) {
     merged.sort(function (a, b) {
         return String(b.weighedAt || b.date || '').localeCompare(String(a.weighedAt || a.date || ''));
     });
-    localStorage.setItem(getAppStorageKey('bodyLog'), JSON.stringify(merged.slice(0, 365)));
+    if (typeof setBodyLog === 'function') setBodyLog(merged);
+    else bodyLogCache = merged.slice(0, 365);
     const latest = merged[0];
     if (latest && latest.weight) {
         if (typeof rememberBodyWeightKg === 'function') rememberBodyWeightKg(latest.weight);
@@ -346,7 +352,8 @@ function isBodyLogUserLoggedIn() {
 function syncBodyLogToSheet(entries) {
     if (!entries || !entries.length) return;
     if (!isBodyLogUserLoggedIn() || typeof callAppsScript !== 'function') {
-        if (typeof showToast === 'function') showToast('已存本機。登入後先至寫入 Google Sheet');
+        if (typeof showToast === 'function') showToast('請先登入，身體日誌只存 Google Sheet');
+        if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
     const payload = entries.map(function (e) {
@@ -373,7 +380,7 @@ function syncBodyLogToSheet(entries) {
             showToast('已寫入 Google Sheet（' + (res.saved || entries.length) + ' 筆身體數據）');
         }
     }).catch(function () {
-        if (typeof showToast === 'function') showToast('Google Sheet 未能寫入，本機紀錄仍然保留');
+        if (typeof showToast === 'function') showToast('Google Sheet 未能寫入，請重新部署 Apps Script');
     });
 }
 

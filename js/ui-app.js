@@ -24,6 +24,7 @@ const APP_MAIN_NAV = {
 let restTimerInterval = null;
 let restTimerEndsAt = 0;
 let calorieDailyProteinGoal = 150;
+let bodyLogCache = [];
 
 function getAppStorageKey(suffix) {
     const user = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : 'guest';
@@ -278,30 +279,24 @@ function hydrateBodyLogEntry(e) {
     return e;
 }
 
-function migrateGuestBodyLog() {
-    if (typeof currentUser === 'undefined' || !currentUser) return;
-    try {
-        const userKey = 'bodyLog_' + currentUser;
-        const guestRaw = localStorage.getItem('bodyLog_guest');
-        const userRaw = localStorage.getItem(userKey);
-        const guestArr = guestRaw ? JSON.parse(guestRaw) : [];
-        const userArr = userRaw ? JSON.parse(userRaw) : [];
-        if (!Array.isArray(guestArr) || !guestArr.length) return;
-        if (Array.isArray(userArr) && userArr.length) return;
-        localStorage.setItem(userKey, JSON.stringify(guestArr));
-    } catch (e) {}
+function setBodyLog(arr) {
+    const list = Array.isArray(arr) ? arr : [];
+    bodyLogCache = list.map(hydrateBodyLogEntry).sort(function (a, b) {
+        return bodyLogSortKey(b).localeCompare(bodyLogSortKey(a));
+    }).slice(0, 365);
+    return bodyLogCache;
 }
 
 function getBodyLog() {
+    return (bodyLogCache || []).slice();
+}
+
+function clearBodyLogLocalStorage() {
     try {
-        migrateGuestBodyLog();
-        const raw = localStorage.getItem(getAppStorageKey('bodyLog'));
-        const arr = raw ? JSON.parse(raw) : [];
-        if (!Array.isArray(arr)) return [];
-        return arr.map(hydrateBodyLogEntry).sort(function (a, b) {
-            return bodyLogSortKey(b).localeCompare(bodyLogSortKey(a));
+        Object.keys(localStorage).forEach(function (k) {
+            if (k.indexOf('bodyLog_') === 0) localStorage.removeItem(k);
         });
-    } catch (e) { return []; }
+    } catch (e) {}
 }
 
 function saveBodyLogEntry() {
@@ -310,6 +305,11 @@ function saveBodyLogEntry() {
     const bf = parseFloat(document.getElementById('body-bf-input')?.value) || 0;
     if (!weight && !bf) {
         if (typeof showToast === 'function') showToast('請至少填一項');
+        return;
+    }
+    if (typeof currentUser === 'undefined' || !currentUser) {
+        if (typeof showLoginModal === 'function') showLoginModal();
+        if (typeof showToast === 'function') showToast('請先登入，身體日誌只存 Google Sheet');
         return;
     }
     const list = getBodyLog().filter(function (e) {
@@ -323,17 +323,13 @@ function saveBodyLogEntry() {
         source: 'manual'
     };
     list.unshift(entry);
-    list.sort(function (a, b) {
-        return String(b.weighedAt || b.date || '').localeCompare(String(a.weighedAt || a.date || ''));
-    });
-    localStorage.setItem(getAppStorageKey('bodyLog'), JSON.stringify(list.slice(0, 365)));
+    setBodyLog(list);
     if (weight && typeof rememberBodyWeightKg === 'function') rememberBodyWeightKg(weight);
     else if (weight) lastBodyWeightKg = weight;
     renderBodyLog();
     applyAutoProteinGoal();
     renderOverviewDashboard();
     if (typeof syncBodyLogToSheet === 'function') syncBodyLogToSheet([entry]);
-    else if (typeof showToast === 'function') showToast('已儲存身體數據');
 }
 
 function bodyLogDelta(curr, prev, key) {
@@ -603,7 +599,7 @@ function onAppTabShown(tab) {
 }
 
 function loadAppPrefs() {
-    migrateGuestBodyLog();
+    clearBodyLogLocalStorage();
     applyAutoProteinGoal();
 }
 
