@@ -154,16 +154,56 @@ function renderOverviewDashboard() {
             }
         }
     }
+    const proteinLine = document.getElementById('overview-protein-line');
+    const proteinBar = document.getElementById('overview-protein-bar');
+    const waterLine = document.getElementById('overview-water-line');
+    const waterBar = document.getElementById('overview-water-bar');
+    const planHint = document.getElementById('overview-plan-hint');
+    const meals = typeof getTodayCalorieEntries === 'function' ? getTodayCalorieEntries() : [];
+    const proteinNow = meals.reduce(function (s, e) { return s + (Number(e.protein_g) || 0); }, 0);
+    const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
+    if (proteinLine) proteinLine.textContent = pGoal ? (Math.round(proteinNow) + ' / ' + pGoal + ' g') : (Math.round(proteinNow) + ' g');
+    if (proteinBar) proteinBar.style.width = (pGoal > 0 ? Math.min(100, Math.round((proteinNow / pGoal) * 100)) : 0) + '%';
+    const waterGoal = typeof getDailyWaterGoal === 'function' ? getDailyWaterGoal() : { ml: 3500 };
+    const waterNow = typeof getTodayWaterMl === 'function' ? getTodayWaterMl() : 0;
+    if (waterLine) waterLine.textContent = (waterNow / 1000).toFixed(1) + ' / ' + (waterGoal.ml / 1000).toFixed(1) + ' L';
+    if (waterBar) waterBar.style.width = (waterGoal.ml > 0 ? Math.min(100, Math.round((waterNow / waterGoal.ml) * 100)) : 0) + '%';
+    const rec = typeof getRecommendedTrainingDay === 'function' ? getRecommendedTrainingDay() : null;
+    const trained = typeof didTrainToday === 'function' && didTrainToday();
+    if (planHint) {
+        if (!currentUser) planHint.textContent = '';
+        else if (trained) planHint.textContent = '今日已練完。可以記餐同補水。';
+        else if (rest) planHint.textContent = '今日休息日。想加操可以撳下面開訓。';
+        else if (rec) planHint.textContent = '今日建議：' + rec.fullName;
+        else planHint.textContent = '今週 3 個訓練日都已完成。';
+    }
+    [1, 2, 3].forEach(function (id) {
+        const btn = document.getElementById('overview-start-day-' + id);
+        if (!btn) return;
+        const recId = rec && rec.id;
+        btn.classList.toggle('ring-2', !trained && !rest && recId === id);
+        btn.classList.toggle('ring-emerald-400', !trained && !rest && recId === id);
+        btn.classList.toggle('bg-emerald-700', !trained && !rest && recId === id);
+        btn.classList.toggle('bg-sky-800', !( !trained && !rest && recId === id));
+    });
+    if (typeof renderMorningChecklist === 'function') renderMorningChecklist();
     markTrainingRestDay();
 }
 
 function isRestDayToday() {
     const day = new Date().getDay();
+    if (typeof getTrainWeekdays === 'function') {
+        return getTrainWeekdays().indexOf(day) < 0;
+    }
     return day === 0 || day === 2 || day === 4 || day === 6;
 }
 
 function markTrainingRestDay() {
-    const cells = document.querySelectorAll('#content-training .grid-cols-7 > div');
+    if (typeof renderTrainWeekStrip === 'function') {
+        renderTrainWeekStrip();
+        return;
+    }
+    const cells = document.querySelectorAll('#content-training .grid-cols-7 > div, #train-week-strip > button');
     if (!cells.length) return;
     const idx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
     cells.forEach(function (el, i) {
@@ -605,6 +645,7 @@ function refreshDietFromBodyLog() {
         applyAutoDietGoals();
         if (typeof renderCalorieTodaySummary === 'function') renderCalorieTodaySummary();
         if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
+        if (typeof renderRecompTrend === 'function') renderRecompTrend();
     } finally {
         dietRefreshLock = false;
     }
@@ -649,6 +690,7 @@ function copyLastCalorieMeal() {
     if (copy.waterMl && typeof waterByDate !== 'undefined') {
         const key = copy.date;
         waterByDate[key] = Math.max(0, Math.min(8000, (Number(waterByDate[key]) || 0) + Number(copy.waterMl)));
+        if (typeof notifyWaterChanged === 'function') notifyWaterChanged();
     }
     if (typeof saveCalorieLog === 'function') saveCalorieLog();
     if (typeof renderCalorieTodaySummary === 'function') renderCalorieTodaySummary();
@@ -695,6 +737,7 @@ function exportLocalBackup() {
         workoutHistory: workoutHistory || [],
         calorieLogEntries: calorieLogEntries || [],
         waterByDate: typeof waterByDate !== 'undefined' ? waterByDate : {},
+        habits: { prefs: typeof habitPrefs !== 'undefined' ? habitPrefs : {}, days: typeof habitDays !== 'undefined' ? habitDays : {} },
         bodyLog: getBodyLog()
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -708,10 +751,14 @@ function onAppTabShown(tab) {
     if (tab === 'overview') renderOverviewDashboard();
     if (tab === 'millennium') showMillenniumPanel('yugong');
     if (tab === 'calories') applyAutoDietGoals();
+    if (tab === 'supplement' && typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
+    if (tab === 'training') markTrainingRestDay();
     if (tab === 'me') {
         if (typeof loadBodyLogsFromSheet === 'function') loadBodyLogsFromSheet();
         renderBodyLog();
         renderDietWeekBars();
+        if (typeof renderRecompTrend === 'function') renderRecompTrend();
+        if (typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
     }
     if (tab === 'yugong') {
         showMillenniumPanel('yugong');
@@ -723,7 +770,10 @@ function onAppTabShown(tab) {
 
 function loadAppPrefs() {
     clearBodyLogLocalStorage();
+    if (typeof loadHabitsLocal === 'function') loadHabitsLocal();
     applyAutoDietGoals();
+    if (typeof renderTrainWeekStrip === 'function') renderTrainWeekStrip();
+    if (typeof renderMorningChecklist === 'function') renderMorningChecklist();
 }
 
 function refreshAppShell() {
@@ -731,6 +781,8 @@ function refreshAppShell() {
     renderOverviewDashboard();
     renderBodyLog();
     renderDietWeekBars();
+    if (typeof renderRecompTrend === 'function') renderRecompTrend();
+    if (typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
 }
 
 loadAppPrefs();

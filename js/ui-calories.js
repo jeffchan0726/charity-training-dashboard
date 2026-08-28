@@ -697,6 +697,7 @@ function deleteCalorieEntry(id) {
     if (gone && gone.waterMl && gone.date === todayDateKey()) {
         const key = gone.date;
         waterByDate[key] = Math.max(0, (Number(waterByDate[key]) || 0) - Number(gone.waterMl));
+        if (typeof notifyWaterChanged === 'function') notifyWaterChanged();
     }
     saveCalorieLog();
     renderCalorieTodaySummary();
@@ -883,7 +884,8 @@ function countTodayQuick(id) {
 function renderQuickAddGrid() {
     const grid = document.getElementById('quick-add-grid');
     if (!grid) return;
-    grid.innerHTML = QUICK_FOODS.map(function (food) {
+    grid.innerHTML = QUICK_FOODS.map(function (raw) {
+        const food = (raw.id === 'whey' && typeof getWheyQuickFood === 'function') ? getWheyQuickFood() : raw;
         const n = countTodayQuick(food.id);
         const count = n ? '<div class="qa-count">今日已加 ×' + n + '</div>' : '';
         return '<button type="button" class="quick-add-btn" onclick="addQuickFood(\'' + food.id + '\')">' +
@@ -901,9 +903,35 @@ function addQuickFood(id) {
         if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
+    if (id === 'whey' && typeof getWheyQuickFood === 'function') {
+        commitQuickFoodEntry(getWheyQuickFood());
+        return;
+    }
     const food = QUICK_FOODS.find(function (f) { return f.id === id; });
     if (!food) return;
     commitQuickFoodEntry(food);
+}
+
+function deleteLastQuickFood(id) {
+    const today = todayDateKey();
+    const idx = (calorieLogEntries || []).findIndex(function (e) {
+        return e && e.quickId === id && e.date === today;
+    });
+    if (idx < 0) return;
+    const gone = calorieLogEntries[idx];
+    calorieLogEntries.splice(idx, 1);
+    if (gone && gone.waterMl && gone.date === today) {
+        waterByDate[today] = Math.max(0, (Number(waterByDate[today]) || 0) - Number(gone.waterMl));
+        if (typeof notifyWaterChanged === 'function') notifyWaterChanged();
+    }
+    saveCalorieLog();
+    renderCalorieTodaySummary();
+    renderCalorieTodayList();
+    if (typeof renderDietWeekBars === 'function') renderDietWeekBars();
+    if (typeof renderOverviewDashboardSafe === 'function') renderOverviewDashboardSafe();
+    if (gone && typeof callAppsScript === 'function' && isCaloriesUserLoggedIn()) {
+        callAppsScript('deleteCalorieEntry', { entryId: gone.id }).catch(function () {});
+    }
 }
 
 function addCustomQuickFood() {
@@ -978,11 +1006,14 @@ function commitQuickFoodEntry(food) {
     if (entry.waterMl) {
         const key = entry.date || todayDateKey();
         waterByDate[key] = Math.max(0, Math.min(8000, (Number(waterByDate[key]) || 0) + Number(entry.waterMl)));
+        if (typeof notifyWaterChanged === 'function') notifyWaterChanged();
     }
     saveCalorieLog();
     renderCalorieTodaySummary();
     renderCalorieTodayList();
     if (typeof renderDietWeekBars === 'function') renderDietWeekBars();
+    if (typeof renderOverviewDashboardSafe === 'function') renderOverviewDashboardSafe();
+    if (typeof renderRecompTrend === 'function') renderRecompTrend();
     if (typeof showToast === 'function') {
         showToast(entry.waterMl
             ? ('已加 ' + food.name + ' · 計入飲水 ' + entry.waterMl + ' ml')
@@ -1028,6 +1059,7 @@ function setTodayWaterMl(ml) {
     waterByDate[key] = n;
     saveCalorieLog();
     renderWaterTracker();
+    if (typeof notifyWaterChanged === 'function') notifyWaterChanged();
 }
 
 function addWaterMl(delta) {

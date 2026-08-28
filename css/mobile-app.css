@@ -276,6 +276,39 @@ html.mobile-app {
     min-height: 56px;
 }
 
+.habit-check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    min-height: 48px;
+    text-align: left;
+    border: 1px solid #44403c;
+    background: #141210;
+    border-radius: 1rem;
+    padding: 0.55rem 0.75rem;
+    color: #e7e5e4;
+}
+.habit-check-row.on {
+    border-color: #166534;
+    background: rgba(22, 101, 52, 0.28);
+}
+.habit-tick {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    border: 2px solid #57534e;
+    display: grid;
+    place-items: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    color: #bbf7d0;
+}
+.habit-check-row.on .habit-tick {
+    background: #166534;
+    border-color: #4ade80;
+}
+
 .mobile-app .water-dot {
     width: 36px;
     height: 36px;

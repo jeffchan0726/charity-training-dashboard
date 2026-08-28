@@ -888,6 +888,22 @@ async function bootstrapGoogleCloudData(options = {}) {
             );
         }
 
+        if (currentUser && typeof loadCalorieLogsFromSheet === 'function') {
+            tasks.push(
+                Promise.resolve(loadCalorieLogsFromSheet()).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] calorie log failed:', err);
+                })
+            );
+        }
+
+        if (currentUser && typeof loadHabitsFromSheet === 'function') {
+            tasks.push(
+                Promise.resolve(loadHabitsFromSheet()).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] habits failed:', err);
+                })
+            );
+        }
+
         await Promise.all(tasks);
 
         if (typeof primeYugongTabFromPrefetch === 'function') {
