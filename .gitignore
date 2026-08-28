@@ -18,3 +18,6 @@ _one_*.json
 # Personal Unique Health / body exports
 *.xlsx
 ~$*.xlsx
+
+# Local Tailwind CLI binary (python tools/fetch-vendor.py)
+tools/*.exe

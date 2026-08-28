@@ -8,7 +8,7 @@ Local Development Instructions:
   - npx serve .
   - VS Code Live Server extension
 - Then access via http://localhost:8000 (or your port).
-- For production (GitHub Pages etc.): Run `npx tailwindcss -i ./input.css -o ./tailwind.css --minify` (input.css + tailwind.config.js are pre-created), then replace the Tailwind CDN <script> with <link rel="stylesheet" href="tailwind.css">. A console.warn suppression hack is active while using the CDN.
+- CSS is compiled: tools/tailwindcss.exe -i ./css/input.css -o ./css/tailwind.css --minify
 - Google Apps Script backend still required for per-user data.
 -->
 
@@ -23,36 +23,10 @@ Local Development Instructions:
     <link rel="apple-touch-icon" href="images/icon.jpeg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#166534">
-    <!-- 
-      Tailwind CSS (CDN for zero-setup dev/demo)
-
-      ⚠️ The cdn.tailwindcss.com script shows a "production warning" in console because
-         it's intended for development only.
-
-      開發階段解決方案：
-      - 已在 CDN script 之前加入 console.warn 攔截腳本，隱藏 production warning。
-      - 此方法僅適用於開發階段（prototype / local demo）。
-      - 之後建議改用 Tailwind CLI 產生 production CSS（已準備 input.css 與 tailwind.config.js）：
-        npx tailwindcss -i ./input.css -o ./tailwind.css --minify
-        然後將 CDN script 替換為 <link rel="stylesheet" href="tailwind.css">
-
-      這樣可以完全移除外部 CDN，提升效能與安全性。
-    -->
-    <!-- 隱藏 Tailwind CDN production warning（必須在 CDN script 之前執行） -->
-    <script>
-      // 隱藏 Tailwind CDN production warning
-      const originalWarn = console.warn;
-      console.warn = function (msg, ...args) {
-        if (typeof msg === 'string' && msg.includes('cdn.tailwindcss.com')) {
-          return;
-        }
-        originalWarn.apply(console, [msg, ...args]);
-      };
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.56">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="css/tailwind.css?v=2.3.60">
+    <link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/mobile-app.css?v=2.3.60">
+    <script src="lib/chart.umd.min.js"></script>
     <style>
         body {
             font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
@@ -2938,7 +2912,7 @@ Local Development Instructions:
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
     <script src="js/ui-calories.js?v=2.3.56"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="lib/xlsx.full.min.js"></script>
     <script src="js/unique-health.js?v=2.3.52"></script>
     <script src="js/ui-habits.js?v=2.3.56"></script>
     <script src="js/ui-app.js?v=2.3.56"></script>
