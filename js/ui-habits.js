@@ -6,16 +6,18 @@ const WHEY_BASE_GRAMS = 30;
 const WHEY_BASE = { calories: 120, protein_g: 24, carbs_g: 3, fat_g: 1.5 };
 
 const SUPPLEMENT_ITEMS = [
-    { id: 'protein', name: 'Protein', slot: 'morning', when: '04:30', dose: '3 scoops' },
-    { id: 'collagen', name: 'Collagen', slot: 'morning', when: '04:30', dose: '2 scoops' },
-    { id: 'creatine', name: 'Creatine', slot: 'morning', when: '04:30', dose: '5g' },
-    { id: 'vitd', name: 'Vitamin D3', slot: 'morning', when: '04:30', dose: '1粒' },
-    { id: 'biotin', name: 'Biotin 生物素', slot: 'dinner', when: '晚餐隨餐', dose: '1粒' },
-    { id: 'omega', name: 'Omega-3 Fish Oil', slot: 'dinner', when: '晚餐隨餐', dose: '3粒' },
-    { id: 'dailyvits', name: 'NOW Daily Vits 多維', slot: 'dinner', when: '晚餐隨餐', dose: '1粒' },
-    { id: 'zinc', name: 'Zinc Picolinate', slot: 'dinner', when: '晚餐隨餐', dose: '1粒' },
-    { id: 'mag', name: 'Magnesium Glycinate', slot: 'night', when: '睡前', dose: '2粒' },
-    { id: 'coq10', name: 'CoQ10 200mg', slot: 'night', when: '睡前', dose: '1粒' }
+    { id: 'protein', name: 'Dymatize ISO100 Whey Isolate', slot: 'morning', when: '04:30 空腹／訓練前', dose: '3 scoops', how: '用冷水沖', why: '高蛋白 recomp 2.4–2.6 g/kg' },
+    { id: 'collagen', name: 'California Gold CollagenUP', slot: 'morning', when: '04:30', dose: '2 scoops', how: '同 Protein 一齊沖', why: '關節／肌腱保護（ACL、跟腱）' },
+    { id: 'creatine', name: 'California Gold Creatine Monohydrate', slot: 'morning', when: '04:30', dose: '5g', how: '同 Protein 一齊', why: '力量同肌肉量' },
+    { id: 'vitd', name: 'California Gold Vitamin D3', slot: 'morning', when: '04:30', dose: '1粒（5000 IU）', how: '同上述一齊', why: '骨密度、睪固酮、恢復' },
+    { id: 'carnitine', name: 'L-Carnitine', slot: 'preworkout', when: '訓練前', dose: '1 份', how: '訓練前食', why: '訓練前脂肪代謝／表現' },
+    { id: 'omega', name: 'California Gold Omega-3 Fish Oil', slot: 'dinner', when: '晚餐隨餐', dose: '3粒', how: '隨餐食', why: 'ALA + EPA/DHA 抗炎' },
+    { id: 'dailyvits', name: 'NOW Daily Vits Multi', slot: 'dinner', when: '晚餐隨餐', dose: '1粒', how: '隨餐', why: '全面礦物質（含碘）' },
+    { id: 'zinc', name: 'Thorne Zinc Picolinate', slot: 'dinner', when: '晚餐隨餐', dose: '1粒（30mg）', how: '隨餐', why: '睪固酮 + 免疫' },
+    { id: 'biotin', name: 'California Gold Biotin', slot: 'dinner', when: '晚餐隨餐', dose: '1粒（10,000 mcg）', how: '隨餐', why: '頭髮／皮膚' },
+    { id: 'mag', name: 'Carlson Magnesium Glycinate', slot: 'night', when: '睡前 30–60 分鐘', dose: '2粒（200mg）', how: '空肚或輕食後', why: '睡眠 + 肌肉鬆弛（已減量防腹瀉）' },
+    { id: 'coq10', name: 'Doctor’s Best CoQ10', slot: 'night', when: '睡前 30–60 分鐘', dose: '1粒（200mg）', how: '同 Mg 一齊', why: '粒線體能量、恢復' },
+    { id: 'probiotic', name: 'Thorne / NOW Probiotic', slot: 'night', when: '睡前 30–60 分鐘', dose: '1粒', how: '同上述一齊', why: '腸道菌群、改善腹瀉' }
 ];
 
 const WEEKDAY_LABELS_MON = [
@@ -313,12 +315,15 @@ function renderMorningChecklist() {
     const items = [
         { id: 'egg3', label: '雞蛋 3隻', sub: '234 kcal · 19g 蛋白', quickId: 'egg3' },
         { id: 'whey', label: '蛋白粉 1 cup + 黑咖啡', sub: whey.calories + ' kcal · 蛋白 ' + whey.protein_g + ' g · 飲水 250 ml', quickId: 'whey' },
-        { id: 'morningSupp', label: '朝早補充劑', sub: 'Protein / Collagen / Creatine / D3', habit: true }
+        { id: 'morningSupp', label: '朝早補充劑', sub: 'ISO100 · Collagen · Creatine · D3', habit: true },
+        { id: 'carnitine', label: 'L-Carnitine 訓練前', sub: '訓練前食 1 份', habit: true, suppId: 'carnitine' }
     ];
     el.innerHTML = items.map(function (it) {
-        const on = it.habit
-            ? morningSuppsDone()
-            : (typeof countTodayQuick === 'function' && countTodayQuick(it.quickId) > 0);
+        const on = it.suppId
+            ? isSuppChecked(it.suppId)
+            : (it.habit
+                ? morningSuppsDone()
+                : (typeof countTodayQuick === 'function' && countTodayQuick(it.quickId) > 0));
         return '<button type="button" class="habit-check-row' + (on ? ' on' : '') + '" onclick="toggleMorningItem(\'' + it.id + '\')">' +
             '<span class="habit-tick">' + (on ? '✓' : '') + '</span>' +
             '<span class="min-w-0 text-left"><span class="block text-sm font-semibold">' + it.label + '</span>' +
@@ -333,6 +338,10 @@ function toggleMorningItem(id) {
     }
     if (id === 'morningSupp') {
         setMorningSupps(!morningSuppsDone());
+        return;
+    }
+    if (id === 'carnitine') {
+        toggleSuppChecked('carnitine');
         return;
     }
     if (typeof countTodayQuick !== 'function') return;
@@ -359,18 +368,21 @@ function renderSupplementChecklist() {
     const el = document.getElementById('supplement-check-list');
     if (!el) return;
     const slots = [
-        { id: 'morning', title: '朝早 04:30' },
+        { id: 'morning', title: '04:30 空腹／訓練前' },
+        { id: 'preworkout', title: '訓練前' },
         { id: 'dinner', title: '晚餐隨餐' },
-        { id: 'night', title: '睡前' }
+        { id: 'night', title: '睡前 30–60 分鐘' }
     ];
     el.innerHTML = slots.map(function (slot) {
         const rows = SUPPLEMENT_ITEMS.filter(function (s) { return s.slot === slot.id; }).map(function (s) {
             const on = isSuppChecked(s.id);
+            const sub = [s.dose, s.how, s.why].filter(Boolean).join(' · ');
             return '<button type="button" class="habit-check-row' + (on ? ' on' : '') + '" onclick="toggleSuppChecked(\'' + s.id + '\')">' +
                 '<span class="habit-tick">' + (on ? '✓' : '') + '</span>' +
                 '<span class="min-w-0 text-left"><span class="block text-sm font-semibold">' + s.name + '</span>' +
-                '<span class="block text-[10px] text-[#a8a29e]">' + s.dose + '</span></span></button>';
+                '<span class="block text-[10px] text-[#a8a29e] leading-snug">' + sub + '</span></span></button>';
         }).join('');
+        if (!rows) return '';
         return '<div class="mb-3"><div class="text-[11px] uppercase tracking-widest text-emerald-300 font-bold mb-1.5">' +
             slot.title + '</div>' + rows + '</div>';
     }).join('');
