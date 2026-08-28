@@ -21,14 +21,14 @@ function loadCalorieLog() {
     calorieDailyGoalKcal = CALORIE_DEFAULT_GOAL;
     try {
         const raw = localStorage.getItem(getCalorieStorageKey());
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        if (Array.isArray(data.entries)) calorieLogEntries = data.entries;
-        const goal = parseInt(data.goalKcal, 10);
-        if (goal >= 800 && goal <= 6000) calorieDailyGoalKcal = goal;
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (Array.isArray(data.entries)) calorieLogEntries = data.entries;
+        }
     } catch (e) {
         console.warn('[calories] load failed', e);
     }
+    if (typeof applyAutoDietGoals === 'function') applyAutoDietGoals();
 }
 
 function saveCalorieLog() {
@@ -604,7 +604,8 @@ function renderCalorieTodaySummary() {
         ring.classList.toggle('over', remain < 0);
     }
     if (pEl) {
-        if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
+        if (typeof applyAutoDietGoals === 'function') applyAutoDietGoals();
+        else if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
         const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
         const pNow = formatMacro(Math.round(totals.protein * 10) / 10);
         pEl.textContent = pGoal ? `${pNow} / ${pGoal} g` : `${pNow} g`;
@@ -830,5 +831,5 @@ function saveCalorieGoal() {
     saveCalorieLog();
     toggleCalorieGoalEdit(false);
     renderCalorieTodaySummary();
-    if (typeof showToast === 'function') showToast(`每日目標已設為 ${raw} kcal`);
+    if (typeof showToast === 'function') showToast('已暫時改目標 ' + raw + ' kcal（下次會跟身體日誌重計）');
 }

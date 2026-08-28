@@ -340,7 +340,8 @@ function mergeUniqueHealthRecords(incoming, options) {
         else lastBodyWeightKg = latest.weight;
     }
     renderBodyLog();
-    if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
+    if (typeof applyAutoDietGoals === 'function') applyAutoDietGoals();
+    else if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
     if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
     if (options.sync !== false) syncBodyLogToSheet(incoming);
 }

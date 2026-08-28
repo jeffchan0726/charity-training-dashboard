@@ -142,8 +142,9 @@ function renderOverviewDashboard() {
         if (!currentUser) subEl.textContent = '登入之後就可以記訓練同飲食。';
         else if (rest) subEl.textContent = '恢復日。可以行下、伸展，或者記一餐。';
         else {
-            applyAutoProteinGoal();
-            subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + goal + ' kcal';
+            applyAutoDietGoals();
+            const kcalGoal = typeof calorieDailyGoalKcal === 'number' ? calorieDailyGoalKcal : goal;
+            subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + kcalGoal + ' kcal';
         }
     }
     markTrainingRestDay();
@@ -327,7 +328,7 @@ function saveBodyLogEntry() {
     if (weight && typeof rememberBodyWeightKg === 'function') rememberBodyWeightKg(weight);
     else if (weight) lastBodyWeightKg = weight;
     renderBodyLog();
-    applyAutoProteinGoal();
+    applyAutoDietGoals();
     renderOverviewDashboard();
     if (typeof syncBodyLogToSheet === 'function') syncBodyLogToSheet([entry]);
 }
@@ -455,15 +456,44 @@ function clampProteinGoal(n) {
     return g;
 }
 
-function getLatestBodyForProtein() {
-    const latest = (getBodyLog() || [])[0] || {};
+function getLatestBodyForDiet() {
+    const rows = getBodyLog() || [];
+    const latest = (typeof isUniqueHealthEntry === 'function'
+        ? (rows.filter(isUniqueHealthEntry)[0] || rows[0])
+        : rows[0]) || {};
     const weight = Number(latest.weight) || (typeof lastBodyWeightKg === 'number' ? lastBodyWeightKg : 0);
     const bf = Number(latest.bf);
     let lbm = Number(latest.lbmKg);
     if (!(lbm >= 30 && lbm <= 150) && weight >= 30 && bf > 0 && bf < 70) {
         lbm = weight * (1 - bf / 100);
     }
-    return { weight: weight, bf: bf, lbm: lbm };
+    const bmr = Number(latest.bmr);
+    return { weight: weight, bf: bf, lbm: lbm, bmr: bmr };
+}
+
+function getLatestBodyForProtein() {
+    return getLatestBodyForDiet();
+}
+
+function getAutoCalorieGoal() {
+    const b = getLatestBodyForDiet();
+    const rest = typeof isRestDayToday === 'function' ? isRestDayToday() : false;
+    if (b.bmr >= 800 && b.bmr <= 5000) {
+        const factor = rest ? 1.2 : 1.4;
+        const kcal = Math.round((b.bmr * factor) / 50) * 50;
+        return {
+            kcal: Math.max(800, Math.min(6000, kcal)),
+            note: '身體日誌 BMR ' + Math.round(b.bmr) + ' × ' + factor + (rest ? '（休息日）' : '（訓練日）')
+        };
+    }
+    if (b.weight >= 30 && b.weight <= 250) {
+        const kcal = Math.round((b.weight * 24) / 50) * 50;
+        return {
+            kcal: Math.max(800, Math.min(6000, kcal)),
+            note: '身體日誌體重 ' + b.weight.toFixed(1) + ' kg × 24'
+        };
+    }
+    return { kcal: 2000, note: '未有身體日誌，暫用 2000 kcal' };
 }
 
 function getAutoProteinGoal() {
@@ -493,6 +523,17 @@ function applyAutoProteinGoal() {
     return auto;
 }
 
+function applyAutoDietGoals() {
+    const p = applyAutoProteinGoal();
+    const c = getAutoCalorieGoal();
+    if (typeof calorieDailyGoalKcal !== 'undefined') calorieDailyGoalKcal = c.kcal;
+    const goalEl = document.getElementById('calorie-today-goal');
+    if (goalEl) goalEl.textContent = String(c.kcal);
+    const noteEl = document.getElementById('calorie-goal-body-note');
+    if (noteEl) noteEl.textContent = c.note;
+    return { protein: p, calorie: c };
+}
+
 function renderDietWeekBars() {
     const el = document.getElementById('diet-week-bars');
     if (!el) return;
@@ -512,7 +553,7 @@ function renderDietWeekBars() {
         const h = Math.round((d.kcal / max) * 72);
         return '<div class="flex flex-col items-center justify-end gap-1"><div class="w-full bg-emerald-500/80 rounded-t" style="height:' + h + 'px"></div><span class="text-[9px] text-[#a8a29e]">' + d.lab + '</span></div>';
     }).join('');
-    applyAutoProteinGoal();
+    applyAutoDietGoals();
 }
 
 function copyLastCalorieMeal() {
@@ -600,7 +641,7 @@ function onAppTabShown(tab) {
 
 function loadAppPrefs() {
     clearBodyLogLocalStorage();
-    applyAutoProteinGoal();
+    applyAutoDietGoals();
 }
 
 function refreshAppShell() {

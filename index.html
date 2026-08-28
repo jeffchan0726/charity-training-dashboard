@@ -1912,7 +1912,7 @@ Local Development Instructions:
                     <div>
                         <div class="calorie-kicker">今日營養</div>
                         <h2 class="text-xl font-bold text-white mt-0.5">卡路里分析</h2>
-                        <p class="text-xs text-[#a8a29e] mt-0.5">影相 → Grok 認餸同估熱量</p>
+                        <p class="text-xs text-[#a8a29e] mt-0.5">熱量／蛋白質目標跟身體日誌自動計</p>
                     </div>
                     <button type="button" onclick="downloadCalorieExcel()"
                         class="text-[11px] px-2.5 py-1.5 rounded-xl border border-[#44403c] text-[#a8a29e] hover:border-emerald-600 hover:text-emerald-300">
@@ -1934,6 +1934,7 @@ Local Development Instructions:
                             </button>
                             <div id="calorie-today-remain" class="text-xs text-[#a8a29e]">仲剩 2000 kcal</div>
                         </div>
+                        <div id="calorie-goal-body-note" class="text-[10px] text-[#a8a29e] mt-0.5">跟身體日誌自動計算</div>
                         <div id="calorie-goal-edit" class="hidden items-center gap-2 mt-2">
                             <input id="calorie-goal-input" type="number" min="800" max="6000" step="50" inputmode="numeric"
                                 class="log-input w-28 px-3 py-1.5 rounded-2xl text-sm" aria-label="每日卡路里目標">
@@ -2792,10 +2793,10 @@ Local Development Instructions:
     <script src="js/ui-yugong.js?v=2.3.24"></script>
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
-    <script src="js/ui-calories.js?v=2.3.41"></script>
+    <script src="js/ui-calories.js?v=2.3.50"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="js/unique-health.js?v=2.3.48"></script>
-    <script src="js/ui-app.js?v=2.3.48"></script>
+    <script src="js/unique-health.js?v=2.3.50"></script>
+    <script src="js/ui-app.js?v=2.3.50"></script>
 
     <script>
         /*
