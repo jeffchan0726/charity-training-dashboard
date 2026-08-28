@@ -272,6 +272,24 @@ html.mobile-app {
     min-height: 46px;
 }
 
+.mobile-app .quick-add-btn {
+    min-height: 56px;
+}
+
+.mobile-app .water-dot {
+    width: 36px;
+    height: 36px;
+}
+
+@media (max-width: 380px) {
+    .quick-custom-row {
+        grid-template-columns: 1fr 1fr;
+    }
+    .quick-custom-row input:first-child {
+        grid-column: 1 / -1;
+    }
+}
+
 .mobile-app #app-chrome {
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
 }

@@ -10,6 +10,16 @@ const CALORIE_THUMB_EDGE = 96;
 
 let calorieListenersBound = false;
 let calorieLastResult = null;
+let waterByDate = {};
+
+const QUICK_FOODS = [
+    { id: 'egg1', name: '雞蛋 1隻', icon: '🥚', calories: 78, protein_g: 6.3, carbs_g: 0.6, fat_g: 5.3, portion: '1 隻（大）' },
+    { id: 'egg3', name: '雞蛋 3隻', icon: '🥚', calories: 234, protein_g: 18.9, carbs_g: 1.8, fat_g: 15.9, portion: '3 隻（大）' },
+    { id: 'whey', name: '蛋白粉 1 scoop', icon: '🥤', calories: 120, protein_g: 24, carbs_g: 3, fat_g: 1.5, portion: '30 g' },
+    { id: 'coffee', name: '黑咖啡', icon: '☕', calories: 5, protein_g: 0.3, carbs_g: 0, fat_g: 0, portion: '1 杯' },
+    { id: 'chicken150', name: '雞胸 150g', icon: '🍗', calories: 248, protein_g: 46.5, carbs_g: 0, fat_g: 5.4, portion: '150 g' },
+    { id: 'rice200', name: '白飯 200g', icon: '🍚', calories: 260, protein_g: 4.4, carbs_g: 57, fat_g: 0.4, portion: '200 g' }
+];
 
 function getCalorieStorageKey() {
     const user = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : 'guest';
@@ -19,11 +29,13 @@ function getCalorieStorageKey() {
 function loadCalorieLog() {
     calorieLogEntries = [];
     calorieDailyGoalKcal = CALORIE_DEFAULT_GOAL;
+    waterByDate = {};
     try {
         const raw = localStorage.getItem(getCalorieStorageKey());
         if (raw) {
             const data = JSON.parse(raw);
             if (Array.isArray(data.entries)) calorieLogEntries = data.entries;
+            if (data.waterByDate && typeof data.waterByDate === 'object') waterByDate = data.waterByDate;
         }
     } catch (e) {
         console.warn('[calories] load failed', e);
@@ -42,7 +54,8 @@ function saveCalorieLog() {
         localStorage.setItem(getCalorieStorageKey(), JSON.stringify({
             v: CALORIE_STORAGE_VERSION,
             goalKcal: calorieDailyGoalKcal,
-            entries: calorieLogEntries
+            entries: calorieLogEntries,
+            waterByDate: waterByDate
         }));
     } catch (e) {
         console.warn('[calories] save failed', e);
@@ -81,6 +94,16 @@ function bindCalorieListeners() {
             }
         });
     }
+    ['quick-custom-name', 'quick-custom-kcal', 'quick-custom-protein'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCustomQuickFood();
+            }
+        });
+    });
 }
 
 function renderCaloriesTab() {
@@ -95,6 +118,8 @@ function renderCaloriesTab() {
     loadCalorieLog();
     renderCalorieTodaySummary();
     renderCalorieTodayList();
+    renderQuickAddGrid();
+    renderWaterTracker();
 }
 
 function triggerCalorieCamera() {
@@ -616,6 +641,8 @@ function renderCalorieTodaySummary() {
     if (cEl) cEl.textContent = `${formatMacro(Math.round(totals.carbs * 10) / 10)} g`;
     if (fEl) fEl.textContent = `${formatMacro(Math.round(totals.fat * 10) / 10)} g`;
     if (countEl) countEl.textContent = todayEntries.length ? `${todayEntries.length} 餐` : '';
+    renderQuickAddGrid();
+    renderWaterTracker();
 }
 
 function renderCalorieTodayList() {
@@ -633,7 +660,7 @@ function renderCalorieTodayList() {
         const thumbSrc = safeCalorieThumbSrc(entry.thumb);
         const thumb = thumbSrc
             ? `<img class="calorie-entry-thumb" alt="" src="${thumbSrc}">`
-            : `<div class="calorie-entry-thumb flex items-center justify-center text-lg">🍽️</div>`;
+            : `<div class="calorie-entry-thumb flex items-center justify-center text-lg">${entry.icon || '🍽️'}</div>`;
         const note = entry.userNote
             ? `<div class="text-[10px] text-[#a8a29e]">${escapeHtml(entry.userNote)}</div>`
             : '';
@@ -835,4 +862,214 @@ function saveCalorieGoal() {
     toggleCalorieGoalEdit(false);
     renderCalorieTodaySummary();
     if (typeof showToast === 'function') showToast('已暫時改目標 ' + raw + ' kcal（下次會跟身體日誌重計）');
+}
+
+function todayDateKey() {
+    return typeof getTodayStr === 'function' ? getTodayStr() : new Date().toISOString().slice(0, 10);
+}
+
+function countTodayQuick(id) {
+    return getTodayCalorieEntries().filter(function (e) { return e && e.quickId === id; }).length;
+}
+
+function renderQuickAddGrid() {
+    const grid = document.getElementById('quick-add-grid');
+    if (!grid) return;
+    grid.innerHTML = QUICK_FOODS.map(function (food) {
+        const n = countTodayQuick(food.id);
+        const count = n ? '<div class="qa-count">今日已加 ×' + n + '</div>' : '';
+        return '<button type="button" class="quick-add-btn" onclick="addQuickFood(\'' + food.id + '\')">' +
+            '<div class="qa-name">' + food.icon + ' ' + food.name + '</div>' +
+            '<div class="qa-meta">' + food.calories + ' kcal · 蛋白 ' + formatMacro(food.protein_g) + ' g</div>' +
+            count +
+            '</button>';
+    }).join('');
+}
+
+function addQuickFood(id) {
+    if (!isCaloriesUserLoggedIn()) {
+        if (typeof showLoginModal === 'function') showLoginModal();
+        return;
+    }
+    const food = QUICK_FOODS.find(function (f) { return f.id === id; });
+    if (!food) return;
+    commitQuickFoodEntry(food);
+}
+
+function addCustomQuickFood() {
+    if (!isCaloriesUserLoggedIn()) {
+        if (typeof showLoginModal === 'function') showLoginModal();
+        return;
+    }
+    const nameEl = document.getElementById('quick-custom-name');
+    const kcalEl = document.getElementById('quick-custom-kcal');
+    const pEl = document.getElementById('quick-custom-protein');
+    const name = nameEl ? String(nameEl.value || '').trim() : '';
+    const kcal = kcalEl ? parseInt(kcalEl.value, 10) : NaN;
+    const protein = pEl ? parseFloat(pEl.value) : 0;
+    if (!name) {
+        if (typeof showToast === 'function') showToast('填個名，例如：乳清餅');
+        return;
+    }
+    if (!kcal || kcal < 1 || kcal > 2000) {
+        if (typeof showToast === 'function') showToast('kcal 請填 1–2000');
+        return;
+    }
+    commitQuickFoodEntry({
+        id: 'custom',
+        name: name.slice(0, 40),
+        icon: '➕',
+        calories: kcal,
+        protein_g: isFinite(protein) && protein > 0 ? protein : 0,
+        carbs_g: 0,
+        fat_g: 0,
+        portion: '自訂'
+    });
+    if (nameEl) nameEl.value = '';
+    if (kcalEl) kcalEl.value = '';
+    if (pEl) pEl.value = '';
+}
+
+function commitQuickFoodEntry(food) {
+    const now = new Date();
+    const entry = {
+        id: 'cal_' + now.getTime() + '_' + Math.floor(Math.random() * 100000),
+        date: todayDateKey(),
+        time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+        createdAt: now.getTime(),
+        mealName: food.name,
+        calories: Math.round(Number(food.calories) || 0),
+        protein_g: roundMacro(food.protein_g),
+        carbs_g: roundMacro(food.carbs_g),
+        fat_g: roundMacro(food.fat_g),
+        items: [{
+            name: food.name,
+            portion: food.portion || '',
+            calories: Math.round(Number(food.calories) || 0),
+            protein_g: roundMacro(food.protein_g),
+            carbs_g: roundMacro(food.carbs_g),
+            fat_g: roundMacro(food.fat_g),
+            source: 'quick'
+        }],
+        notes: '',
+        tips: '',
+        confidence: 'high',
+        userNote: '快速加入',
+        thumb: '',
+        icon: food.icon || '🍽️',
+        engine: 'quick',
+        quickId: food.id,
+        oilSpoons: 0,
+        scaleText: '',
+        scaleOk: true
+    };
+    calorieLogEntries.unshift(entry);
+    saveCalorieLog();
+    renderCalorieTodaySummary();
+    renderCalorieTodayList();
+    if (typeof renderDietWeekBars === 'function') renderDietWeekBars();
+    if (typeof showToast === 'function') {
+        showToast('已加 ' + food.name + ' · ' + entry.calories + ' kcal · 蛋白 ' + formatMacro(entry.protein_g) + ' g');
+    }
+    syncCalorieEntryToSheet(entry);
+}
+
+function getDailyWaterGoal() {
+    const b = typeof getLatestBodyForDiet === 'function' ? getLatestBodyForDiet() : {};
+    const trained = typeof didTrainToday === 'function' && didTrainToday();
+    const w = Number(b.weight);
+    let ml;
+    let note;
+    if (w >= 30 && w <= 250) {
+        ml = w * 40;
+        note = '身體日誌 ' + w.toFixed(1) + ' kg × 40 ml';
+        if (trained) {
+            ml += 500;
+            note += ' · 訓練 +500 ml';
+        }
+    } else {
+        ml = 3500;
+        note = '未有體重，暫用 3.5 L（時間表 3–4 L）';
+        if (trained) {
+            ml += 500;
+            note += ' · 訓練 +500 ml';
+        }
+    }
+    ml = Math.round(ml / 100) * 100;
+    ml = Math.max(2000, Math.min(5000, ml));
+    return { ml: ml, note: note, trained: trained };
+}
+
+function getTodayWaterMl() {
+    const key = todayDateKey();
+    return Math.max(0, Number(waterByDate[key]) || 0);
+}
+
+function setTodayWaterMl(ml) {
+    const key = todayDateKey();
+    const n = Math.max(0, Math.min(8000, Math.round(Number(ml) || 0)));
+    waterByDate[key] = n;
+    saveCalorieLog();
+    renderWaterTracker();
+}
+
+function addWaterMl(delta) {
+    if (!isCaloriesUserLoggedIn()) {
+        if (typeof showLoginModal === 'function') showLoginModal();
+        return;
+    }
+    setTodayWaterMl(getTodayWaterMl() + Number(delta));
+}
+
+function setWaterBottles(n) {
+    if (!isCaloriesUserLoggedIn()) {
+        if (typeof showLoginModal === 'function') showLoginModal();
+        return;
+    }
+    const count = Math.max(0, Math.round(Number(n) || 0));
+    const target = count * 500;
+    const current = getTodayWaterMl();
+    if (current >= target && current < target + 500) {
+        setTodayWaterMl(Math.max(0, target - 500));
+        return;
+    }
+    setTodayWaterMl(target);
+}
+
+function renderWaterTracker() {
+    const goal = getDailyWaterGoal();
+    const ml = getTodayWaterMl();
+    const liters = (n) => (n / 1000).toFixed(1) + ' L';
+    const todayEl = document.getElementById('water-today-display');
+    const goalEl = document.getElementById('water-goal-display');
+    const noteEl = document.getElementById('water-goal-note');
+    const remainEl = document.getElementById('water-remain');
+    const bar = document.getElementById('water-progress-bar');
+    const row = document.getElementById('water-check-row');
+    if (todayEl) todayEl.textContent = liters(ml);
+    if (goalEl) goalEl.textContent = '目標 ' + liters(goal.ml);
+    if (noteEl) noteEl.textContent = goal.note + ' · 每格 500 ml';
+    const remain = goal.ml - ml;
+    if (remainEl) {
+        remainEl.textContent = remain > 0
+            ? '仲差 ' + liters(remain)
+            : (remain === 0 ? '今日目標已夠' : '超出 ' + liters(-remain));
+        remainEl.classList.toggle('text-sky-300', remain <= 0);
+        remainEl.classList.toggle('text-[#a8a29e]', remain > 0);
+    }
+    const pct = goal.ml > 0 ? Math.min(100, Math.round((ml / goal.ml) * 1000) / 10) : 0;
+    if (bar) bar.style.width = pct + '%';
+    if (!row) return;
+    const bottles = Math.max(4, Math.ceil(goal.ml / 500));
+    const filled = Math.floor(ml / 500);
+    const cells = [];
+    for (let i = 1; i <= bottles; i++) {
+        const on = i <= filled;
+        cells.push(
+            '<button type="button" class="water-dot' + (on ? ' on' : '') + '" onclick="setWaterBottles(' + i + ')" aria-pressed="' + on + '" aria-label="' + (i * 500) + ' ml">' +
+            i +
+            '</button>'
+        );
+    }
+    row.innerHTML = cells.join('');
 }

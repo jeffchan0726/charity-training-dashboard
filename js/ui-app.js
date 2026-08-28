@@ -690,6 +690,7 @@ function exportLocalBackup() {
         user: currentUser || 'guest',
         workoutHistory: workoutHistory || [],
         calorieLogEntries: calorieLogEntries || [],
+        waterByDate: typeof waterByDate !== 'undefined' ? waterByDate : {},
         bodyLog: getBodyLog()
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
