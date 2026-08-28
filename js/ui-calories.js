@@ -912,12 +912,14 @@ function addQuickFood(id) {
     commitQuickFoodEntry(food);
 }
 
-function deleteLastQuickFood(id) {
+function deleteLastQuickFood(id, bundledWith) {
     const today = todayDateKey();
     const idx = (calorieLogEntries || []).findIndex(function (e) {
-        return e && e.quickId === id && e.date === today;
+        if (!e || e.quickId !== id || e.date !== today) return false;
+        if (bundledWith) return e.bundledWith === bundledWith;
+        return true;
     });
-    if (idx < 0) return;
+    if (idx < 0) return false;
     const gone = calorieLogEntries[idx];
     calorieLogEntries.splice(idx, 1);
     if (gone && gone.waterMl && gone.date === today) {
@@ -932,6 +934,11 @@ function deleteLastQuickFood(id) {
     if (gone && typeof callAppsScript === 'function' && isCaloriesUserLoggedIn()) {
         callAppsScript('deleteCalorieEntry', { entryId: gone.id }).catch(function () {});
     }
+    return true;
+}
+
+function getCoffeeQuickFood() {
+    return QUICK_FOODS.find(function (f) { return f.id === 'coffee'; });
 }
 
 function addCustomQuickFood() {
@@ -992,12 +999,13 @@ function commitQuickFoodEntry(food) {
         notes: '',
         tips: '',
         confidence: 'high',
-        userNote: food.waterMl ? ('快速加入 · 計入飲水 ' + food.waterMl + ' ml') : '快速加入',
+        userNote: food.userNote || (food.waterMl ? ('快速加入 · 計入飲水 ' + food.waterMl + ' ml') : '快速加入'),
         thumb: '',
         icon: food.icon || '🍽️',
         engine: 'quick',
         quickId: food.id,
         waterMl: food.waterMl || 0,
+        bundledWith: food.bundledWith || '',
         oilSpoons: 0,
         scaleText: '',
         scaleOk: true
