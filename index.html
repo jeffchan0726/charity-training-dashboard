@@ -2040,9 +2040,6 @@ Local Development Instructions:
                 <div class="calorie-kicker">快速加入</div>
                 <h3 class="text-sm font-bold mt-0.5">食咗蛋 / 飲咗蛋白</h3>
                 <p class="text-[11px] text-[#a8a29e] mt-0.5 mb-2">固定嘢唔使影相，撳一下就入今日紀錄</p>
-                <button type="button" onclick="cycleWheyGrams()" class="mb-2 text-[11px] text-emerald-300 underline decoration-dotted underline-offset-2">
-                    蛋白粉份量：撳呢度轉 25／30／35／40 g
-                </button>
                 <div id="quick-add-grid" class="quick-add-grid"></div>
                 <div class="quick-custom-row">
                     <input id="quick-custom-name" type="text" maxlength="40" placeholder="其他（名）"
@@ -2053,6 +2050,13 @@ Local Development Instructions:
                         class="log-input px-2 py-2 rounded-xl">
                     <button type="button" onclick="addCustomQuickFood()" class="water-action">加入</button>
                 </div>
+            </section>
+
+            <section class="calorie-capture">
+                <div class="calorie-kicker">補充劑</div>
+                <h3 class="text-sm font-bold mt-0.5">剔咗就計入今日熱量／蛋白</h3>
+                <p class="text-[11px] text-[#a8a29e] mt-0.5 mb-2">ISO100 3 scoops 330 kcal · 75g 蛋白；Collagen 2 scoops 80 kcal · 18g 蛋白</p>
+                <div id="calorie-supp-list"></div>
             </section>
 
             <section class="calorie-capture">
@@ -2911,10 +2915,10 @@ Local Development Instructions:
     <script src="js/ui-yugong.js?v=2.3.24"></script>
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
-    <script src="js/ui-calories.js?v=2.3.61"></script>
+    <script src="js/ui-calories.js?v=2.3.64"></script>
     <script src="lib/xlsx.full.min.js"></script>
     <script src="js/unique-health.js?v=2.3.52"></script>
-    <script src="js/ui-habits.js?v=2.3.63"></script>
+    <script src="js/ui-habits.js?v=2.3.64"></script>
     <script src="js/ui-app.js?v=2.3.56"></script>
 
     <script>

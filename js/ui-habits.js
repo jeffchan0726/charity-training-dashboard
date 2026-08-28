@@ -6,12 +6,12 @@ const WHEY_BASE_GRAMS = 30;
 const WHEY_BASE = { calories: 120, protein_g: 24, carbs_g: 3, fat_g: 1.5 };
 
 const SUPPLEMENT_ITEMS = [
-    { id: 'protein', name: 'Dymatize ISO100 Whey Isolate', slot: 'morning', when: '04:30 空腹／訓練前', dose: '3 scoops', how: '用冷水沖', why: '高蛋白 recomp 2.4–2.6 g/kg' },
-    { id: 'collagen', name: 'California Gold CollagenUP', slot: 'morning', when: '04:30', dose: '2 scoops', how: '同 Protein 一齊沖', why: '關節／肌腱保護（ACL、跟腱）' },
+    { id: 'protein', name: 'Dymatize ISO100 Whey Isolate', slot: 'morning', when: '04:30 空腹／訓練前', dose: '3 scoops', how: '用冷水沖', why: '高蛋白 recomp 2.4–2.6 g/kg', calories: 330, protein_g: 75, carbs_g: 6, fat_g: 1.5, waterMl: 300, icon: '🥤' },
+    { id: 'collagen', name: 'California Gold CollagenUP', slot: 'morning', when: '04:30', dose: '2 scoops', how: '同 Protein 一齊沖', why: '關節／肌腱保護（ACL、跟腱）', calories: 80, protein_g: 18, carbs_g: 0, fat_g: 0, icon: '💊' },
     { id: 'creatine', name: 'California Gold Creatine Monohydrate', slot: 'morning', when: '04:30', dose: '5g', how: '同 Protein 一齊', why: '力量同肌肉量' },
     { id: 'vitd', name: 'California Gold Vitamin D3', slot: 'morning', when: '04:30', dose: '1粒（5000 IU）', how: '同上述一齊', why: '骨密度、睪固酮、恢復' },
     { id: 'carnitine', name: 'L-Carnitine', slot: 'preworkout', when: '訓練前', dose: '1 份', how: '訓練前食', why: '訓練前脂肪代謝／表現' },
-    { id: 'omega', name: 'California Gold Omega-3 Fish Oil', slot: 'dinner', when: '晚餐隨餐', dose: '3粒', how: '隨餐食', why: 'ALA + EPA/DHA 抗炎' },
+    { id: 'omega', name: 'California Gold Omega-3 Fish Oil', slot: 'dinner', when: '晚餐隨餐', dose: '3粒', how: '隨餐食', why: 'ALA + EPA/DHA 抗炎', calories: 30, protein_g: 0, carbs_g: 0, fat_g: 3, icon: '💊' },
     { id: 'dailyvits', name: 'NOW Daily Vits Multi', slot: 'dinner', when: '晚餐隨餐', dose: '1粒', how: '隨餐', why: '全面礦物質（含碘）' },
     { id: 'zinc', name: 'Thorne Zinc Picolinate', slot: 'dinner', when: '晚餐隨餐', dose: '1粒（30mg）', how: '隨餐', why: '睪固酮 + 免疫' },
     { id: 'biotin', name: 'California Gold Biotin', slot: 'dinner', when: '晚餐隨餐', dose: '1粒（10,000 mcg）', how: '隨餐', why: '頭髮／皮膚' },
@@ -86,18 +86,55 @@ function getWheyGrams() {
 }
 
 function getWheyQuickFood() {
-    const g = getWheyGrams();
-    const scale = g / WHEY_BASE_GRAMS;
-    return {
-        id: 'whey',
-        name: '蛋白粉 ' + g + 'g',
+    return getSuppFood(SUPPLEMENT_ITEMS.find(function (s) { return s.id === 'protein'; })) || {
+        id: 'supp_protein',
+        name: 'ISO100 3 scoops',
         icon: '🥤',
-        calories: Math.round(WHEY_BASE.calories * scale),
-        protein_g: Math.round(WHEY_BASE.protein_g * scale * 10) / 10,
-        carbs_g: Math.round(WHEY_BASE.carbs_g * scale * 10) / 10,
-        fat_g: Math.round(WHEY_BASE.fat_g * scale * 10) / 10,
-        portion: g + ' g'
+        calories: 330,
+        protein_g: 75,
+        carbs_g: 6,
+        fat_g: 1.5,
+        portion: '3 scoops',
+        waterMl: 300
     };
+}
+
+function suppQuickId(id) {
+    return 'supp_' + id;
+}
+
+function getSuppFood(s) {
+    if (!s) return null;
+    const cal = Number(s.calories) || 0;
+    const p = Number(s.protein_g) || 0;
+    const c = Number(s.carbs_g) || 0;
+    const f = Number(s.fat_g) || 0;
+    const w = Number(s.waterMl) || 0;
+    if (!(cal > 0 || p > 0 || f > 0 || w > 0)) return null;
+    return {
+        id: suppQuickId(s.id),
+        name: s.name,
+        icon: s.icon || '💊',
+        calories: cal,
+        protein_g: p,
+        carbs_g: c,
+        fat_g: f,
+        portion: s.dose || '',
+        waterMl: w,
+        userNote: '補充劑 · ' + (s.dose || '')
+    };
+}
+
+function applySuppCalories(id, on) {
+    const s = SUPPLEMENT_ITEMS.find(function (x) { return x.id === id; });
+    const food = getSuppFood(s);
+    if (!food) return;
+    if (on) {
+        if (typeof countTodayQuick === 'function' && countTodayQuick(food.id) > 0) return;
+        if (typeof commitQuickFoodEntry === 'function') commitQuickFoodEntry(food, { silent: true });
+        return;
+    }
+    if (typeof deleteLastQuickFood === 'function') deleteLastQuickFood(food.id);
 }
 
 function ensureHabitDay(dateStr) {
@@ -123,10 +160,13 @@ function setSuppChecked(id, on, dateStr) {
     const day = ensureHabitDay(dateStr);
     if (on) day.supp[id] = true;
     else delete day.supp[id];
+    applySuppCalories(id, on);
     persistHabitsSoon();
     renderSupplementChecklist();
     renderMorningChecklist();
     renderOverviewDashboardSafe();
+    if (typeof renderCalorieTodaySummary === 'function') renderCalorieTodaySummary();
+    if (typeof renderCalorieTodayList === 'function') renderCalorieTodayList();
 }
 
 function toggleSuppChecked(id) {
@@ -135,16 +175,18 @@ function toggleSuppChecked(id) {
 
 function setMorningSupps(on) {
     SUPPLEMENT_ITEMS.forEach(function (s) {
-        if (s.slot === 'morning') {
-            const day = ensureHabitDay();
-            if (on) day.supp[s.id] = true;
-            else delete day.supp[s.id];
-        }
+        if (s.slot !== 'morning') return;
+        const day = ensureHabitDay();
+        if (on) day.supp[s.id] = true;
+        else delete day.supp[s.id];
+        applySuppCalories(s.id, on);
     });
     persistHabitsSoon();
     renderSupplementChecklist();
     renderMorningChecklist();
     renderOverviewDashboardSafe();
+    if (typeof renderCalorieTodaySummary === 'function') renderCalorieTodaySummary();
+    if (typeof renderCalorieTodayList === 'function') renderCalorieTodayList();
 }
 
 function persistHabitsSoon() {
@@ -314,7 +356,7 @@ function renderMorningChecklist() {
     const whey = getWheyQuickFood();
     const items = [
         { id: 'egg3', label: '雞蛋 3隻', sub: '234 kcal · 19g 蛋白', quickId: 'egg3' },
-        { id: 'whey', label: '蛋白粉 1 cup + 黑咖啡', sub: whey.calories + ' kcal · 蛋白 ' + whey.protein_g + ' g · 飲水 250 ml', quickId: 'whey' },
+        { id: 'whey', label: 'ISO100 3 scoops + 黑咖啡', sub: whey.calories + ' kcal · 蛋白 ' + whey.protein_g + ' g · 沖水 300 ml + 咖啡 250 ml', suppId: 'protein' },
         { id: 'morningSupp', label: '朝早補充劑', sub: 'ISO100 · Collagen · Creatine · D3', habit: true },
         { id: 'carnitine', label: 'L-Carnitine 訓練前', sub: '訓練前食 1 份', habit: true, suppId: 'carnitine' }
     ];
@@ -344,39 +386,52 @@ function toggleMorningItem(id) {
         toggleSuppChecked('carnitine');
         return;
     }
+    if (id === 'whey') {
+        const proteinOn = isSuppChecked('protein');
+        const coffeeBundled = typeof countTodayQuick === 'function' &&
+            (calorieLogEntries || []).some(function (e) {
+                return e && e.quickId === 'coffee' && e.bundledWith === 'whey' &&
+                    e.date === (typeof habitsTodayKey === 'function' ? habitsTodayKey() : '');
+            });
+        if (proteinOn && coffeeBundled) {
+            setSuppChecked('protein', false);
+            if (typeof deleteLastQuickFood === 'function') deleteLastQuickFood('coffee', 'whey');
+            return;
+        }
+        if (!proteinOn) setSuppChecked('protein', true);
+        if (!coffeeBundled && typeof commitQuickFoodEntry === 'function') {
+            const coffee = typeof getCoffeeQuickFood === 'function' ? getCoffeeQuickFood() : null;
+            if (coffee) {
+                commitQuickFoodEntry(Object.assign({}, coffee, {
+                    bundledWith: 'whey',
+                    userNote: '跟 ISO100 3 scoops 一齊'
+                }), { silent: true });
+            }
+        }
+        return;
+    }
     if (typeof countTodayQuick !== 'function') return;
     if (countTodayQuick(id) > 0) {
         if (typeof deleteLastQuickFood === 'function') deleteLastQuickFood(id);
-        if (id === 'whey' && typeof deleteLastQuickFood === 'function') deleteLastQuickFood('coffee', 'whey');
-        return;
-    }
-    if (id === 'whey' && typeof commitQuickFoodEntry === 'function') {
-        commitQuickFoodEntry(getWheyQuickFood());
-        const coffee = typeof getCoffeeQuickFood === 'function' ? getCoffeeQuickFood() : null;
-        if (coffee) {
-            commitQuickFoodEntry(Object.assign({}, coffee, {
-                bundledWith: 'whey',
-                userNote: '跟蛋白粉 1 cup 一齊'
-            }));
-        }
         return;
     }
     if (typeof addQuickFood === 'function') addQuickFood(id);
 }
 
 function renderSupplementChecklist() {
-    const el = document.getElementById('supplement-check-list');
-    if (!el) return;
     const slots = [
         { id: 'morning', title: '04:30 空腹／訓練前' },
         { id: 'preworkout', title: '訓練前' },
         { id: 'dinner', title: '晚餐隨餐' },
         { id: 'night', title: '睡前 30–60 分鐘' }
     ];
-    el.innerHTML = slots.map(function (slot) {
+    const html = slots.map(function (slot) {
         const rows = SUPPLEMENT_ITEMS.filter(function (s) { return s.slot === slot.id; }).map(function (s) {
             const on = isSuppChecked(s.id);
-            const sub = [s.dose, s.how, s.why].filter(Boolean).join(' · ');
+            const macros = (Number(s.calories) > 0 || Number(s.protein_g) > 0)
+                ? (s.calories + ' kcal · 蛋白 ' + (s.protein_g || 0) + ' g')
+                : '';
+            const sub = [s.dose, s.how, macros, s.why].filter(Boolean).join(' · ');
             return '<button type="button" class="habit-check-row' + (on ? ' on' : '') + '" onclick="toggleSuppChecked(\'' + s.id + '\')">' +
                 '<span class="habit-tick">' + (on ? '✓' : '') + '</span>' +
                 '<span class="min-w-0 text-left"><span class="block text-sm font-semibold">' + s.name + '</span>' +
@@ -386,6 +441,10 @@ function renderSupplementChecklist() {
         return '<div class="mb-3"><div class="text-[11px] uppercase tracking-widest text-emerald-300 font-bold mb-1.5">' +
             slot.title + '</div>' + rows + '</div>';
     }).join('');
+    const a = document.getElementById('supplement-check-list');
+    const b = document.getElementById('calorie-supp-list');
+    if (a) a.innerHTML = html;
+    if (b) b.innerHTML = html;
 }
 
 function renderOverviewDashboardSafe() {

@@ -120,6 +120,7 @@ function renderCaloriesTab() {
     renderCalorieTodayList();
     renderQuickAddGrid();
     renderWaterTracker();
+    if (typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
 }
 
 function triggerCalorieCamera() {
@@ -890,9 +891,10 @@ function renderQuickAddGrid() {
         const count = n ? '<div class="qa-count">今日已加 ×' + n + '</div>' : '';
         return '<button type="button" class="quick-add-btn" onclick="addQuickFood(\'' + food.id + '\')">' +
             '<div class="qa-name">' + food.icon + ' ' + food.name + '</div>' +
-            '<div class="qa-meta">' + (food.waterMl
+            '<div class="qa-meta">' + (food.waterMl && !(Number(food.calories) > 0)
                 ? ('飲水 ' + food.waterMl + ' ml · 0 kcal')
-                : (food.calories + ' kcal · 蛋白 ' + formatMacro(food.protein_g) + ' g')) + '</div>' +
+                : (food.calories + ' kcal · 蛋白 ' + formatMacro(food.protein_g) + ' g' +
+                    (food.waterMl ? ' · 水 ' + food.waterMl + ' ml' : ''))) + '</div>' +
             count +
             '</button>';
     }).join('');
@@ -903,11 +905,17 @@ function addQuickFood(id) {
         if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
-    if (id === 'whey' && typeof getWheyQuickFood === 'function') {
-        commitQuickFoodEntry(getWheyQuickFood());
-        return;
+    if (id === 'whey' || id === 'supp_protein') {
+        if (typeof setSuppChecked === 'function' && typeof isSuppChecked === 'function') {
+            setSuppChecked('protein', !isSuppChecked('protein'));
+            return;
+        }
+        if (typeof getWheyQuickFood === 'function') {
+            commitQuickFoodEntry(getWheyQuickFood());
+            return;
+        }
     }
-    const food = QUICK_FOODS.find(function (f) { return f.id === id; });
+    const food = QUICK_FOODS.find(function (f) { return f.id === id || (id === 'supp_protein' && f.id === 'whey'); });
     if (!food) return;
     commitQuickFoodEntry(food);
 }
@@ -975,7 +983,8 @@ function addCustomQuickFood() {
     if (pEl) pEl.value = '';
 }
 
-function commitQuickFoodEntry(food) {
+function commitQuickFoodEntry(food, options) {
+    options = options || {};
     const now = new Date();
     const entry = {
         id: 'cal_' + now.getTime() + '_' + Math.floor(Math.random() * 100000),
@@ -1022,8 +1031,8 @@ function commitQuickFoodEntry(food) {
     if (typeof renderDietWeekBars === 'function') renderDietWeekBars();
     if (typeof renderOverviewDashboardSafe === 'function') renderOverviewDashboardSafe();
     if (typeof renderRecompTrend === 'function') renderRecompTrend();
-    if (typeof showToast === 'function') {
-        showToast(entry.waterMl
+    if (!options.silent && typeof showToast === 'function') {
+        showToast(entry.waterMl && !(entry.calories > 0)
             ? ('已加 ' + food.name + ' · 計入飲水 ' + entry.waterMl + ' ml')
             : ('已加 ' + food.name + ' · ' + entry.calories + ' kcal · 蛋白 ' + formatMacro(entry.protein_g) + ' g'));
     }
