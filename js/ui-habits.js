@@ -312,8 +312,7 @@ function renderMorningChecklist() {
     const whey = getWheyQuickFood();
     const items = [
         { id: 'egg3', label: '雞蛋 3隻', sub: '234 kcal · 19g 蛋白', quickId: 'egg3' },
-        { id: 'whey', label: '蛋白粉 1 cup', sub: whey.calories + ' kcal · 蛋白 ' + whey.protein_g + ' g · 連黑咖啡 250 ml', quickId: 'whey' },
-        { id: 'coffee', label: '黑咖啡', sub: '額外再一杯 · 飲水 250 ml', quickId: 'coffee' },
+        { id: 'whey', label: '蛋白粉 1 cup + 黑咖啡', sub: whey.calories + ' kcal · 蛋白 ' + whey.protein_g + ' g · 飲水 250 ml', quickId: 'whey' },
         { id: 'morningSupp', label: '朝早補充劑', sub: 'Protein / Collagen / Creatine / D3', habit: true }
     ];
     el.innerHTML = items.map(function (it) {
