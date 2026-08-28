@@ -244,11 +244,63 @@ function skipRestTimer() {
     if (bar) bar.classList.add('hidden');
 }
 
+function bodyLogSortKey(e) {
+    return String((e && (e.weighedAt || ((e.date || '') + ' ' + (e.time || '00:00:00')))) || '');
+}
+
+function isUniqueHealthEntry(e) {
+    if (!e) return false;
+    if (e.source === 'unique-health') return true;
+    if (e.bmi != null || e.muscleKg != null || e.lbmKg != null) return true;
+    return !!(e.metrics && Object.keys(e.metrics).length > 3);
+}
+
+function hydrateBodyLogEntry(e) {
+    if (!e) return e;
+    if (e.metrics && typeof matchUniqueHealthField === 'function') {
+        Object.keys(e.metrics).forEach(function (h) {
+            const field = matchUniqueHealthField(h);
+            if (!field) return;
+            if (e[field.key] != null && e[field.key] !== '') return;
+            const raw = e.metrics[h];
+            if (field.key === 'weighedAt') {
+                e.weighedAt = typeof uniqueHealthWeighedAt === 'function' ? uniqueHealthWeighedAt(raw) : String(raw || '');
+            } else if (field.key === 'deviceMac' || field.key === 'bodyType') {
+                e[field.key] = raw == null ? '' : String(raw);
+            } else if (typeof uniqueHealthNum === 'function') {
+                const n = uniqueHealthNum(raw);
+                if (n != null) e[field.key] = n;
+            }
+        });
+    }
+    if (!e.date && e.weighedAt) e.date = String(e.weighedAt).slice(0, 10);
+    if (!e.time && e.weighedAt && String(e.weighedAt).length >= 19) e.time = String(e.weighedAt).slice(11, 19);
+    return e;
+}
+
+function migrateGuestBodyLog() {
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    try {
+        const userKey = 'bodyLog_' + currentUser;
+        const guestRaw = localStorage.getItem('bodyLog_guest');
+        const userRaw = localStorage.getItem(userKey);
+        const guestArr = guestRaw ? JSON.parse(guestRaw) : [];
+        const userArr = userRaw ? JSON.parse(userRaw) : [];
+        if (!Array.isArray(guestArr) || !guestArr.length) return;
+        if (Array.isArray(userArr) && userArr.length) return;
+        localStorage.setItem(userKey, JSON.stringify(guestArr));
+    } catch (e) {}
+}
+
 function getBodyLog() {
     try {
+        migrateGuestBodyLog();
         const raw = localStorage.getItem(getAppStorageKey('bodyLog'));
         const arr = raw ? JSON.parse(raw) : [];
-        return Array.isArray(arr) ? arr.sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); }) : [];
+        if (!Array.isArray(arr)) return [];
+        return arr.map(hydrateBodyLogEntry).sort(function (a, b) {
+            return bodyLogSortKey(b).localeCompare(bodyLogSortKey(a));
+        });
     } catch (e) { return []; }
 }
 
@@ -337,9 +389,11 @@ function renderBodyLog() {
     const latestWrap = document.getElementById('body-latest-metrics');
     const countEl = document.getElementById('body-log-count');
     const rows = getBodyLog();
-    const latest = rows[0];
-    const prev = rows[1];
-    if (countEl) countEl.textContent = rows.length > 1 ? '對比上一次' : (rows.length ? '最新一次' : '');
+    const uhRows = rows.filter(isUniqueHealthEntry);
+    const latestUh = uhRows[0];
+    const latest = latestUh || rows[0];
+    const prev = latestUh ? uhRows[1] : rows[1];
+    if (countEl) countEl.textContent = uhRows.length > 1 ? '對比上一次 Unique Health' : (latest ? '最新一次' : '');
 
     if (latest) {
         const w = document.getElementById('body-weight-input');
@@ -373,15 +427,21 @@ function renderBodyLog() {
                 ? ('<div class="body-metric-section"><div class="body-metric-heading">其他</div>' +
                     '<div class="body-metric-grid">' + bodyLogMetricHtml(latest, leftoverKeys, prev) + '</div></div>')
                 : '';
+            const newest = rows[0];
+            const manualNote = (newest && newest !== latest && newest.weight)
+                ? ('<div class="text-[11px] text-amber-300 mb-2">另外有較新手動體重 ' + Number(newest.weight).toFixed(2) + ' kg' +
+                    (newest.date ? '（' + newest.date + '）' : '') + ' · 下面仍顯示最新 Unique Health 詳情</div>')
+                : '';
             const prevLine = prev
                 ? ('上一次 ' + (prev.weighedAt || prev.date) +
                     (prev.weight != null ? ' · ' + Number(prev.weight).toFixed(2) + ' kg' : '') +
                     (prev.bf != null ? ' · 體脂 ' + Number(prev.bf).toFixed(1) + '%' : ''))
-                : '未有上一次紀錄，匯入多一次量度之後會自動對比';
+                : '未有上一次 Unique Health 紀錄';
             latestWrap.innerHTML =
                 '<div class="text-[11px] text-[#a8a29e] mb-1">最新 ' + (latest.weighedAt || latest.date) +
-                    (latest.source === 'unique-health' ? ' · Unique Health 全部欄位' : ' · 手動') +
+                    (isUniqueHealthEntry(latest) ? ' · Unique Health 全部欄位' : ' · 手動') +
                 '</div>' +
+                manualNote +
                 '<div class="text-[11px] text-[#a8a29e] mb-2">' + prevLine + '</div>' +
                 blocks + leftover;
         }
@@ -530,6 +590,7 @@ function onAppTabShown(tab) {
     if (tab === 'overview') renderOverviewDashboard();
     if (tab === 'millennium') showMillenniumPanel('yugong');
     if (tab === 'me') {
+        if (typeof loadBodyLogsFromSheet === 'function') loadBodyLogsFromSheet();
         renderBodyLog();
         renderDietWeekBars();
     }
@@ -542,6 +603,7 @@ function onAppTabShown(tab) {
 }
 
 function loadAppPrefs() {
+    migrateGuestBodyLog();
     applyAutoProteinGoal();
 }
 
