@@ -328,8 +328,7 @@ function saveBodyLogEntry() {
     if (weight && typeof rememberBodyWeightKg === 'function') rememberBodyWeightKg(weight);
     else if (weight) lastBodyWeightKg = weight;
     renderBodyLog();
-    applyAutoDietGoals();
-    renderOverviewDashboard();
+    refreshDietFromBodyLog();
     if (typeof syncBodyLogToSheet === 'function') syncBodyLogToSheet([entry]);
 }
 
@@ -523,6 +522,22 @@ function applyAutoProteinGoal() {
     return auto;
 }
 
+function updateDietBodySnapshot() {
+    const el = document.getElementById('calorie-body-snapshot');
+    const b = getLatestBodyForDiet();
+    if (!el) return b;
+    if (!(b.weight >= 30)) {
+        el.textContent = '未有身體日誌，去「我」匯入 Unique Health';
+        return b;
+    }
+    const parts = [b.weight.toFixed(1) + ' kg'];
+    if (b.bf > 0 && b.bf < 70) parts.push('體脂 ' + b.bf.toFixed(1) + '%');
+    if (b.lbm >= 30 && b.lbm <= 150) parts.push('去脂 ' + b.lbm.toFixed(1) + ' kg');
+    if (b.bmr >= 800 && b.bmr <= 5000) parts.push('BMR ' + Math.round(b.bmr));
+    el.textContent = '身體日誌 ' + parts.join(' · ');
+    return b;
+}
+
 function applyAutoDietGoals() {
     const p = applyAutoProteinGoal();
     const c = getAutoCalorieGoal();
@@ -530,13 +545,35 @@ function applyAutoDietGoals() {
     const goalEl = document.getElementById('calorie-today-goal');
     if (goalEl) goalEl.textContent = String(c.kcal);
     const noteEl = document.getElementById('calorie-goal-body-note');
-    if (noteEl) noteEl.textContent = c.note;
+    if (noteEl) noteEl.textContent = c.note + ' · 蛋白質 ' + p.note;
+    const kcalMe = document.getElementById('calorie-kcal-goal-display');
+    if (kcalMe) kcalMe.textContent = c.kcal + ' kcal';
+    const kcalNoteMe = document.getElementById('calorie-kcal-goal-note');
+    if (kcalNoteMe) kcalNoteMe.textContent = c.note;
+    updateDietBodySnapshot();
     return { protein: p, calorie: c };
+}
+
+let dietRefreshLock = false;
+function refreshDietFromBodyLog() {
+    if (dietRefreshLock) {
+        applyAutoDietGoals();
+        return;
+    }
+    dietRefreshLock = true;
+    try {
+        applyAutoDietGoals();
+        if (typeof renderCalorieTodaySummary === 'function') renderCalorieTodaySummary();
+        if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
+    } finally {
+        dietRefreshLock = false;
+    }
 }
 
 function renderDietWeekBars() {
     const el = document.getElementById('diet-week-bars');
     if (!el) return;
+    applyAutoDietGoals();
     const start = getWeekStart(new Date());
     const labels = ['一', '二', '三', '四', '五', '六', '日'];
     const entries = Array.isArray(calorieLogEntries) ? calorieLogEntries : [];
@@ -553,7 +590,6 @@ function renderDietWeekBars() {
         const h = Math.round((d.kcal / max) * 72);
         return '<div class="flex flex-col items-center justify-end gap-1"><div class="w-full bg-emerald-500/80 rounded-t" style="height:' + h + 'px"></div><span class="text-[9px] text-[#a8a29e]">' + d.lab + '</span></div>';
     }).join('');
-    applyAutoDietGoals();
 }
 
 function copyLastCalorieMeal() {
@@ -626,6 +662,7 @@ function exportLocalBackup() {
 function onAppTabShown(tab) {
     if (tab === 'overview') renderOverviewDashboard();
     if (tab === 'millennium') showMillenniumPanel('yugong');
+    if (tab === 'calories') applyAutoDietGoals();
     if (tab === 'me') {
         if (typeof loadBodyLogsFromSheet === 'function') loadBodyLogsFromSheet();
         renderBodyLog();

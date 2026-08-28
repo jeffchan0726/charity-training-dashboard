@@ -566,6 +566,11 @@ function getTodayCalorieEntries() {
 }
 
 function renderCalorieTodaySummary() {
+    if (typeof dietRefreshLock === 'undefined' || !dietRefreshLock) {
+        if (typeof applyAutoDietGoals === 'function') applyAutoDietGoals();
+        else if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
+    }
+
     const todayEntries = getTodayCalorieEntries();
     const totals = todayEntries.reduce((acc, e) => {
         acc.calories += Number(e.calories) || 0;
@@ -604,8 +609,6 @@ function renderCalorieTodaySummary() {
         ring.classList.toggle('over', remain < 0);
     }
     if (pEl) {
-        if (typeof applyAutoDietGoals === 'function') applyAutoDietGoals();
-        else if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
         const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
         const pNow = formatMacro(Math.round(totals.protein * 10) / 10);
         pEl.textContent = pGoal ? `${pNow} / ${pGoal} g` : `${pNow} g`;

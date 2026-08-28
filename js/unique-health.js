@@ -96,6 +96,7 @@ function matchUniqueHealthField(header) {
         { key: 'weighedAt', tests: ['稱重時間', '称重时间', '測量時間', '测量时间', '稱重', '称重'] },
         { key: 'bf', tests: ['體脂率', '体脂率', '體脂', '体脂'] },
         { key: 'weight', tests: ['體重', '体重'], skip: ['標準', '标准', '理想', '控制', '去脂'] },
+        { key: 'lbmKg', tests: ['去脂體重', '去脂体重'] },
         { key: 'bmi', tests: ['bmi'] },
         { key: 'muscleKg', tests: ['肌肉量'], skip: ['左', '右', '軀', '躯', '手', '腳', '脚', '腿', '臂'] },
         { key: 'musclePct', tests: ['肌肉率'], skip: ['左', '右', '軀', '躯', '手', '腳', '脚', '腿', '臂', '骨骼'] },
@@ -340,9 +341,10 @@ function mergeUniqueHealthRecords(incoming, options) {
         else lastBodyWeightKg = latest.weight;
     }
     renderBodyLog();
-    if (typeof applyAutoDietGoals === 'function') applyAutoDietGoals();
+    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
+    else if (typeof applyAutoDietGoals === 'function') applyAutoDietGoals();
     else if (typeof applyAutoProteinGoal === 'function') applyAutoProteinGoal();
-    if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
+    if (typeof renderDietWeekBars === 'function') renderDietWeekBars();
     if (options.sync !== false) syncBodyLogToSheet(incoming);
 }
 
@@ -386,8 +388,8 @@ function syncBodyLogToSheet(entries) {
 }
 
 function loadBodyLogsFromSheet() {
-    if (!isBodyLogUserLoggedIn() || typeof callAppsScript !== 'function') return;
-    callAppsScript('getBodyLogs', {}).then(function (res) {
+    if (!isBodyLogUserLoggedIn() || typeof callAppsScript !== 'function') return Promise.resolve();
+    return callAppsScript('getBodyLogs', {}).then(function (res) {
         if (!res || res.status === 'error' || !Array.isArray(res.entries)) return;
         mergeUniqueHealthRecords(res.entries, { sync: false });
     }).catch(function () {});

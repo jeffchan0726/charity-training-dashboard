@@ -1873,8 +1873,13 @@ Local Development Instructions:
                         <div id="calorie-protein-goal-display" class="text-lg font-bold tabular-nums mt-0.5">150 g</div>
                         <div id="calorie-protein-goal-note" class="text-[10px] text-[#a8a29e] leading-snug">跟身體日誌自動計算</div>
                     </div>
-                    <button type="button" onclick="copyLastCalorieMeal()" class="self-end py-2.5 border border-[#57534e] rounded-2xl text-sm font-semibold">複製上一餐</button>
+                    <div>
+                        <div class="text-[11px] text-[#a8a29e]">熱量目標</div>
+                        <div id="calorie-kcal-goal-display" class="text-lg font-bold tabular-nums mt-0.5">2000 kcal</div>
+                        <div id="calorie-kcal-goal-note" class="text-[10px] text-[#a8a29e] leading-snug">跟身體日誌自動計算</div>
+                    </div>
                 </div>
+                <button type="button" onclick="copyLastCalorieMeal()" class="mt-3 w-full py-2.5 border border-[#57534e] rounded-2xl text-sm font-semibold">複製上一餐</button>
             </div>
             <div class="grid grid-cols-1 gap-2">
                 <button type="button" onclick="switchTab('training')" class="section-card rounded-3xl p-4 text-left">
@@ -1913,6 +1918,10 @@ Local Development Instructions:
                         <div class="calorie-kicker">今日營養</div>
                         <h2 class="text-xl font-bold text-white mt-0.5">卡路里分析</h2>
                         <p class="text-xs text-[#a8a29e] mt-0.5">熱量／蛋白質目標跟身體日誌自動計</p>
+                        <button type="button" id="calorie-body-snapshot" onclick="switchTab('me')"
+                            class="text-[10px] text-emerald-400/90 mt-1 text-left underline decoration-dotted underline-offset-2">
+                            未有身體日誌，去「我」匯入 Unique Health
+                        </button>
                     </div>
                     <button type="button" onclick="downloadCalorieExcel()"
                         class="text-[11px] px-2.5 py-1.5 rounded-xl border border-[#44403c] text-[#a8a29e] hover:border-emerald-600 hover:text-emerald-300">
@@ -2793,10 +2802,10 @@ Local Development Instructions:
     <script src="js/ui-yugong.js?v=2.3.24"></script>
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
-    <script src="js/ui-calories.js?v=2.3.50"></script>
+    <script src="js/ui-calories.js?v=2.3.51"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="js/unique-health.js?v=2.3.50"></script>
-    <script src="js/ui-app.js?v=2.3.50"></script>
+    <script src="js/unique-health.js?v=2.3.51"></script>
+    <script src="js/ui-app.js?v=2.3.51"></script>
 
     <script>
         /*
@@ -4888,8 +4897,9 @@ Local Development Instructions:
                 if (tab === 'me' && typeof onAppTabShown === 'function') onAppTabShown('me');
                 if (tab === 'overview' && typeof onAppTabShown === 'function') onAppTabShown('overview');
 
-                if (tab === 'calories' && typeof initCaloriesTab === 'function') {
-                    initCaloriesTab();
+                if (tab === 'calories') {
+                    if (typeof onAppTabShown === 'function') onAppTabShown('calories');
+                    if (typeof initCaloriesTab === 'function') initCaloriesTab();
                 }
 
                 try {
