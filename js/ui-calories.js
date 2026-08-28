@@ -16,7 +16,7 @@ const QUICK_FOODS = [
     { id: 'egg1', name: '雞蛋 1隻', icon: '🥚', calories: 78, protein_g: 6.3, carbs_g: 0.6, fat_g: 5.3, portion: '1 隻（大）' },
     { id: 'egg3', name: '雞蛋 3隻', icon: '🥚', calories: 234, protein_g: 18.9, carbs_g: 1.8, fat_g: 15.9, portion: '3 隻（大）' },
     { id: 'whey', name: '蛋白粉 1 scoop', icon: '🥤', calories: 120, protein_g: 24, carbs_g: 3, fat_g: 1.5, portion: '30 g' },
-    { id: 'coffee', name: '黑咖啡', icon: '☕', calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, portion: '1 杯' },
+    { id: 'coffee', name: '黑咖啡', icon: '☕', calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, portion: '1 杯（250 ml）', waterMl: 250 },
     { id: 'chicken150', name: '雞胸 150g', icon: '🍗', calories: 248, protein_g: 46.5, carbs_g: 0, fat_g: 5.4, portion: '150 g' },
     { id: 'rice200', name: '白飯 200g', icon: '🍚', calories: 260, protein_g: 4.4, carbs_g: 57, fat_g: 0.4, portion: '200 g' }
 ];
@@ -672,13 +672,16 @@ function renderCalorieTodayList() {
                     <span class="font-semibold text-sm truncate">${escapeHtml(entry.mealName)}</span>
                 </div>
                 <div class="text-[11px] text-[#a8a29e] tabular-nums">
-                    P ${formatMacro(entry.protein_g)} · C ${formatMacro(entry.carbs_g)} · F ${formatMacro(entry.fat_g)}
+                    ${entry.waterMl
+                        ? ('飲水 ' + entry.waterMl + ' ml')
+                        : ('P ' + formatMacro(entry.protein_g) + ' · C ' + formatMacro(entry.carbs_g) + ' · F ' + formatMacro(entry.fat_g))}
                 </div>
                 ${note}
             </div>
             <div class="text-right flex-shrink-0">
-                <div class="font-bold text-emerald-400 tabular-nums">${entry.calories}</div>
-                <div class="text-[10px] text-[#a8a29e]">kcal</div>
+                ${entry.waterMl && !(Number(entry.calories) > 0)
+                    ? '<div class="font-bold text-sky-300 tabular-nums">' + entry.waterMl + '</div><div class="text-[10px] text-[#a8a29e]">ml 水</div>'
+                    : '<div class="font-bold text-emerald-400 tabular-nums">' + entry.calories + '</div><div class="text-[10px] text-[#a8a29e]">kcal</div>'}
             </div>
             <button type="button" class="calorie-entry-delete" onclick="deleteCalorieEntry('${escapeJsString(entry.id)}')" aria-label="刪除紀錄">
                 <i class="fa-solid fa-trash"></i>
@@ -689,7 +692,12 @@ function renderCalorieTodayList() {
 
 function deleteCalorieEntry(id) {
     if (!id) return;
+    const gone = (calorieLogEntries || []).find(function (e) { return e && e.id === id; });
     calorieLogEntries = (calorieLogEntries || []).filter(e => e.id !== id);
+    if (gone && gone.waterMl && gone.date === todayDateKey()) {
+        const key = gone.date;
+        waterByDate[key] = Math.max(0, (Number(waterByDate[key]) || 0) - Number(gone.waterMl));
+    }
     saveCalorieLog();
     renderCalorieTodaySummary();
     renderCalorieTodayList();
@@ -880,7 +888,9 @@ function renderQuickAddGrid() {
         const count = n ? '<div class="qa-count">今日已加 ×' + n + '</div>' : '';
         return '<button type="button" class="quick-add-btn" onclick="addQuickFood(\'' + food.id + '\')">' +
             '<div class="qa-name">' + food.icon + ' ' + food.name + '</div>' +
-            '<div class="qa-meta">' + food.calories + ' kcal · 蛋白 ' + formatMacro(food.protein_g) + ' g</div>' +
+            '<div class="qa-meta">' + (food.waterMl
+                ? ('飲水 ' + food.waterMl + ' ml · 0 kcal')
+                : (food.calories + ' kcal · 蛋白 ' + formatMacro(food.protein_g) + ' g')) + '</div>' +
             count +
             '</button>';
     }).join('');
@@ -954,22 +964,29 @@ function commitQuickFoodEntry(food) {
         notes: '',
         tips: '',
         confidence: 'high',
-        userNote: '快速加入',
+        userNote: food.waterMl ? ('快速加入 · 計入飲水 ' + food.waterMl + ' ml') : '快速加入',
         thumb: '',
         icon: food.icon || '🍽️',
         engine: 'quick',
         quickId: food.id,
+        waterMl: food.waterMl || 0,
         oilSpoons: 0,
         scaleText: '',
         scaleOk: true
     };
     calorieLogEntries.unshift(entry);
+    if (entry.waterMl) {
+        const key = entry.date || todayDateKey();
+        waterByDate[key] = Math.max(0, Math.min(8000, (Number(waterByDate[key]) || 0) + Number(entry.waterMl)));
+    }
     saveCalorieLog();
     renderCalorieTodaySummary();
     renderCalorieTodayList();
     if (typeof renderDietWeekBars === 'function') renderDietWeekBars();
     if (typeof showToast === 'function') {
-        showToast('已加 ' + food.name + ' · ' + entry.calories + ' kcal · 蛋白 ' + formatMacro(entry.protein_g) + ' g');
+        showToast(entry.waterMl
+            ? ('已加 ' + food.name + ' · 計入飲水 ' + entry.waterMl + ' ml')
+            : ('已加 ' + food.name + ' · ' + entry.calories + ' kcal · 蛋白 ' + formatMacro(entry.protein_g) + ' g'));
     }
     syncCalorieEntryToSheet(entry);
 }

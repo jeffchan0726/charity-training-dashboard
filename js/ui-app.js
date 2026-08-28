@@ -646,6 +646,10 @@ function copyLastCalorieMeal() {
     copy.time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
     copy.createdAt = now.getTime();
     calorieLogEntries.unshift(copy);
+    if (copy.waterMl && typeof waterByDate !== 'undefined') {
+        const key = copy.date;
+        waterByDate[key] = Math.max(0, Math.min(8000, (Number(waterByDate[key]) || 0) + Number(copy.waterMl)));
+    }
     if (typeof saveCalorieLog === 'function') saveCalorieLog();
     if (typeof renderCalorieTodaySummary === 'function') renderCalorieTodaySummary();
     if (typeof renderCalorieTodayList === 'function') renderCalorieTodayList();
