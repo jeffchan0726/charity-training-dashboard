@@ -790,6 +790,7 @@ function upsertWorkoutInHistory(workout) {
     if (typeof refreshWorkoutTotals === 'function') refreshWorkoutTotals(record);
     workoutHistory.unshift(record);
     workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
     return record;
 }
 
@@ -1072,6 +1073,7 @@ function applyContinueWorkoutFinishToLocalHistory(workout) {
     if (typeof refreshWorkoutTotals === 'function') refreshWorkoutTotals(record);
     workoutHistory.unshift(record);
     workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
     return record;
 }
 

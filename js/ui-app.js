@@ -139,12 +139,19 @@ function renderOverviewDashboard() {
         else statusEl.textContent = '今日未訓練';
     }
     if (subEl) {
-        if (!currentUser) subEl.textContent = '登入之後就可以記訓練同飲食。';
-        else if (rest) subEl.textContent = '恢復日。可以行下、伸展，或者記一餐。';
-        else {
+        if (!currentUser) {
+            subEl.textContent = '登入之後就可以記訓練同飲食。';
+        } else {
             applyAutoDietGoals();
             const kcalGoal = typeof calorieDailyGoalKcal === 'number' ? calorieDailyGoalKcal : goal;
-            subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + kcalGoal + ' kcal';
+            const trained = didTrainToday();
+            if (trained) {
+                subEl.textContent = '今日已訓練 · 蛋白質 ' + calorieDailyProteinGoal + ' g · 熱量 ' + kcalGoal + ' kcal';
+            } else if (rest) {
+                subEl.textContent = '恢復日 · 蛋白質 ' + calorieDailyProteinGoal + ' g · 熱量 ' + kcalGoal + ' kcal';
+            } else {
+                subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + kcalGoal + ' kcal';
+            }
         }
     }
     markTrainingRestDay();
@@ -448,6 +455,32 @@ function renderBodyLog() {
     }
 }
 
+function workoutDateKey(w) {
+    if (!w || !w.date) return '';
+    if (typeof normalizeDateToLocal === 'function') return normalizeDateToLocal(w.date);
+    return String(w.date).slice(0, 10);
+}
+
+function workoutHasLoggedSets(w) {
+    if (!w) return false;
+    return (w.exercises || []).some(function (ex) {
+        return ex && (ex.sets || []).length > 0;
+    });
+}
+
+function didTrainToday() {
+    const today = typeof getTodayStr === 'function' ? getTodayStr() : '';
+    if (!today) return false;
+    if (typeof currentWorkout !== 'undefined' && currentWorkout && workoutHasLoggedSets(currentWorkout)) {
+        const d = workoutDateKey(currentWorkout);
+        if (!d || d === today) return true;
+    }
+    const history = (typeof workoutHistory !== 'undefined' && Array.isArray(workoutHistory)) ? workoutHistory : [];
+    return history.some(function (w) {
+        return workoutDateKey(w) === today && workoutHasLoggedSets(w);
+    });
+}
+
 function clampProteinGoal(n) {
     const g = Math.round(Number(n) / 5) * 5;
     if (g < 40) return 40;
@@ -476,20 +509,22 @@ function getLatestBodyForProtein() {
 
 function getAutoCalorieGoal() {
     const b = getLatestBodyForDiet();
-    const rest = typeof isRestDayToday === 'function' ? isRestDayToday() : false;
+    const trained = didTrainToday();
+    const rest = !trained && (typeof isRestDayToday === 'function' ? isRestDayToday() : false);
+    const dayNote = trained ? '（今日已訓練）' : (rest ? '（休息日）' : '（訓練日）');
     if (b.bmr >= 800 && b.bmr <= 5000) {
         const factor = rest ? 1.2 : 1.4;
         const kcal = Math.round((b.bmr * factor) / 50) * 50;
         return {
             kcal: Math.max(800, Math.min(6000, kcal)),
-            note: '身體日誌 BMR ' + Math.round(b.bmr) + ' × ' + factor + (rest ? '（休息日）' : '（訓練日）')
+            note: '身體日誌 BMR ' + Math.round(b.bmr) + ' × ' + factor + dayNote
         };
     }
     if (b.weight >= 30 && b.weight <= 250) {
         const kcal = Math.round((b.weight * 24) / 50) * 50;
         return {
             kcal: Math.max(800, Math.min(6000, kcal)),
-            note: '身體日誌體重 ' + b.weight.toFixed(1) + ' kg × 24'
+            note: '身體日誌體重 ' + b.weight.toFixed(1) + ' kg × 24' + dayNote
         };
     }
     return { kcal: 2000, note: '未有身體日誌，暫用 2000 kcal' };
@@ -497,19 +532,23 @@ function getAutoCalorieGoal() {
 
 function getAutoProteinGoal() {
     const b = getLatestBodyForProtein();
+    const trained = didTrainToday();
+    const lbmFactor = trained ? 2.5 : 2.2;
+    const wtFactor = trained ? 2.2 : 1.8;
+    const tag = trained ? '（今日已訓練）' : '（今日未訓練）';
     if (b.lbm >= 30 && b.lbm <= 150) {
         return {
-            grams: clampProteinGoal(b.lbm * 2.2),
-            note: '去脂體重 ' + b.lbm.toFixed(1) + ' kg × 2.2'
+            grams: clampProteinGoal(b.lbm * lbmFactor),
+            note: '去脂體重 ' + b.lbm.toFixed(1) + ' kg × ' + lbmFactor + tag
         };
     }
     if (b.weight >= 30 && b.weight <= 250) {
         return {
-            grams: clampProteinGoal(b.weight * 1.8),
-            note: '體重 ' + b.weight.toFixed(1) + ' kg × 1.8'
+            grams: clampProteinGoal(b.weight * wtFactor),
+            note: '體重 ' + b.weight.toFixed(1) + ' kg × ' + wtFactor + tag
         };
     }
-    return { grams: 150, note: '未有體重，暫用 150 g' };
+    return { grams: trained ? 170 : 150, note: '未有體重，暫用 ' + (trained ? 170 : 150) + ' g' + tag };
 }
 
 function applyAutoProteinGoal() {
@@ -534,6 +573,7 @@ function updateDietBodySnapshot() {
     if (b.bf > 0 && b.bf < 70) parts.push('體脂 ' + b.bf.toFixed(1) + '%');
     if (b.lbm >= 30 && b.lbm <= 150) parts.push('去脂 ' + b.lbm.toFixed(1) + ' kg');
     if (b.bmr >= 800 && b.bmr <= 5000) parts.push('BMR ' + Math.round(b.bmr));
+    if (didTrainToday()) parts.push('今日已訓練');
     el.textContent = '身體日誌 ' + parts.join(' · ');
     return b;
 }

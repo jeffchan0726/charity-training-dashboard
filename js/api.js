@@ -896,6 +896,9 @@ async function bootstrapGoogleCloudData(options = {}) {
         if (typeof finalizeLogTabUiReady === 'function') {
             try { finalizeLogTabUiReady(); } catch (_) {}
         }
+        if (typeof refreshDietFromBodyLog === 'function') {
+            try { refreshDietFromBodyLog(); } catch (_) {}
+        }
     })();
 
     return googleBootstrapPromise;

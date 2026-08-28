@@ -154,6 +154,7 @@ function addSetToExercise(exIdx) {
     renderCurrentWorkout();
     updateSessionSummary();
     saveWorkoutData();
+    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
 
     if (typeof startRestTimer === 'function' && recordType !== 'treadmill') {
         startRestTimer(90);
@@ -196,6 +197,7 @@ function deleteSet(exIdx, setIdx) {
     renderCurrentWorkout();
     updateSessionSummary();
     saveWorkoutData();
+    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
 }
 
 function updateSetField(exIdx, setIdx, field, value) {

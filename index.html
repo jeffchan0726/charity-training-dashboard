@@ -2788,12 +2788,12 @@ Local Development Instructions:
     <!-- Extracted data for architecture refactor (Option A) -->
     <script src="js/data.js?v=2.3.36"></script>
     <script src="js/exercise-gif-map.js?v=2.3.25"></script>
-    <script src="js/utils.js?v=2.3.25"></script>
+    <script src="js/utils.js?v=2.3.52"></script>
     <script src="js/state.js?v=2.3.26"></script>
-    <script src="js/api.js?v=2.3.43"></script>
+    <script src="js/api.js?v=2.3.52"></script>
     <script src="js/fullscreen.js?v=2.3.36"></script>
     <script src="js/ui.js?v=2.3.24"></script>
-    <script src="js/ui-log.js?v=2.3.36"></script>
+    <script src="js/ui-log.js?v=2.3.52"></script>
     <script src="js/ui-history.js?v=2.3.49"></script>
     <script src="js/ui-calendar.js?v=2.3.24"></script>
     <script src="js/ui-workoutsets.js?v=2.3.24"></script>
@@ -2802,10 +2802,10 @@ Local Development Instructions:
     <script src="js/ui-yugong.js?v=2.3.24"></script>
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
-    <script src="js/ui-calories.js?v=2.3.51"></script>
+    <script src="js/ui-calories.js?v=2.3.52"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="js/unique-health.js?v=2.3.51"></script>
-    <script src="js/ui-app.js?v=2.3.51"></script>
+    <script src="js/unique-health.js?v=2.3.52"></script>
+    <script src="js/ui-app.js?v=2.3.52"></script>
 
     <script>
         /*
@@ -3168,6 +3168,9 @@ Local Development Instructions:
 
                 // 更新「開始新訓練 / 繼續今日訓練」按鈕
                 try { updateStartTrainingButton(); } catch (e) {}
+                try {
+                    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
+                } catch (e) {}
 
                 cloudLogsReady = true;
                 if (typeof finalizeLogTabUiReady === 'function') {
