@@ -375,13 +375,24 @@ function getRecommendedTrainingDay() {
     return null;
 }
 
+function isGymDayToday() {
+    if (typeof didTrainToday === 'function' && didTrainToday()) return true;
+    if (typeof isRestDayToday === 'function') return !isRestDayToday();
+    return true;
+}
+
+function getProteinCupTarget() {
+    return isGymDayToday() ? 3 : 2;
+}
+
 function renderMorningChecklist() {
     const el = document.getElementById('overview-morning-list');
     if (!el) return;
     const wheyN = typeof countTodayQuick === 'function' ? countTodayQuick('whey_cup') : 0;
     const coffeeN = typeof countTodayQuick === 'function' ? countTodayQuick('coffee') : 0;
+    const wheyTarget = getProteinCupTarget();
     const cups = [
-        { id: 'whey_cup', label: '蛋白 1 cup', sub: 'ISO100 · 每杯 110 kcal · 25g 蛋白 · 水 250 ml', n: wheyN },
+        { id: 'whey_cup', label: '蛋白 1 cup', sub: 'ISO100 · 每杯 110 kcal · 25g · 今日目標 ' + wheyTarget + ' cup' + (isGymDayToday() ? '（gym）' : '（休息日）'), n: wheyN },
         { id: 'coffee', label: '黑咖啡 1 cup', sub: '每杯 0 kcal · 水 250 ml', n: coffeeN }
     ];
     const cupHtml = cups.map(function (it) {
@@ -415,6 +426,16 @@ function addMorningCup(kind) {
         return;
     }
     if (typeof commitQuickFoodEntry !== 'function') return;
+    if (kind !== 'coffee') {
+        const n = typeof countTodayQuick === 'function' ? countTodayQuick('whey_cup') : 0;
+        const cap = getProteinCupTarget();
+        if (n >= cap) {
+            if (typeof showToast === 'function') {
+                showToast(isGymDayToday() ? '今日 gym，蛋白目標 ' + cap + ' cup' : '今日冇 gym，蛋白只加 ' + cap + ' cup');
+            }
+            return;
+        }
+    }
     const food = kind === 'coffee' ? getCoffeeCupFood() : getWheyCupFood();
     commitQuickFoodEntry(food, { silent: true });
     syncProteinSuppFromCups();
@@ -436,7 +457,7 @@ function removeMorningCup(kind) {
 function syncProteinSuppFromCups() {
     const n = typeof countTodayQuick === 'function' ? countTodayQuick('whey_cup') : 0;
     const day = ensureHabitDay();
-    if (n >= 3) day.supp.protein = true;
+    if (n >= getProteinCupTarget()) day.supp.protein = true;
     else delete day.supp.protein;
     persistHabitsSoon();
     renderSupplementChecklist();
