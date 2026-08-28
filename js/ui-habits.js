@@ -489,9 +489,7 @@ function renderSupplementChecklist() {
             slot.title + '</div>' + rows + '</div>';
     }).join('');
     const a = document.getElementById('supplement-check-list');
-    const b = document.getElementById('calorie-supp-list');
     if (a) a.innerHTML = html;
-    if (b) b.innerHTML = html;
 }
 
 function renderOverviewDashboardSafe() {
