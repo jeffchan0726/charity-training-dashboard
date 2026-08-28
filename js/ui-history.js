@@ -17,7 +17,7 @@ function renderWorkoutHistory() {
     // 使用共用 grouping 函數，確保與 renderCalendar() 邏輯完全一致
     const grouped = groupWorkoutsByDate();
     // 由新到舊排序
-    const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+    const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a)).slice(0, 5);
 
     dates.forEach((d) => {
         const g = grouped[d];
