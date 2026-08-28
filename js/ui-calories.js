@@ -905,9 +905,13 @@ function addQuickFood(id) {
         if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
-    if (id === 'whey' || id === 'supp_protein') {
-        if (typeof setSuppChecked === 'function' && typeof isSuppChecked === 'function') {
-            setSuppChecked('protein', !isSuppChecked('protein'));
+    if (id === 'whey' || id === 'whey_cup' || id === 'supp_protein') {
+        if (typeof addMorningCup === 'function') {
+            addMorningCup('whey_cup');
+            return;
+        }
+        if (typeof getWheyCupFood === 'function') {
+            commitQuickFoodEntry(getWheyCupFood());
             return;
         }
         if (typeof getWheyQuickFood === 'function') {
