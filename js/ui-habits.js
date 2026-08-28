@@ -92,7 +92,7 @@ function getWheyQuickFood() {
 function getWheyCupFood() {
     return {
         id: 'whey_cup',
-        name: '蛋白粉 1 cup',
+        name: '蛋白 1 cup',
         icon: '🥤',
         calories: 110,
         protein_g: 25,
@@ -381,7 +381,7 @@ function renderMorningChecklist() {
     const wheyN = typeof countTodayQuick === 'function' ? countTodayQuick('whey_cup') : 0;
     const coffeeN = typeof countTodayQuick === 'function' ? countTodayQuick('coffee') : 0;
     const cups = [
-        { id: 'whey_cup', label: '蛋白粉 1 cup', sub: '每杯 110 kcal · 25g 蛋白 · 水 250 ml', n: wheyN },
+        { id: 'whey_cup', label: '蛋白 1 cup', sub: 'ISO100 · 每杯 110 kcal · 25g 蛋白 · 水 250 ml', n: wheyN },
         { id: 'coffee', label: '黑咖啡 1 cup', sub: '每杯 0 kcal · 水 250 ml', n: coffeeN }
     ];
     const cupHtml = cups.map(function (it) {
@@ -419,7 +419,7 @@ function addMorningCup(kind) {
     commitQuickFoodEntry(food, { silent: true });
     syncProteinSuppFromCups();
     renderMorningChecklist();
-    if (typeof showToast === 'function') showToast('已加 1 cup ' + (kind === 'coffee' ? '黑咖啡' : '蛋白粉'));
+    if (typeof showToast === 'function') showToast('已加 1 cup ' + (kind === 'coffee' ? '黑咖啡' : '蛋白'));
 }
 
 function removeMorningCup(kind) {
