@@ -193,19 +193,25 @@ function renderOverviewDashboard() {
     const trained = typeof didTrainToday === 'function' && didTrainToday();
     if (planHint) {
         if (!currentUser) planHint.textContent = '';
-        else if (trained) planHint.textContent = '今日已練完。可以記餐同補水。';
-        else if (rest) planHint.textContent = '今日休息日。想加操可以撳下面開訓。';
-        else if (rec) planHint.textContent = '今日建議：' + rec.fullName;
-        else planHint.textContent = '今週 3 個訓練日都已完成。';
+        else if (trained) planHint.textContent = rec
+            ? ('今日已練完。下次：' + rec.fullName)
+            : '今日已練完。可以記餐同補水。';
+        else if (rest) planHint.textContent = rec
+            ? ('今日休息日。下次開訓：' + rec.fullName)
+            : '今日休息日。想加操可以撳下面開訓。';
+        else if (rec) planHint.textContent = '今次建議：' + rec.fullName;
+        else planHint.textContent = '撳下面一鍵開訓。';
     }
     [1, 2, 3].forEach(function (id) {
         const btn = document.getElementById('overview-start-day-' + id);
         if (!btn) return;
-        const recId = rec && rec.id;
-        btn.classList.toggle('ring-2', !trained && !rest && recId === id);
-        btn.classList.toggle('ring-emerald-400', !trained && !rest && recId === id);
-        btn.classList.toggle('bg-emerald-700', !trained && !rest && recId === id);
-        btn.classList.toggle('bg-sky-800', !( !trained && !rest && recId === id));
+        const recId = rec && Number(rec.id) === Number(id);
+        btn.classList.toggle('ring-2', recId);
+        btn.classList.toggle('ring-emerald-400', recId);
+        btn.classList.toggle('bg-emerald-800', recId);
+        btn.classList.toggle('bg-[#166534]', recId);
+        btn.classList.toggle('bg-sky-800', !recId);
+        btn.classList.toggle('opacity-70', !recId);
     });
     if (typeof renderMorningChecklist === 'function') renderMorningChecklist();
     markTrainingRestDay();

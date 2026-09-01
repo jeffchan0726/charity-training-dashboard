@@ -367,12 +367,46 @@ function trainingDayDoneThisWeek(day) {
     });
 }
 
-function getRecommendedTrainingDay() {
+function getLastCompletedTrainingDay() {
     const days = (typeof TRAINING_DAYS !== 'undefined') ? TRAINING_DAYS : [];
-    for (let i = 0; i < days.length; i++) {
-        if (!trainingDayDoneThisWeek(days[i])) return days[i];
+    if (!days.length) return null;
+    const history = ((typeof workoutHistory !== 'undefined' && Array.isArray(workoutHistory)) ? workoutHistory : [])
+        .filter(function (w) {
+            if (!w) return false;
+            if (typeof workoutHasLoggedSets === 'function' && !workoutHasLoggedSets(w)) return false;
+            return true;
+        });
+    history.sort(function (a, b) {
+        const da = String((a && (a.date || '')) || '');
+        const db = String((b && (b.date || '')) || '');
+        if (da !== db) return db.localeCompare(da);
+        const ta = Number(a.createdAt || a.finishedAt || 0);
+        const tb = Number(b.createdAt || b.finishedAt || 0);
+        if (ta !== tb) return tb - ta;
+        return String(b.id || b.session_id || '').localeCompare(String(a.id || a.session_id || ''));
+    });
+    for (let i = 0; i < history.length; i++) {
+        for (let d = 0; d < days.length; d++) {
+            if (workoutMatchesTrainingDay(history[i], days[d])) return days[d];
+        }
     }
     return null;
+}
+
+function getRecommendedTrainingDay() {
+    const days = (typeof TRAINING_DAYS !== 'undefined') ? TRAINING_DAYS : [];
+    if (!days.length) return null;
+    const last = getLastCompletedTrainingDay();
+    if (!last) return days[0];
+    let idx = -1;
+    for (let i = 0; i < days.length; i++) {
+        if (Number(days[i].id) === Number(last.id)) {
+            idx = i;
+            break;
+        }
+    }
+    if (idx < 0) return days[0];
+    return days[(idx + 1) % days.length];
 }
 
 function isGymDayToday() {
