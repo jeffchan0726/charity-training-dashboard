@@ -192,7 +192,7 @@ function exitImmersiveMode() {
 
 // === Immersive sticky top collapse/expand ===
 // Mobile-friendly: 44px+ tap target (top-right), Tailwind transition + class toggle.
-// When collapsed (.collapsed added): hides the header (title + sets-bar) + rest timer.
+// When collapsed (.collapsed added): hides the header (title + sets-bar).
 // ONLY the session-summary bar remains visible (volume / sets / tonnes stats).
 function toggleImmersiveTopCollapse() {
     const top = document.getElementById('immersive-sticky-top');

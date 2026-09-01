@@ -1,5 +1,5 @@
 // js/ui-app.js
-// App shell: 5-tab IA, 千年任務, 今日總覽, 日行千里, 身體日誌, 打卡, 組間休息
+// App shell: 5-tab IA, 千年任務, 今日總覽, 日行千里, 身體日誌, 打卡
 
 const APP_TAB_ALIAS = {
     yugong: 'millennium',
@@ -21,8 +21,6 @@ const APP_MAIN_NAV = {
     training: 'me'
 };
 
-let restTimerInterval = null;
-let restTimerEndsAt = 0;
 let calorieDailyProteinGoal = 180;
 let calorieDailyCarbGoal = 160;
 let calorieDailyFatGoal = 50;
@@ -287,37 +285,6 @@ function renderRixingTab() {
             }).join('')
             : '<li>未有跑步機紀錄。去訓練頁加入跑步機。</li>';
     }
-}
-
-function startRestTimer(seconds) {
-    const sec = Number(seconds) || 90;
-    restTimerEndsAt = Date.now() + sec * 1000;
-    const bar = document.getElementById('rest-timer-bar');
-    if (bar) bar.classList.remove('hidden');
-    if (restTimerInterval) clearInterval(restTimerInterval);
-    tickRestTimer();
-    restTimerInterval = setInterval(tickRestTimer, 250);
-}
-
-function tickRestTimer() {
-    const left = Math.max(0, Math.ceil((restTimerEndsAt - Date.now()) / 1000));
-    const el = document.getElementById('rest-timer-display');
-    if (el) {
-        const m = Math.floor(left / 60);
-        const s = left % 60;
-        el.textContent = m + ':' + String(s).padStart(2, '0');
-    }
-    if (left <= 0) {
-        skipRestTimer();
-        if (typeof showToast === 'function') showToast('休息完，下一組');
-    }
-}
-
-function skipRestTimer() {
-    if (restTimerInterval) clearInterval(restTimerInterval);
-    restTimerInterval = null;
-    const bar = document.getElementById('rest-timer-bar');
-    if (bar) bar.classList.add('hidden');
 }
 
 function bodyLogSortKey(e) {

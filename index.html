@@ -123,8 +123,6 @@ Local Development Instructions:
             background: #1c1917;
             -webkit-overflow-scrolling: touch;
         }
-        #rest-timer-bar.hidden { display: none !important; }
-        #rest-timer-bar:not(.hidden) { display: flex; }
         .me-back-btn {
             display: inline-flex;
             align-items: center;
@@ -553,8 +551,6 @@ Local Development Instructions:
             background: #292524;
         }
 
-        /* .rest-timer / .timer-display 已移除 (休息計時器功能已完全刪除) */
-
         .exercise-log-card {
             border: 1px solid #57534e;
         }
@@ -681,7 +677,7 @@ Local Development Instructions:
             flex-shrink: 0;
             pointer-events: auto;
         }
-        /* fullscreen variant: collapsed shows only session-summary (timer 已移除) */
+        /* fullscreen variant: collapsed shows only session-summary */
         .fullscreen-training .immersive-sticky-top.collapsed .immersive-header {
             display: none !important;
         }
@@ -2291,7 +2287,7 @@ Local Development Instructions:
                         </div>
                     </div>
 
-                    <!-- Session Summary Bar (直接接在 header 之後，timer 已移除，騰出空間給動作列表) -->
+                    <!-- Session Summary Bar -->
                     <div class="bg-[#292524] rounded-2xl p-3 flex items-center justify-between text-sm session-summary">
                         <div>
                             <span class="text-[#a8a29e]">訓練量</span>
@@ -2303,15 +2299,6 @@ Local Development Instructions:
                             <span class="mx-1">•</span>
                             <span id="session-tonnes" class="text-amber-400">0.00 t</span>
                             <span id="sync-status" class="text-[10px] ml-1 text-emerald-300/70"></span>
-                        </div>
-                    </div>
-                    <div id="rest-timer-bar" class="hidden mt-2 flex items-center justify-between gap-2 bg-[#14532d] rounded-2xl px-3 py-2">
-                        <span class="text-xs text-emerald-100">組間休息</span>
-                        <span id="rest-timer-display" class="font-bold tabular-nums text-lg text-white">1:30</span>
-                        <div class="flex gap-1">
-                            <button type="button" onclick="startRestTimer(60)" class="text-[10px] px-2 py-1 rounded-lg bg-white/10">60s</button>
-                            <button type="button" onclick="startRestTimer(90)" class="text-[10px] px-2 py-1 rounded-lg bg-white/10">90s</button>
-                            <button type="button" onclick="skipRestTimer()" class="text-[10px] px-2 py-1 rounded-lg bg-white/10">跳過</button>
                         </div>
                     </div>
                 </div>
@@ -2690,7 +2677,7 @@ Local Development Instructions:
     </div>
 
     <!-- History Record View / Edit Modal -->
-    <!-- This is a dedicated editor for past records. It NEVER touches currentWorkout, live-log-panel, rest timer or new-training flow. -->
+    <!-- This is a dedicated editor for past records. It NEVER touches currentWorkout, live-log-panel or new-training flow. -->
     <div id="historyEditModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[110] p-4">
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <!-- Header -->
@@ -2923,10 +2910,10 @@ Local Development Instructions:
     <script src="js/utils.js?v=2.3.52"></script>
     <script src="js/state.js?v=2.3.26"></script>
     <script src="js/api.js?v=2.3.56"></script>
-    <script src="js/fullscreen.js?v=2.3.36"></script>
+    <script src="js/fullscreen.js?v=2.3.76"></script>
     <script src="js/ui.js?v=2.3.24"></script>
-    <script src="js/ui-log.js?v=2.3.52"></script>
-    <script src="js/ui-history.js?v=2.3.49"></script>
+    <script src="js/ui-log.js?v=2.3.76"></script>
+    <script src="js/ui-history.js?v=2.3.76"></script>
     <script src="js/ui-calendar.js?v=2.3.24"></script>
     <script src="js/ui-workoutsets.js?v=2.3.24"></script>
     <script src="js/ui-library.js?v=2.3.36"></script>
@@ -2938,7 +2925,7 @@ Local Development Instructions:
     <script src="lib/xlsx.full.min.js"></script>
     <script src="js/unique-health.js?v=2.3.52"></script>
     <script src="js/ui-habits.js?v=2.3.74"></script>
-    <script src="js/ui-app.js?v=2.3.74"></script>
+    <script src="js/ui-app.js?v=2.3.76"></script>
 
     <script>
         /*
@@ -2979,10 +2966,6 @@ Local Development Instructions:
         var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8C7XUmx5IvhoSQZ-6JKegxyFtDtoK_gWv_xSS7b2vyRO3Nv7Sc6Kz8p6mWsVOrh1/exec";
         window.APPS_SCRIPT_URL = APPS_SCRIPT_URL;
 
-        // === Username / PIN normalization helpers (enforce rules on client) ===
-        // Note: core state (currentUser, workoutLogs, currentWorkout, workoutHistory, etc.)
-        // has been moved to js/state.js as part of A refactor.
-
         function normalizeUsername(raw) {
             if (!raw) return '';
             return String(raw).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -2992,8 +2975,6 @@ Local Development Instructions:
             if (!raw) return '';
             return String(raw).trim().replace(/\D/g, '');
         }
-
-        // callAppsScript and related API/sync functions moved to js/api.js (A refactor)
 
         function updateUIAfterLogin() {
             const display = document.getElementById('currentUserDisplay');
@@ -3352,8 +3333,6 @@ Local Development Instructions:
                 try { updateGlobalSyncIndicator('error'); } catch (_) {}
                 try { showToast('載入失敗，請點擊 log 區域內的重試按鈕', 3800); } catch (_) {}
             }
-
-            // Note: 自動恢復未完成訓練提示已完全停用（checkForUnfinishedWorkout 及 startNewWorkout 內的舊邏輯已移除）
             })();
 
             try {
@@ -3438,31 +3417,11 @@ Local Development Instructions:
            WORKOUT LOG ENGINE (Rich client-side with localStorage persistence + optional backend sync)
            ============================================================ */
 
-        // --- Core State ---
-        // All core app state (currentWorkout, workoutHistory, isInFullScreenTraining, workoutSets, etc.)
-        // has been centralized in js/state.js as part of A (architecture refactor).
-        // Additional UI-only flags are kept here for now (to be moved in later steps).
-        // Do NOT re-declare the moved variables with 'let' here to avoid "already declared" errors.
-
-        // UI-specific state still local for now:
-        let personalRecords = {};            // Computed on the fly or cached
+        let personalRecords = {};
         let currentLogSub = 'history';
-        // analysisTimeRange, analysisChart*, bodyPartChart, weeklyVolumeChart moved to js/state.js (A refactor)
         let workoutSetsCacheTimestamp = 0;
         const WORKOUT_SETS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes TTL for cache
-        // currentViewingHistory moved to js/state.js
-        // isSavingHistory, isDeletingHistory moved to js/state.js
         let isLoggingIn = false;
-
-        // Data now loaded from js/data.js (architecture refactor A)
-        // The helpers below still reference EXERCISES etc. which are now global from data.js
-
-        // getUserStorageKey, saveWorkoutData, loadWorkoutData now in js/utils.js (A refactor)
-
-        // isValidUnfinishedWorkout, formatDateForDisplay now in js/utils.js (A refactor)
-
-        // 自動恢復未完成訓練提示已完全停用（用戶要求）
-        // checkForUnfinishedWorkout 函數已無作用，已移除。
 
         function showUnfinishedWorkoutModal() {
             const modal = document.getElementById('unfinishedWorkoutModal');
@@ -3525,11 +3484,6 @@ Local Development Instructions:
                 // but main persistence is localStorage + final push on finish.
             }
         }
-
-        // seedSampleDataIfNeeded disabled (A refactor - guest demo seeding removed)
-
-
-        // estimate1RM and getAllExercisesFromHistory moved to js/utils.js (A refactor)
 
         function rebuildLastPerformed() {
             lastPerformed = {};
@@ -3987,15 +3941,10 @@ Local Development Instructions:
             }
             const empty = document.getElementById('log-empty-state');
             if (empty) empty.classList.remove('hidden');
-            // resetRestTimer(); // 休息計時器已移除
             exitImmersiveMode();
             saveWorkoutData();
             try { updateStartTrainingButton(); } catch (_) {}
         }
-
-        // enterImmersiveMode moved to js/fullscreen.js (A refactor)
-
-        // exitImmersiveMode moved to js/fullscreen.js (A refactor)
 
         function addExerciseToCurrentWorkout(nameFromInput = null) {
             if (!currentWorkout) startNewWorkout();
@@ -4149,20 +4098,6 @@ Local Development Instructions:
             // 如果需要更明確的 toast，可以在 backgroundDeleteLog 的 catch 裡加，但這裡保持靜默為主。
         }
 
-        // === Background Incremental Sync Helpers (for live training) ===
-        // activeBackgroundSyncs moved to js/state.js (A refactor)
-
-        // backgroundSyncNewSet moved to js/api.js (A refactor)
-
-        // backgroundDeleteLog moved to js/api.js (A refactor)
-
-        // updateSyncStatus moved to js/api.js (A refactor)
-
-        // globalPendingSyncs and lastSyncError moved to js/state.js (A refactor)
-
-        // updateGlobalSyncIndicator moved to js/api.js (A refactor)
-        // (leftover body removed)
-
         /* ============================================================
            A. 初始載入狀態指示器 (Initial Load Status in header right)
            用於登入成功或已登入刷新時的 getLogs + workoutHistory 重建
@@ -4269,54 +4204,6 @@ Local Development Instructions:
 
             }
         });
-
-        // addSetToExercise, deleteSet, updateSetField, renderCurrentWorkout, copyLastToExercise, copyPrevSetToExercise moved to js/ui-log.js (A refactor)
-
-        // updateSessionSummary, updateSessionVolume, updateLastPerformedHint, safeSet* moved to js/ui.js (A refactor)
-
-        function setRestPreset() { /* rest timer removed */ }
-
-        function resetRestTimer() { /* rest timer removed */ }
-
-        function updateTimerDisplay() { /* rest timer removed */ }
-        function startRestTimer() { /* rest timer removed */ }
-        function pauseRestTimer() { /* rest timer removed */ }
-        function addTimeToTimer() { /* rest timer removed */ }
-
-        function playBeep() {
-            try {
-                const audio = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audio.createOscillator();
-                const gain = audio.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = 880;
-                gain.gain.value = 0.3;
-                osc.connect(gain);
-                gain.connect(audio.destination);
-                osc.start();
-                setTimeout(() => {
-                    gain.gain.linearRampToValueAtTime(0.0001, audio.currentTime + 0.8);
-                    setTimeout(() => osc.stop(), 900);
-                }, 180);
-            } catch (e) {}
-        }
-
-        /*
-          === 休息計時器相關函數（已完全移除 UI）===
-          以下函數因為需求 2 而不再使用，可安全刪除或整個區塊註解掉：
-            - setRestPreset
-            - resetRestTimer
-            - updateTimerDisplay
-            - startRestTimer
-            - pauseRestTimer
-            - addTimeToTimer
-            - playBeep   (僅 timer 用)
-            - toggleRestTimerSection (已刪除)
-            - 相關變數：restTimerInterval, restTimeLeft, restTimerRunning, DEFAULT_REST, _restTimerSectionCollapsed
-
-          目前保留函數定義是為了避免舊程式碼呼叫時出錯（非關鍵路徑已清理）。
-          建議之後做大掃除時整段刪除。
-        */
 
         // --- Finish Workout + PR Detection + Charity ---
         function finishCurrentWorkout() {
@@ -4473,15 +4360,6 @@ Local Development Instructions:
             }
         }
 
-        // toggleImmersiveTopCollapse moved to js/fullscreen.js (A refactor)
-        // (the var _immersiveTopCollapsed is in js/state.js)
-
-        // NEW: Allow the Rest Timer section itself to be collapsed / "收埋"
-        // This hides the presets + secondary controls (timer-controls), but keeps the timer display + Start button visible in a compact form.
-        // Gives users maximum scroll space in immersive mode while still having quick access to rest timing.
-        // toggleRestTimerSection + _restTimerSectionCollapsed 已移除（休息計時器完全刪除）
-        // 可以安全刪除以上變數與函數。
-
         async function confirmFinishWorkout() {
             if (!currentWorkout) return;
 
@@ -4568,8 +4446,6 @@ Local Development Instructions:
 
 
 
-        // finalizeAndSaveWorkout moved to js/api.js（單次 replaceSession，更快）
-
         async function pushCurrentWorkoutToLegacyGAS(workout) {
             if (!currentUser || !APPS_SCRIPT_URL) return;
             const sessionId = workout.id || Date.now();
@@ -4598,9 +4474,6 @@ Local Development Instructions:
             }
         }
 
-        // pushCurrentWorkoutToBackend moved to js/api.js
-
-        // --- Routines ---
         function showRoutinesModal() {
             const modal = document.getElementById('routinesModal');
             if (!modal) {
@@ -4680,43 +4553,6 @@ Local Development Instructions:
             saveWorkoutData();
         }
 
-        /* ============================================================
-           WORKOUT SETS (訓練組合) 架構（嚴格分離）
-           - 訓練日 1/2/3 是**前端固定預設**（TRAINING_DAYS 陣列），永不存入 Workout_Sets 表，用戶不可修改。
-           - Workout_Sets 表**只儲存用戶自己新增的自訂 Set**（完全由後端管理）。
-           - Workout Sets Bar 顯示順序：固定預設（3個）→ 用戶自訂 Set → + 新增自訂 Set 按鈕。
-           - loadWorkoutSets() 只負責從後端 load 自訂 Set（workoutSets 變數只存 custom）。
-           - renderWorkoutSetsBar() 永遠先渲染 3 個固定預設（來自 TRAINING_DAYS），再渲染 customs。
-           - 無註冊時 seed 預設的邏輯。新用戶的 Workout_Sets 表一開始為空。
-           - + 按鈕只用於自訂 Set 的 CRUD。
-           ============================================================ */
-
-        // loadWorkoutSets moved to js/api.js (A refactor)
-
-        // Workout Sets UI (renderWorkoutSetsBar, loadWorkoutSet, showWorkoutSetModal, etc.) moved to js/ui-workoutsets.js (A refactor)
-
-
-        // History rendering & edit modal moved to js/ui-history.js (A refactor)
-
-        // showWorkoutDetail, groupWorkoutsByDate, showWorkoutDetailForDate moved to js/ui-history.js (A refactor)
-
-        // History rendering & edit modal moved to js/ui-history.js (A refactor)
-
-        // closeHistoryEditModal, renderHistoryEditContent moved to js/ui-history.js (A refactor)
-
-        // updateHistorySetField moved to js/ui-history.js (A refactor)
-
-        // addSetToHistoryExercise, deleteHistorySet, deleteHistoryExercise moved to js/ui-history.js (A refactor)
-
-        // History edit logic (saveHistoryEdit / deleteHistoryWorkout) fully in js/ui-history.js
-
-        // Analysis UI (updateExerciseSelectForAnalysis, renderExerciseAnalysis, renderOverallStats, setAnalysisTimeRange, filterAnalysisTable, charts etc.)
-        // moved to js/ui-analysis.js (A refactor)
-
-        // Calendar functions (renderCalendar, prevMonth, nextMonth, showAllWorkoutDates) moved to js/ui-calendar.js (A refactor)
-
-        // Library UI (showLibraryModal, renderLibraryList, showExerciseDetail, etc.) moved to js/ui-library.js (A refactor)
-
         // --- Export / Import / Data layer ---
         function exportAllData() {
             const data = {
@@ -4788,8 +4624,6 @@ Local Development Instructions:
             input.click();
         }
 
-        // originalLogContent moved to js/state.js (A refactor)
-
         function initializeWorkoutLog() {
             try {
                 // Save original early for protection (before any possible guard replace on tab switch)
@@ -4837,9 +4671,6 @@ Local Development Instructions:
                 try { updateStartTrainingButton(); } catch (e) {}
                 try { if (typeof updateInteractionLock === 'function') updateInteractionLock(); } catch (e) {}
 
-                // (休息計時器功能已移除，無需預設 timer)
-                // if (typeof resetRestTimer === 'function') { resetRestTimer(...); }
-
                 // Make sure sub sections start correctly
                 if (typeof showLogSubSection === 'function') {
                     showLogSubSection('history');
@@ -4858,10 +4689,6 @@ Local Development Instructions:
 
                     }
                 });
-
-                // Note: 自動恢復未完成訓練提示（Unfinished Workout Recovery Prompt）已完全停用。
-                // startNewWorkout() 內的舊 modal 提示已移除，不再自動彈出。
-                // 如有未完成 currentWorkout，現在會直接重用或由「今日繼續」邏輯處理。
 
                 // Global beforeunload protection for in-progress training
                 if (typeof saveDraftBeforeUnload === 'function') {

@@ -61,7 +61,7 @@ function renderWorkoutHistory() {
 
 function showWorkoutDetail(workout, historyIndex) {
     // 改為打開專屬的歷史記錄查看/編輯 Modal
-    // 完全獨立於新訓練流程 (currentWorkout / live-log-panel / rest timer)
+    // 完全獨立於新訓練流程 (currentWorkout / live-log-panel)
     openHistoryEditModal(workout, historyIndex);
 }
 

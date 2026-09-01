@@ -156,10 +156,6 @@ function addSetToExercise(exIdx) {
     saveWorkoutData();
     if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
 
-    if (typeof startRestTimer === 'function' && recordType !== 'treadmill') {
-        startRestTimer(90);
-    }
-
     if (currentUser && currentWorkout && currentWorkout.id) {
         backgroundSyncNewSet(ex.name, newSet, currentWorkout.id);
     }
