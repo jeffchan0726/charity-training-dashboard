@@ -575,6 +575,25 @@ function renderCalorieResult(entry) {
     if (tipsEl) tipsEl.textContent = entry.tips || '';
 }
 
+function describeMacroRemain(totals, goals) {
+    const bits = [];
+    function gap(now, goal, name) {
+        const g = Number(goal) || 0;
+        if (g <= 0) return;
+        const d = Math.round(g - (Number(now) || 0));
+        if (d >= 8) bits.push('仲要 ' + d + 'g ' + name);
+        else if (d <= -12) bits.push(name + '多咗 ' + Math.abs(d) + 'g');
+        else bits.push(name + '達標');
+    }
+    gap(totals.protein, goals.protein, '蛋白');
+    gap(totals.carbs, goals.carbs, '碳水');
+    gap(totals.fat, goals.fat, '脂肪');
+    if (!bits.length) return '目標跟快速減磅 + 增肌自動出。';
+    const eaten = (Number(totals.protein) || 0) + (Number(totals.carbs) || 0) + (Number(totals.fat) || 0);
+    if (eaten < 1) return '仲未記餐。' + bits.join(' · ');
+    return bits.join(' · ');
+}
+
 function formatMacro(n) {
     const v = Number(n) || 0;
     return Number.isInteger(v) ? String(v) : v.toFixed(1);
@@ -634,13 +653,25 @@ function renderCalorieTodaySummary() {
         ring.style.setProperty('--pct', String(Math.min(100, pct)));
         ring.classList.toggle('over', remain < 0);
     }
-    if (pEl) {
-        const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
-        const pNow = formatMacro(Math.round(totals.protein * 10) / 10);
-        pEl.textContent = pGoal ? `${pNow} / ${pGoal} g` : `${pNow} g`;
+    function fillTodayMacro(textEl, barId, now, goal) {
+        const n = Math.round(now * 10) / 10;
+        if (textEl) textEl.textContent = goal ? `${formatMacro(n)} / ${goal} g` : `${formatMacro(n)} g`;
+        const bar = document.getElementById(barId);
+        if (bar) {
+            bar.style.width = (goal > 0 ? Math.min(100, Math.round((now / goal) * 100)) : 0) + '%';
+            bar.classList.toggle('over', goal > 0 && now > goal + 8);
+        }
     }
-    if (cEl) cEl.textContent = `${formatMacro(Math.round(totals.carbs * 10) / 10)} g`;
-    if (fEl) fEl.textContent = `${formatMacro(Math.round(totals.fat * 10) / 10)} g`;
+    const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
+    const cGoal = typeof calorieDailyCarbGoal === 'number' ? calorieDailyCarbGoal : 0;
+    const fGoal = typeof calorieDailyFatGoal === 'number' ? calorieDailyFatGoal : 0;
+    fillTodayMacro(pEl, 'calorie-today-protein-bar', totals.protein, pGoal);
+    fillTodayMacro(cEl, 'calorie-today-carbs-bar', totals.carbs, cGoal);
+    fillTodayMacro(fEl, 'calorie-today-fat-bar', totals.fat, fGoal);
+    const remainMacroEl = document.getElementById('calorie-macro-remain');
+    if (remainMacroEl) {
+        remainMacroEl.textContent = describeMacroRemain(totals, { protein: pGoal, carbs: cGoal, fat: fGoal });
+    }
     if (countEl) countEl.textContent = todayEntries.length ? `${todayEntries.length} 餐` : '';
     renderQuickAddGrid();
     renderWaterTracker();

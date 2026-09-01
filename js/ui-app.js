@@ -23,7 +23,9 @@ const APP_MAIN_NAV = {
 
 let restTimerInterval = null;
 let restTimerEndsAt = 0;
-let calorieDailyProteinGoal = 150;
+let calorieDailyProteinGoal = 180;
+let calorieDailyCarbGoal = 160;
+let calorieDailyFatGoal = 50;
 let bodyLogCache = [];
 
 function getAppStorageKey(suffix) {
@@ -145,25 +147,44 @@ function renderOverviewDashboard() {
             applyAutoDietGoals();
             const kcalGoal = typeof calorieDailyGoalKcal === 'number' ? calorieDailyGoalKcal : goal;
             const trained = didTrainToday();
+            const carbG = typeof calorieDailyCarbGoal === 'number' ? calorieDailyCarbGoal : 0;
+            const fatG = typeof calorieDailyFatGoal === 'number' ? calorieDailyFatGoal : 0;
+            const macroLine = '蛋白 ' + calorieDailyProteinGoal + 'g · 碳水 ' + carbG + 'g · 脂肪 ' + fatG + 'g · ' + kcalGoal + ' kcal';
             if (trained) {
-                subEl.textContent = '今日已訓練 · 蛋白質 ' + calorieDailyProteinGoal + ' g · 熱量 ' + kcalGoal + ' kcal';
+                subEl.textContent = '快速減磅 + 增肌 · 今日已訓練 · ' + macroLine;
             } else if (rest) {
-                subEl.textContent = '恢復日 · 蛋白質 ' + calorieDailyProteinGoal + ' g · 熱量 ' + kcalGoal + ' kcal';
+                subEl.textContent = '快速減磅 + 增肌 · 恢復日 · ' + macroLine;
             } else {
-                subEl.textContent = '蛋白質目標 ' + calorieDailyProteinGoal + ' g · 熱量目標 ' + kcalGoal + ' kcal';
+                subEl.textContent = '快速減磅 + 增肌 · ' + macroLine;
             }
         }
     }
     const proteinLine = document.getElementById('overview-protein-line');
     const proteinBar = document.getElementById('overview-protein-bar');
+    const carbLine = document.getElementById('overview-carb-line');
+    const carbBar = document.getElementById('overview-carb-bar');
+    const fatLine = document.getElementById('overview-fat-line');
+    const fatBar = document.getElementById('overview-fat-bar');
     const waterLine = document.getElementById('overview-water-line');
     const waterBar = document.getElementById('overview-water-bar');
     const planHint = document.getElementById('overview-plan-hint');
     const meals = typeof getTodayCalorieEntries === 'function' ? getTodayCalorieEntries() : [];
     const proteinNow = meals.reduce(function (s, e) { return s + (Number(e.protein_g) || 0); }, 0);
+    const carbNow = meals.reduce(function (s, e) { return s + (Number(e.carbs_g) || 0); }, 0);
+    const fatNow = meals.reduce(function (s, e) { return s + (Number(e.fat_g) || 0); }, 0);
     const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
-    if (proteinLine) proteinLine.textContent = pGoal ? (Math.round(proteinNow) + ' / ' + pGoal + ' g') : (Math.round(proteinNow) + ' g');
-    if (proteinBar) proteinBar.style.width = (pGoal > 0 ? Math.min(100, Math.round((proteinNow / pGoal) * 100)) : 0) + '%';
+    const cGoal = typeof calorieDailyCarbGoal === 'number' ? calorieDailyCarbGoal : 0;
+    const fGoal = typeof calorieDailyFatGoal === 'number' ? calorieDailyFatGoal : 0;
+    function fillOverviewMacro(lineEl, barEl, now, goal) {
+        if (lineEl) lineEl.textContent = goal ? (Math.round(now) + ' / ' + goal + ' g') : (Math.round(now) + ' g');
+        if (barEl) {
+            barEl.style.width = (goal > 0 ? Math.min(100, Math.round((now / goal) * 100)) : 0) + '%';
+            barEl.classList.toggle('over', goal > 0 && now > goal + 8);
+        }
+    }
+    fillOverviewMacro(proteinLine, proteinBar, proteinNow, pGoal);
+    fillOverviewMacro(carbLine, carbBar, carbNow, cGoal);
+    fillOverviewMacro(fatLine, fatBar, fatNow, fGoal);
     const waterGoal = typeof getDailyWaterGoal === 'function' ? getDailyWaterGoal() : { ml: 3500 };
     const waterNow = typeof getTodayWaterMl === 'function' ? getTodayWaterMl() : 0;
     if (waterLine) waterLine.textContent = (waterNow / 1000).toFixed(1) + ' / ' + (waterGoal.ml / 1000).toFixed(1) + ' L';
@@ -521,11 +542,16 @@ function didTrainToday() {
     });
 }
 
-function clampProteinGoal(n) {
+function clampMacroGoal(n, min, max) {
     const g = Math.round(Number(n) / 5) * 5;
-    if (g < 40) return 40;
-    if (g > 300) return 300;
+    if (!isFinite(g)) return min;
+    if (g < min) return min;
+    if (g > max) return max;
     return g;
+}
+
+function clampProteinGoal(n) {
+    return clampMacroGoal(n, 40, 300);
 }
 
 function getLatestBodyForDiet() {
@@ -547,58 +573,137 @@ function getLatestBodyForProtein() {
     return getLatestBodyForDiet();
 }
 
-function getAutoCalorieGoal() {
+function getDietDayFlags(options) {
+    options = options || {};
+    const trained = options.trained != null ? !!options.trained : didTrainToday();
+    const restSchedule = options.rest != null
+        ? !!options.rest
+        : (typeof isRestDayToday === 'function' ? isRestDayToday() : false);
+    const rest = !trained && restSchedule;
+    return {
+        trained: trained,
+        rest: rest,
+        label: trained ? '訓練日' : (rest ? '休息日' : '訓練日')
+    };
+}
+
+function buildDietGoalPlan(options) {
     const b = getLatestBodyForDiet();
-    const trained = didTrainToday();
-    const rest = !trained && (typeof isRestDayToday === 'function' ? isRestDayToday() : false);
-    const dayNote = trained ? '（今日已訓練）' : (rest ? '（休息日）' : '（訓練日）');
-    if (b.bmr >= 800 && b.bmr <= 5000) {
-        const factor = rest ? 1.2 : 1.4;
-        const kcal = Math.round((b.bmr * factor) / 50) * 50;
-        return {
-            kcal: Math.max(800, Math.min(6000, kcal)),
-            note: '身體日誌 BMR ' + Math.round(b.bmr) + ' × ' + factor + dayNote
-        };
+    const day = getDietDayFlags(options);
+    const rest = day.rest;
+    const wt = (b.weight >= 30 && b.weight <= 250) ? b.weight : 0;
+    const lbm = (b.lbm >= 30 && b.lbm <= 150) ? b.lbm : 0;
+    const bf = (b.bf > 0 && b.bf < 70) ? b.bf : 0;
+    const bmr = (b.bmr >= 800 && b.bmr <= 5000) ? b.bmr : 0;
+    const tdeeFactor = rest ? 1.35 : 1.55;
+    let deficitFrac;
+    if (bf >= 22) deficitFrac = rest ? 0.30 : 0.22;
+    else if (bf > 0 && bf < 14) deficitFrac = rest ? 0.20 : 0.15;
+    else deficitFrac = rest ? 0.28 : 0.20;
+
+    let tdee = 0;
+    if (bmr) tdee = bmr * tdeeFactor;
+    else if (wt) tdee = wt * (rest ? 26 : 31);
+    else tdee = rest ? 2100 : 2500;
+
+    const floor = bmr ? Math.max(1400, bmr * 1.1) : (wt ? Math.max(1400, wt * 18) : 1400);
+    let kcal = Math.round((tdee * (1 - deficitFrac)) / 50) * 50;
+    kcal = Math.max(Math.round(floor / 50) * 50, Math.min(6000, kcal));
+
+    const proteinLbm = rest ? 2.4 : 2.6;
+    const proteinWt = rest ? 2.2 : 2.4;
+    let protein;
+    let proteinNote;
+    if (lbm) {
+        protein = clampProteinGoal(lbm * proteinLbm);
+        proteinNote = '增肌保肌 · 去脂體重 ' + lbm.toFixed(1) + ' kg × ' + proteinLbm;
+    } else if (wt) {
+        protein = clampProteinGoal(wt * proteinWt);
+        proteinNote = '增肌保肌 · 體重 ' + wt.toFixed(1) + ' kg × ' + proteinWt;
+    } else {
+        protein = rest ? 165 : 180;
+        proteinNote = '未有體重，暫用高蛋白 ' + protein + ' g';
     }
-    if (b.weight >= 30 && b.weight <= 250) {
-        const kcal = Math.round((b.weight * 24) / 50) * 50;
-        return {
-            kcal: Math.max(800, Math.min(6000, kcal)),
-            note: '身體日誌體重 ' + b.weight.toFixed(1) + ' kg × 24' + dayNote
-        };
+
+    const fatFactor = rest ? 0.70 : 0.65;
+    let fat = wt ? clampMacroGoal(wt * fatFactor, 40, 90) : (rest ? 55 : 50);
+    const carbMin = rest ? 50 : 100;
+    let carbs = clampMacroGoal((kcal - protein * 4 - fat * 9) / 4, 40, 500);
+    if (carbs < carbMin) {
+        fat = clampMacroGoal(wt ? wt * 0.55 : 40, 40, 90);
+        carbs = clampMacroGoal((kcal - protein * 4 - fat * 9) / 4, 40, 500);
     }
-    return { kcal: 2000, note: '未有身體日誌，暫用 2000 kcal' };
+
+    const deficit = Math.max(0, Math.round(tdee - kcal));
+    let kcalNote;
+    if (bmr) {
+        kcalNote = '快速減磅 · 消耗約 ' + Math.round(tdee) + ' − ' + Math.round(deficitFrac * 100) + '%';
+    } else if (wt) {
+        kcalNote = '快速減磅 · 體重 ' + wt.toFixed(1) + ' kg 推算消耗後打赤字';
+    } else {
+        kcalNote = '未有身體日誌，暫用減脂熱量 ' + kcal + ' kcal';
+    }
+    kcalNote += rest ? '（休息日）' : '（訓練日）';
+
+    return {
+        mode: '快速減磅 + 增肌',
+        kcal: kcal,
+        tdee: Math.round(tdee),
+        deficit: deficit,
+        deficitPct: Math.round(deficitFrac * 100),
+        protein: protein,
+        proteinNote: proteinNote,
+        carbs: carbs,
+        carbsNote: day.label + ' · 剩餘熱量做碳水，訓練日多、休息日少',
+        fat: fat,
+        fatNote: (wt ? ('體重 ' + wt.toFixed(1) + ' kg × ' + fatFactor) : '暫用脂肪底線') +
+            (rest ? '（休息日）' : '（訓練日）'),
+        kcalNote: kcalNote,
+        trained: day.trained,
+        rest: rest,
+        dayLabel: day.label
+    };
+}
+
+function estimateWeeklyFatLossKg() {
+    const days = (typeof getTrainWeekdays === 'function' ? getTrainWeekdays() : [1, 3, 5]) || [1, 3, 5];
+    const train = {};
+    days.forEach(function (d) { train[Number(d)] = true; });
+    let sum = 0;
+    for (let dow = 0; dow < 7; dow++) {
+        const rest = !train[dow];
+        const plan = buildDietGoalPlan({ rest: rest, trained: !rest });
+        sum += Math.max(0, plan.tdee - plan.kcal);
+    }
+    return Math.round((sum / 7700) * 100) / 100;
+}
+
+function getDietGoalPlan() {
+    return buildDietGoalPlan();
+}
+
+function getAutoCalorieGoal() {
+    const plan = getDietGoalPlan();
+    return { kcal: plan.kcal, note: plan.kcalNote };
 }
 
 function getAutoProteinGoal() {
-    const b = getLatestBodyForProtein();
-    const trained = didTrainToday();
-    const lbmFactor = trained ? 2.5 : 2.2;
-    const wtFactor = trained ? 2.2 : 1.8;
-    const tag = trained ? '（今日已訓練）' : '（今日未訓練）';
-    if (b.lbm >= 30 && b.lbm <= 150) {
-        return {
-            grams: clampProteinGoal(b.lbm * lbmFactor),
-            note: '去脂體重 ' + b.lbm.toFixed(1) + ' kg × ' + lbmFactor + tag
-        };
-    }
-    if (b.weight >= 30 && b.weight <= 250) {
-        return {
-            grams: clampProteinGoal(b.weight * wtFactor),
-            note: '體重 ' + b.weight.toFixed(1) + ' kg × ' + wtFactor + tag
-        };
-    }
-    return { grams: trained ? 170 : 150, note: '未有體重，暫用 ' + (trained ? 170 : 150) + ' g' + tag };
+    const plan = getDietGoalPlan();
+    return { grams: plan.protein, note: plan.proteinNote };
+}
+
+function getAutoMacroGoals() {
+    return getDietGoalPlan();
 }
 
 function applyAutoProteinGoal() {
-    const auto = getAutoProteinGoal();
-    calorieDailyProteinGoal = auto.grams;
+    const auto = getAutoMacroGoals();
+    calorieDailyProteinGoal = auto.protein;
     const gEl = document.getElementById('calorie-protein-goal-display');
     const nEl = document.getElementById('calorie-protein-goal-note');
-    if (gEl) gEl.textContent = auto.grams + ' g';
-    if (nEl) nEl.textContent = auto.note;
-    return auto;
+    if (gEl) gEl.textContent = auto.protein + ' g';
+    if (nEl) nEl.textContent = auto.proteinNote;
+    return { grams: auto.protein, note: auto.proteinNote };
 }
 
 function updateDietBodySnapshot() {
@@ -614,24 +719,57 @@ function updateDietBodySnapshot() {
     if (b.lbm >= 30 && b.lbm <= 150) parts.push('去脂 ' + b.lbm.toFixed(1) + ' kg');
     if (b.bmr >= 800 && b.bmr <= 5000) parts.push('BMR ' + Math.round(b.bmr));
     if (didTrainToday()) parts.push('今日已訓練');
-    el.textContent = '身體日誌 ' + parts.join(' · ');
+    el.textContent = '快速減磅 + 增肌 · ' + parts.join(' · ');
     return b;
 }
 
 function applyAutoDietGoals() {
-    const p = applyAutoProteinGoal();
-    const c = getAutoCalorieGoal();
-    if (typeof calorieDailyGoalKcal !== 'undefined') calorieDailyGoalKcal = c.kcal;
+    const m = getAutoMacroGoals();
+    calorieDailyProteinGoal = m.protein;
+    calorieDailyCarbGoal = m.carbs;
+    calorieDailyFatGoal = m.fat;
+    if (typeof calorieDailyGoalKcal !== 'undefined') calorieDailyGoalKcal = m.kcal;
     const goalEl = document.getElementById('calorie-today-goal');
-    if (goalEl) goalEl.textContent = String(c.kcal);
+    if (goalEl) goalEl.textContent = String(m.kcal);
     const noteEl = document.getElementById('calorie-goal-body-note');
-    if (noteEl) noteEl.textContent = c.note + ' · 蛋白質 ' + p.note;
+    if (noteEl) {
+        noteEl.textContent = '目標：快速減磅 + 增肌 · ' + m.kcalNote +
+            ' · 蛋白 ' + m.protein + 'g · 碳水 ' + m.carbs + 'g · 脂肪 ' + m.fat + 'g';
+    }
+    const weekKg = estimateWeeklyFatLossKg();
+    const body = getLatestBodyForDiet();
+    const hasBody = (body.weight >= 30) || (body.bmr >= 800);
+    const weekText = hasBody && weekKg > 0
+        ? ('照呢個赤字，大約每週減脂 ' + weekKg.toFixed(1) + ' kg；高蛋白用來保肌／增肌。')
+        : '匯入 Unique Health 之後會按你嘅體重／體脂／BMR 計每週減脂速度。';
+    document.querySelectorAll('[data-diet-week-note]').forEach(function (el) {
+        el.textContent = weekText;
+    });
+    const modeEls = document.querySelectorAll('[data-diet-goal-mode]');
+    modeEls.forEach(function (el) { el.textContent = '目標：快速減磅 + 增肌'; });
+    const pEl = document.getElementById('calorie-protein-goal-display');
+    const pNote = document.getElementById('calorie-protein-goal-note');
+    if (pEl) pEl.textContent = m.protein + ' g';
+    if (pNote) pNote.textContent = m.proteinNote;
+    const cEl = document.getElementById('calorie-carb-goal-display');
+    const cNote = document.getElementById('calorie-carb-goal-note');
+    if (cEl) cEl.textContent = m.carbs + ' g';
+    if (cNote) cNote.textContent = m.carbsNote;
+    const fEl = document.getElementById('calorie-fat-goal-display');
+    const fNote = document.getElementById('calorie-fat-goal-note');
+    if (fEl) fEl.textContent = m.fat + ' g';
+    if (fNote) fNote.textContent = m.fatNote;
     const kcalMe = document.getElementById('calorie-kcal-goal-display');
-    if (kcalMe) kcalMe.textContent = c.kcal + ' kcal';
+    if (kcalMe) kcalMe.textContent = m.kcal + ' kcal';
     const kcalNoteMe = document.getElementById('calorie-kcal-goal-note');
-    if (kcalNoteMe) kcalNoteMe.textContent = c.note;
+    if (kcalNoteMe) kcalNoteMe.textContent = m.kcalNote;
+    const summaryNote = document.getElementById('calorie-macro-goal-summary');
+    if (summaryNote) {
+        summaryNote.textContent = '快速減磅 + 增肌 · ' + m.dayLabel +
+            ' · 蛋白 ' + m.protein + 'g · 碳水 ' + m.carbs + 'g · 脂肪 ' + m.fat + 'g · ' + m.kcal + ' kcal';
+    }
     updateDietBodySnapshot();
-    return { protein: p, calorie: c };
+    return { protein: { grams: m.protein, note: m.proteinNote }, calorie: { kcal: m.kcal, note: m.kcalNote }, macros: m };
 }
 
 let dietRefreshLock = false;

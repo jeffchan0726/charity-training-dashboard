@@ -1427,7 +1427,15 @@ Local Development Instructions:
                     <div class="space-y-2">
                         <div>
                             <div class="flex justify-between text-[11px] text-[#a8a29e]"><span>蛋白質</span><span id="overview-protein-line">—</span></div>
-                            <div class="calorie-progress-track mt-1"><div id="overview-protein-bar" class="calorie-progress-bar" style="width:0%"></div></div>
+                            <div class="calorie-progress-track mt-1"><div id="overview-protein-bar" class="calorie-progress-bar" style="width:0%;background:linear-gradient(90deg,#0369a1,#38bdf8)"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-[#a8a29e]"><span>碳水</span><span id="overview-carb-line">—</span></div>
+                            <div class="calorie-progress-track mt-1"><div id="overview-carb-bar" class="calorie-progress-bar" style="width:0%;background:linear-gradient(90deg,#b45309,#fbbf24)"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-[#a8a29e]"><span>脂肪</span><span id="overview-fat-line">—</span></div>
+                            <div class="calorie-progress-track mt-1"><div id="overview-fat-bar" class="calorie-progress-bar" style="width:0%;background:linear-gradient(90deg,#9f1239,#fb7185)"></div></div>
                         </div>
                         <div>
                             <div class="flex justify-between text-[11px] text-[#a8a29e]"><span>飲水</span><span id="overview-water-line">—</span></div>
@@ -1923,16 +1931,29 @@ Local Development Instructions:
                 <ul id="body-log-list" class="mt-3 space-y-1 text-xs text-[#a8a29e]"></ul>
             </div>
             <div class="section-card rounded-3xl p-4">
-                <h2 class="text-lg font-bold mb-2">近 7 日熱量</h2>
+                <h2 class="text-lg font-bold mb-1">每日營養目標</h2>
+                <p class="text-[11px] text-emerald-300 mb-2" data-diet-goal-mode>目標：快速減磅 + 增肌</p>
                 <div id="diet-week-bars" class="grid grid-cols-7 gap-1.5 min-h-[80px]"></div>
-                <div class="grid grid-cols-2 gap-2 mt-3">
+                <p id="calorie-macro-goal-summary" class="text-[11px] text-emerald-300/90 mb-1 leading-snug">跟身體日誌同訓練日自動計蛋白質／碳水／脂肪</p>
+                <p class="text-[11px] text-[#a8a29e] mb-2 leading-snug" data-diet-week-note>匯入 Unique Health 之後會按體重／體脂／BMR 計每週減脂速度。</p>
+                <div class="grid grid-cols-2 gap-2 mt-1">
                     <div>
-                        <div class="text-[11px] text-[#a8a29e]">蛋白質目標</div>
-                        <div id="calorie-protein-goal-display" class="text-lg font-bold tabular-nums mt-0.5">150 g</div>
+                        <div class="text-[11px] text-[#a8a29e]">蛋白質</div>
+                        <div id="calorie-protein-goal-display" class="text-lg font-bold tabular-nums mt-0.5 text-sky-300">150 g</div>
                         <div id="calorie-protein-goal-note" class="text-[10px] text-[#a8a29e] leading-snug">跟身體日誌自動計算</div>
                     </div>
                     <div>
-                        <div class="text-[11px] text-[#a8a29e]">熱量目標</div>
+                        <div class="text-[11px] text-[#a8a29e]">碳水</div>
+                        <div id="calorie-carb-goal-display" class="text-lg font-bold tabular-nums mt-0.5 text-amber-300">205 g</div>
+                        <div id="calorie-carb-goal-note" class="text-[10px] text-[#a8a29e] leading-snug">熱量減蛋白同脂肪後剩餘</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-[#a8a29e]">脂肪</div>
+                        <div id="calorie-fat-goal-display" class="text-lg font-bold tabular-nums mt-0.5 text-rose-300">65 g</div>
+                        <div id="calorie-fat-goal-note" class="text-[10px] text-[#a8a29e] leading-snug">體重 × 0.8</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-[#a8a29e]">熱量</div>
                         <div id="calorie-kcal-goal-display" class="text-lg font-bold tabular-nums mt-0.5">2000 kcal</div>
                         <div id="calorie-kcal-goal-note" class="text-[10px] text-[#a8a29e] leading-snug">跟身體日誌自動計算</div>
                     </div>
@@ -1980,9 +2001,9 @@ Local Development Instructions:
             <section class="calorie-hero">
                 <div class="calorie-hero-top">
                     <div>
-                        <div class="calorie-kicker">今日營養</div>
+                        <div class="calorie-kicker" data-diet-goal-mode>目標：快速減磅 + 增肌</div>
                         <h2 class="text-xl font-bold text-white mt-0.5">卡路里分析</h2>
-                        <p class="text-xs text-[#a8a29e] mt-0.5">熱量／蛋白質目標跟身體日誌自動計</p>
+                        <p class="text-xs text-[#a8a29e] mt-0.5">高蛋白增肌、熱量赤字減脂；訓練日多碳水、休息日少碳水</p>
                         <button type="button" id="calorie-body-snapshot" onclick="switchTab('me')"
                             class="text-[10px] text-emerald-400/90 mt-1 text-left underline decoration-dotted underline-offset-2">
                             未有身體日誌，去「我」匯入 Unique Health
@@ -2021,17 +2042,22 @@ Local Development Instructions:
                         <div class="grid grid-cols-3 gap-1.5">
                             <div class="calorie-macro-chip">
                                 <div class="text-[10px] text-[#a8a29e]">蛋白質</div>
-                                <div id="calorie-today-protein" class="text-sm font-semibold tabular-nums text-sky-300">0 g</div>
+                                <div id="calorie-today-protein" class="text-[11px] font-semibold tabular-nums text-sky-300 leading-tight">0 g</div>
+                                <div class="calorie-progress-track mt-1" style="height:4px"><div id="calorie-today-protein-bar" class="calorie-progress-bar" style="width:0%;background:linear-gradient(90deg,#0369a1,#38bdf8)"></div></div>
                             </div>
                             <div class="calorie-macro-chip">
                                 <div class="text-[10px] text-[#a8a29e]">碳水</div>
-                                <div id="calorie-today-carbs" class="text-sm font-semibold tabular-nums text-amber-300">0 g</div>
+                                <div id="calorie-today-carbs" class="text-[11px] font-semibold tabular-nums text-amber-300 leading-tight">0 g</div>
+                                <div class="calorie-progress-track mt-1" style="height:4px"><div id="calorie-today-carbs-bar" class="calorie-progress-bar" style="width:0%;background:linear-gradient(90deg,#b45309,#fbbf24)"></div></div>
                             </div>
                             <div class="calorie-macro-chip">
                                 <div class="text-[10px] text-[#a8a29e]">脂肪</div>
-                                <div id="calorie-today-fat" class="text-sm font-semibold tabular-nums text-rose-300">0 g</div>
+                                <div id="calorie-today-fat" class="text-[11px] font-semibold tabular-nums text-rose-300 leading-tight">0 g</div>
+                                <div class="calorie-progress-track mt-1" style="height:4px"><div id="calorie-today-fat-bar" class="calorie-progress-bar" style="width:0%;background:linear-gradient(90deg,#9f1239,#fb7185)"></div></div>
                             </div>
                         </div>
+                        <div id="calorie-macro-remain" class="text-[11px] text-[#a8a29e] mt-2 leading-snug">仲未記餐。目標跟快速減磅 + 增肌自動出。</div>
+                        <div class="text-[11px] text-emerald-300/80 mt-1 leading-snug" data-diet-week-note>匯入身體日誌之後會計每週減脂速度。</div>
                     </div>
                 </div>
             </section>
@@ -2908,11 +2934,11 @@ Local Development Instructions:
     <script src="js/ui-yugong.js?v=2.3.24"></script>
     <script src="js/food-nutrition.js?v=2.3.33"></script>
     <script src="js/food-depth.js?v=2.3.27"></script>
-    <script src="js/ui-calories.js?v=2.3.65"></script>
+    <script src="js/ui-calories.js?v=2.3.73"></script>
     <script src="lib/xlsx.full.min.js"></script>
     <script src="js/unique-health.js?v=2.3.52"></script>
     <script src="js/ui-habits.js?v=2.3.69"></script>
-    <script src="js/ui-app.js?v=2.3.56"></script>
+    <script src="js/ui-app.js?v=2.3.73"></script>
 
     <script>
         /*
