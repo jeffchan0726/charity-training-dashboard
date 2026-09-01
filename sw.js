@@ -1,6 +1,6 @@
 // Recomp PWA: precache shell + JS + vendor libs so Gym 網絡差 / 離線都開到。
 // index.html 同 JS 仍優先走網絡，有網就更新；斷線用快取。
-const CACHE_NAME = 'recomp-charity-v2.3.74';
+const CACHE_NAME = 'recomp-charity-v2.3.75';
 
 const CORE_ASSETS = [
   './',

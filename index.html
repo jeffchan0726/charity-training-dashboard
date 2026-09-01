@@ -1404,6 +1404,14 @@ Local Development Instructions:
                         <button type="button" onclick="switchTab('calories')" class="px-3 py-2.5 border border-[#57534e] rounded-2xl text-sm font-semibold">記一餐</button>
                     </div>
                 </div>
+                <div class="section-card rounded-3xl p-4">
+                    <div class="text-sm font-bold mb-2">一鍵開訓</div>
+                    <div class="grid grid-cols-1 gap-2">
+                        <button type="button" id="overview-start-day-1" onclick="startTrainingDay(1)" class="px-3 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold text-left leading-snug">訓練日 1（Chest + Triceps + Shoulders）</button>
+                        <button type="button" id="overview-start-day-2" onclick="startTrainingDay(2)" class="px-3 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold text-left leading-snug">訓練日 2（Back + Biceps + Shoulders + Core）</button>
+                        <button type="button" id="overview-start-day-3" onclick="startTrainingDay(3)" class="px-3 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold text-left leading-snug">訓練日 3（Legs + Shoulders + Forearms + Core）</button>
+                    </div>
+                </div>
                 <div class="overview-stats-grid grid grid-cols-2 gap-3">
                     <div class="section-card rounded-3xl p-4">
                         <div class="text-xs text-[#a8a29e]">最新體重</div>
@@ -1447,14 +1455,6 @@ Local Development Instructions:
                 <div class="section-card rounded-3xl p-4">
                     <div class="text-sm font-bold mb-2">朝早固定</div>
                     <div id="overview-morning-list" class="space-y-1.5"></div>
-                </div>
-                <div class="section-card rounded-3xl p-4">
-                    <div class="text-sm font-bold mb-2">一鍵開訓</div>
-                    <div class="grid grid-cols-1 gap-2">
-                        <button type="button" id="overview-start-day-1" onclick="startTrainingDay(1)" class="px-3 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold text-left leading-snug">訓練日 1（Chest + Triceps + Shoulders）</button>
-                        <button type="button" id="overview-start-day-2" onclick="startTrainingDay(2)" class="px-3 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold text-left leading-snug">訓練日 2（Back + Biceps + Shoulders + Core）</button>
-                        <button type="button" id="overview-start-day-3" onclick="startTrainingDay(3)" class="px-3 py-2.5 bg-sky-800 rounded-2xl text-xs font-semibold text-left leading-snug">訓練日 3（Legs + Shoulders + Forearms + Core）</button>
-                    </div>
                 </div>
             </div>
         </div>
