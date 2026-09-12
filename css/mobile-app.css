@@ -65,9 +65,9 @@ html.mobile-app {
 }
 
 .mobile-app .app-header-btn {
-    min-height: 40px;
-    min-width: 40px;
-    padding: 0.4rem 0.65rem;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.4rem 0.75rem;
     font-size: 0.75rem;
     border-radius: 0.85rem;
 }
@@ -345,19 +345,199 @@ html.mobile-app {
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
 }
 
-.mobile-app #main-top-nav {
-    flex-wrap: nowrap;
-    margin-bottom: 0;
-    padding-bottom: 0.65rem;
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
-.mobile-app #main-top-nav .nav-tab {
+.pb-app {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.app-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    background: #141210;
+    border-top: 1px solid #44403c;
+    padding: 0.25rem 0.2rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+}
+
+.app-bottom-nav .nav-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    min-height: 52px;
+    min-width: 0;
+    padding: 0.35rem 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #a8a29e;
+    background: transparent;
+    border: 0;
+    border-radius: 0.85rem;
+}
+
+.app-bottom-nav .nav-tab i {
+    font-size: 1.05rem;
+}
+
+.app-bottom-nav .nav-tab.active,
+.app-bottom-nav .nav-tab[aria-selected="true"] {
+    color: #bbf7d0;
+    background: rgba(22, 101, 52, 0.35);
+}
+
+.account-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    max-width: 132px;
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.account-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.35rem);
+    z-index: 80;
+    min-width: 148px;
+    background: #1c1917;
+    border: 1px solid #57534e;
+    border-radius: 0.9rem;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+.account-menu button {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    text-align: left;
+    padding: 0.7rem 0.9rem;
+    color: #e7e5e4;
+    background: transparent;
+    border: 0;
+    font-size: 0.875rem;
+}
+
+.account-menu button:hover,
+.account-menu button:active {
+    background: #292524;
+}
+
+.diet-week-chips {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.3rem;
+}
+
+.diet-week-chip {
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #44403c;
+    background: #141210;
+    color: #e7e5e4;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.25rem 0;
+}
+
+.diet-week-chip.on {
+    border-color: #4ade80;
+    background: rgba(22, 101, 52, 0.35);
+    color: #bbf7d0;
+}
+
+.diet-week-chip-kcal {
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: #a8a29e;
+}
+
+.me-link-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 56px;
+    text-align: left;
+    padding: 0.85rem 1rem;
+    border-radius: 1.15rem;
+    border: 1px solid #44403c;
+    background: #1c1917;
+    color: #e7e5e4;
+}
+
+.me-link-card .fa-chevron-right {
+    color: #a8a29e;
+}
+
+.me-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 44px;
+    padding: 0 0.15rem;
+    font-size: 0.8rem;
+    color: #a8a29e;
+    margin-bottom: 0.5rem;
+    background: transparent;
+    border: 0;
+}
+
+.yugong-zoom-btns {
+    display: flex;
+    gap: 0.4rem;
     flex-shrink: 0;
-    padding-left: 0.85rem !important;
-    padding-right: 0.85rem !important;
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.5rem !important;
-    font-size: 0.75rem !important;
+}
+
+.yugong-zoom-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.4rem 0.7rem;
+    border-radius: 0.85rem;
+    border: 1px solid #57534e;
+    background: #141210;
+    color: #e7e5e4;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.mobile-app input,
+.mobile-app select,
+.mobile-app textarea,
+.mobile-app .log-input {
+    font-size: 16px !important;
 }
 
 .mobile-app .body-metric-section {

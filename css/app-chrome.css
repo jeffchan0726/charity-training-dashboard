@@ -1,0 +1,1244 @@
+        body {
+            font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+        }
+
+        .charity-header {
+            background: linear-gradient(135deg, #166534 0%, #4ade80 100%);
+        }
+
+        /* Global Sync Indicator styles - mobile friendly, subtle */
+        #global-sync-indicator {
+            transition: all 0.2s ease;
+            font-size: 0.7rem;
+        }
+        #global-sync-indicator.syncing {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+        #global-sync-indicator.success {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+        #global-sync-indicator.error {
+            background: rgba(248, 113, 113, 0.2);
+            border-color: #f87171;
+            color: #f87171;
+            cursor: pointer;
+        }
+        #global-sync-indicator .fa-circle { transition: color 0.2s; }
+        #global-sync-indicator.syncing .fa-circle { color: #fbbf24; }
+        #global-sync-indicator.success .fa-circle { color: #4ade80; }
+        #global-sync-indicator.error .fa-circle { color: #f87171; }
+
+        /* === Initial Load Indicator (mobile-first, subtle but clear) === */
+        #initial-load-indicator {
+            transition: all 0.2s ease;
+            font-size: 0.7rem;
+        }
+        #initial-load-indicator.loading {
+            background: rgba(251, 191, 36, 0.18);
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+        #initial-load-indicator.success {
+            background: rgba(74, 222, 128, 0.18);
+            border-color: #4ade80;
+            color: #4ade80;
+        }
+        #initial-load-indicator.error {
+            background: rgba(248, 113, 113, 0.18);
+            border-color: #f87171;
+            color: #f87171;
+            cursor: pointer;
+        }
+        #initial-load-indicator .fa-spin { animation: fa-spin 1s linear infinite; }
+        #initial-load-indicator.success .fa-check { color: #4ade80; }
+        #initial-load-indicator.error .fa-exclamation-triangle { color: #f87171; }
+
+        .section-card {
+            background: #1c1917;
+            border: 1px solid #44403c;
+        }
+
+        .nav-tab.active {
+            background-color: #166534;
+            color: white;
+        }
+        html, body {
+            background: #0c0a09;
+        }
+        #app-shell {
+            width: 100%;
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100dvh;
+            background: #1c1917;
+            overflow-x: hidden;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .tab-content.hidden {
+            display: none !important;
+        }
+        #app-chrome {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: #1c1917;
+        }
+        #main-top-nav {
+            background: #1c1917;
+            -webkit-overflow-scrolling: touch;
+        }
+        .me-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.75rem;
+            color: #a8a29e;
+            margin-bottom: 0.75rem;
+        }
+
+        .exercise-card {
+            transition: all 0.2s;
+        }
+
+        .exercise-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+        }
+
+        /* Mobile refinements */
+        @media (max-width: 640px) {
+            .section-card {
+                border-radius: 1.25rem;
+            }
+            table {
+                font-size: 0.875rem;
+            }
+            .nav-tab {
+                min-height: 38px;
+            }
+        }
+
+        /* Ensure schedule rows and long content wrap nicely on tiny screens */
+        #content-schedule .flex-1 {
+            word-break: break-word;
+        }
+
+        /* 愚公移山 — Q→Q 放大鏡 + 漫畫箭咀（深色主題配色） */
+        .yugong-magnifier-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.15rem;
+            padding: 0.45rem 0.65rem;
+            border: 2px solid #57534e;
+            border-radius: 9999px;
+            background: #292524;
+            color: #e7e5e4;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+            min-height: 44px;
+            min-width: 44px;
+        }
+        .yugong-magnifier-btn:hover,
+        .yugong-magnifier-btn:active {
+            transform: scale(1.06);
+            border-color: #4ade80;
+            background: #1a2e22;
+            box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.25);
+        }
+        .yugong-qq {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.35rem;
+            height: 1.35rem;
+            border: 2px solid #a8a29e;
+            border-radius: 50%;
+            font-size: 0.65rem;
+            font-weight: 800;
+            font-family: Georgia, serif;
+            line-height: 1;
+            color: #e7e5e4;
+        }
+        .yugong-qq-arrow {
+            font-size: 0.75rem;
+            color: #4ade80;
+            font-weight: 700;
+        }
+        .yugong-image-section {
+            margin-bottom: 0.75rem;
+        }
+        .yugong-comic-flow,
+        .yugong-stats-row {
+            position: relative;
+        }
+        .yugong-bubble {
+            background: #292524;
+            color: #e7e5e4;
+            border: 1px solid #57534e;
+            border-radius: 1rem;
+            padding: 0.65rem 0.85rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+            position: relative;
+        }
+        .yugong-bubble::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+        }
+        .yugong-bubble-moved::after {
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-left-color: #57534e;
+        }
+        .yugong-bubble-remaining::after {
+            left: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-right-color: #57534e;
+        }
+        .yugong-bubble-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: #a8a29e;
+        }
+        .yugong-bubble-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #4ade80;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+        .yugong-bubble-sub {
+            font-size: 0.65rem;
+            color: #78716c;
+            margin-top: 0.1rem;
+        }
+        .yugong-arrow {
+            font-size: 1.5rem;
+            color: #4ade80;
+            font-weight: 900;
+            text-align: center;
+            animation: yugong-arrow-pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes yugong-arrow-pulse {
+            0%, 100% { opacity: 0.55; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(3px); }
+        }
+        .yugong-scene {
+            background: #1c1917;
+            border: 1px solid #57534e;
+            border-radius: 1.25rem;
+            overflow: hidden;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+        }
+        .yugong-image-frame {
+            position: relative;
+            background: #1c1917;
+            min-height: clamp(200px, 52vw, 300px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .yugong-image-frame:active {
+            background: #141211;
+        }
+        .yugong-scene-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: opacity 0.28s ease;
+        }
+        .yugong-scene-inner.yugong-zoom-out {
+            opacity: 0.25;
+        }
+        .yugong-scene-inner.yugong-zoom-in {
+            animation: yugong-img-fadein 0.38s ease;
+        }
+        @keyframes yugong-img-fadein {
+            0% { opacity: 0.35; transform: scale(0.97); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        #yugong-mountain-img {
+            width: 100%;
+            height: auto;
+            max-height: clamp(180px, 48vw, 280px);
+            object-fit: contain;
+            display: block;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        .yugong-scene-footer {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding: 0.55rem 0.75rem;
+            background: #292524;
+            border-top: 1px solid #44403c;
+        }
+        .yugong-progress-pct {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #4ade80;
+            background: rgba(22, 101, 52, 0.35);
+            border: 1px solid #166534;
+            border-radius: 9999px;
+            padding: 0.2rem 0.75rem;
+            white-space: nowrap;
+        }
+        .yugong-zoom-dots {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .yugong-zoom-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 9999px;
+            background: #57534e;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: transform 0.15s, background 0.15s;
+        }
+        .yugong-zoom-dot.active {
+            background: #4ade80;
+            transform: scale(1.25);
+        }
+        .yugong-tap-hint {
+            font-size: 0.6rem;
+            color: #78716c;
+            text-align: center;
+            padding: 0.25rem 0.75rem 0.5rem;
+            background: #292524;
+        }
+        .yugong-stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .yugong-progress-bar-wrap {
+            height: 0.65rem;
+            background: #292524;
+            border: 2px solid #44403c;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .yugong-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #166534, #4ade80);
+            border-radius: 9999px;
+            transition: width 0.6s ease;
+            min-width: 0;
+        }
+        .yugong-zoom-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            border: 2px solid #44403c;
+            background: #292524;
+            color: #e7e5e4;
+        }
+        .yugong-zoom-badge.yugong-zoom-milestone {
+            animation: yugong-badge-pop 0.85s ease;
+            border-color: #4ade80;
+            color: #4ade80;
+            background: rgba(22, 101, 52, 0.3);
+        }
+        .yugong-zoom-scale-label {
+            font-size: 0.65rem;
+            color: #a8a29e;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.75rem;
+        }
+        @keyframes yugong-badge-pop {
+            0%, 100% { transform: scale(1); }
+            40% { transform: scale(1.12); }
+        }
+        .yugong-scene-celebrate {
+            animation: yugong-scene-shake 0.85s ease;
+        }
+        @keyframes yugong-scene-shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-0.6deg); }
+            75% { transform: rotate(0.6deg); }
+        }
+        .yugong-speech {
+            position: absolute;
+            bottom: 0.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1c1917;
+            color: #e7e5e4;
+            border: 1px solid #4ade80;
+            border-radius: 1rem 1rem 1rem 0.25rem;
+            padding: 0.4rem 0.65rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            max-width: 92%;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+            z-index: 3;
+            line-height: 1.35;
+        }
+        .yugong-mobile-arrow {
+            text-align: center;
+            color: #4ade80;
+            font-size: 1.25rem;
+            font-weight: 900;
+            padding: 0.15rem 0;
+        }
+        .yugong-tip-item {
+            background: #292524;
+            border: 1px solid #44403c;
+        }
+        .yugong-tip-title {
+            color: #6ee7b7;
+        }
+        .yugong-tip-text {
+            color: #a8a29e;
+        }
+        .yugong-tip-dynamic {
+            color: #fbbf24;
+        }
+        .yugong-leaderboard-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 0.65rem;
+            border-radius: 0.85rem;
+            background: #292524;
+            border: 1px solid #44403c;
+        }
+        .yugong-leaderboard-row.is-me {
+            border-color: #4ade80;
+            background: rgba(22, 101, 52, 0.22);
+        }
+        .yugong-leaderboard-rank {
+            width: 1.75rem;
+            text-align: center;
+            font-weight: 800;
+            font-size: 0.8rem;
+            color: #a8a29e;
+            flex-shrink: 0;
+        }
+        .yugong-leaderboard-rank.top3 {
+            color: #fbbf24;
+        }
+        .yugong-leaderboard-user {
+            flex: 1;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #e7e5e4;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .yugong-leaderboard-tonnes {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #4ade80;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .yugong-leaderboard-meta {
+            font-size: 0.65rem;
+            color: #78716c;
+        }
+        .yugong-tab-loading {
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: #a8a29e;
+            font-size: 0.8rem;
+        }
+        @media (max-width: 640px) {
+            .yugong-bubble-value {
+                font-size: 1.05rem;
+            }
+            .yugong-image-frame {
+                min-height: clamp(210px, 58vw, 280px);
+                padding: 0.5rem;
+            }
+            #yugong-mountain-img {
+                max-height: clamp(190px, 54vw, 260px);
+            }
+            .yugong-scene-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .yugong-zoom-dots {
+                justify-content: center;
+            }
+            .yugong-bubble::after {
+                display: none;
+            }
+        }
+
+        /* Modal full width tweak on very small screens */
+        @media (max-width: 420px) {
+            .max-w-md {
+                max-width: calc(100vw - 2rem) !important;
+            }
+        }
+
+        /* === Professional Workout Log Styles === */
+        .log-card {
+            background: #1c1917;
+            border: 1px solid #44403c;
+            transition: all 0.2s;
+        }
+
+        .set-row {
+            transition: background 0.1s;
+        }
+        .set-row:hover {
+            background: #292524;
+        }
+
+        .exercise-log-card {
+            border: 1px solid #57534e;
+        }
+
+        .pr-badge {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            color: #1c1917;
+            font-weight: 700;
+            font-size: 0.65rem;
+            padding: 1px 7px;
+            border-radius: 9999px;
+        }
+
+        .volume-number {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mini-stat {
+            font-size: 0.75rem;
+            background: #292524;
+            padding: 1px 6px;
+            border-radius: 6px;
+        }
+
+        .workout-history-card {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .workout-history-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+        }
+
+        .exercise-drag-handle {
+            touch-action: none;
+            cursor: grab;
+            color: #a8a29e;
+            background: #1c1917;
+            border: 1px solid #57534e;
+            border-radius: 8px;
+            padding: 2px 6px;
+            line-height: 1.1;
+            font-size: 0.85rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .exercise-drag-handle:active {
+            cursor: grabbing;
+            color: #4ade80;
+            border-color: #4ade80;
+        }
+        .exercise-log-card.exercise-dragging {
+            opacity: 0.88;
+            transform: scale(0.985);
+            transition: transform 0.1s, opacity 0.1s;
+        }
+        .exercise-log-card.exercise-drag-over {
+            box-shadow: 0 0 0 2px #4ade80;
+        }
+        body.exercise-drag-active {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body.server-syncing-lock #start-training-btn,
+        body.server-syncing-lock .workout-history-card,
+        body.server-syncing-lock .calendar-workout-day {
+            pointer-events: none;
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* === Full-Screen / Immersive Training Mode (Start New Training) === */
+        .fullscreen-training #content-log > .flex:first-child, /* log top header with buttons */
+        .fullscreen-training #log-sub-nav, /* sub-tabs */
+        .fullscreen-training #log-empty-state {
+            display: none !important;
+        }
+
+        .fullscreen-training #live-log-panel {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 60 !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            background-color: #1c1917;
+            overflow: hidden;
+            display: block !important;
+            /* Dynamic viewport height: adapts when browser address bar / chrome appears or hides */
+            height: 100dvh !important;
+        }
+
+        /* Ensure the root elements use dynamic viewport in immersive training mode (iOS Safari + Android Chrome) */
+        .fullscreen-training,
+        .fullscreen-training body {
+            height: 100dvh !important;
+            overflow: hidden !important;
+        }
+
+        /* Additional safety: the bottom bar always reserves space for safe-area even if Tailwind arbitrary value not processed */
+        .fullscreen-training .immersive-sticky-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 8px);
+        }
+
+        .fullscreen-training #live-log-panel .immersive-container {
+            /* Use dvh instead of vh so the container shrinks/expands with the visual viewport */
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            max-height: 100dvh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            display: flex;
+            flex-direction: column;
+            /* Prevent any body/html scroll leaking into the immersive view */
+            overscroll-behavior: none;
+        }
+
+        .fullscreen-training .immersive-sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 70;
+            background: #1c1917;
+            border-bottom: 1px solid #57534e;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+            flex-shrink: 0;
+            pointer-events: auto;
+        }
+        /* fullscreen variant: collapsed shows only session-summary */
+        .fullscreen-training .immersive-sticky-top.collapsed .immersive-header {
+            display: none !important;
+        }
+        .fullscreen-training .immersive-sticky-top.collapsed .session-summary {
+            display: flex !important;
+            margin-top: 0 !important;
+        }
+        .fullscreen-training .immersive-sticky-top.collapsed {
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
+
+        .fullscreen-training .immersive-sticky-bottom {
+            position: sticky;
+            bottom: 0;
+            z-index: 70;
+            background: #1c1917;
+            border-top: 1px solid #57534e;
+            box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.3);
+            flex-shrink: 0;
+            pointer-events: auto;
+            /* The actual safe-area + visual breathing room lives on the inner wrapper (see HTML).
+               We only need to ensure the bar itself doesn't collapse and has good tap area. */
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .fullscreen-training .immersive-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            min-height: 0; /* critical for flex child to scroll properly */
+            padding-bottom: 16px;
+        }
+
+        /* 加入動作區：固定喺 scroll 同底部掣之間，唔放入 scroll 避免被夾 */
+        .immersive-add-exercise {
+            flex-shrink: 0;
+            background: #1c1917;
+            border-top: 1px solid #57534e;
+            padding: 12px 1rem 10px;
+        }
+        @media (min-width: 640px) {
+            .immersive-add-exercise {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+        }
+
+        /* Fallback / previous near-fullscreen styles (for non-fullscreen immersive if needed) */
+        .workout-immersive #log-empty-state,
+        .workout-immersive #log-sub-nav,
+        .workout-immersive #content-log > .flex.flex-col.sm\:flex-row {
+            display: none !important;
+        }
+
+        .workout-immersive #live-log-panel {
+            margin-bottom: 0;
+        }
+
+        .workout-immersive .immersive-container {
+            min-height: calc(100vh - 120px);
+            max-height: calc(100vh - 90px);
+        }
+
+        .immersive-sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: #1c1917;
+            border-bottom: 1px solid #57534e;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);
+        }
+
+        /* Collapse support: when .collapsed, hide header (title+sets) + timer, ONLY keep the session-summary bar visible (minimal stats at top) */
+        .immersive-sticky-top.collapsed .immersive-header {
+            display: none !important;
+        }
+        .immersive-sticky-top.collapsed .session-summary {
+            display: flex !important;
+            margin-top: 0 !important;
+        }
+        .immersive-sticky-top.collapsed {
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
+        #immersive-collapse-btn {
+            transition: transform 0.2s ease, background-color 0.1s ease;
+        }
+        #immersive-collapse-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Rest timer 已完全移除 (requirement 2)。以下舊樣式保留作為註解以免影響其他佈局。
+           可以安全刪除整個 timer 相關 CSS 區塊。 */
+
+        .immersive-sticky-bottom {
+            position: sticky;
+            bottom: 0;
+            z-index: 30;
+            background: #1c1917;
+            border-top: 1px solid #57534e;
+            box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.2);
+            /* Safe area support for all immersive (non-fullscreen) cases */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .immersive-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            min-height: 0;
+            padding-bottom: 12px;
+        }
+
+        /* Modal scrollable content with subtle top/bottom shadows when overflowing */
+        .finish-modal-scroll {
+            position: relative;
+        }
+        .finish-modal-scroll::before,
+        .finish-modal-scroll::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 12px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .finish-modal-scroll::before {
+            top: 0;
+            background: linear-gradient(to bottom, rgba(28,25,23,0.9), transparent);
+        }
+        .finish-modal-scroll::after {
+            bottom: 0;
+            background: linear-gradient(to top, rgba(28,25,23,0.9), transparent);
+        }
+
+        .muscle-chip {
+            font-size: 0.65rem;
+            padding: 1px 8px;
+            border-radius: 999px;
+            background: #292524;
+            color: #a8a29e;
+        }
+
+        .log-input {
+            background: #292524;
+            border: 1px solid #57534e;
+            color: #e7e5e4;
+            font-size: 0.875rem;
+        }
+        .log-input:focus {
+            border-color: #4ade80;
+            outline: none;
+        }
+
+        /* Analysis redesign styles */
+        .time-range-btn {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.65rem;
+            transition: all 0.1s ease;
+        }
+        .time-range-btn.active {
+            background-color: #166534;
+            border-color: #4ade80;
+            color: #fff;
+        }
+
+        .calorie-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+        .calorie-hero {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(120% 80% at 0% 0%, rgba(74, 222, 128, 0.18), transparent 55%),
+                linear-gradient(180deg, #1c1917 0%, #0c0a09 100%);
+            border: 1px solid #3f3a36;
+            border-radius: 1.6rem;
+            padding: 1.15rem 1.1rem 1.25rem;
+        }
+        .calorie-hero-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 0.85rem;
+        }
+        .calorie-kicker {
+            font-size: 0.68rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #86efac;
+            font-weight: 700;
+        }
+        .calorie-ring-wrap {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+        @media (max-width: 380px) {
+            .calorie-ring-wrap {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                text-align: center;
+            }
+        }
+        .calorie-ring {
+            --pct: 0;
+            width: 118px;
+            height: 118px;
+            border-radius: 50%;
+            background:
+                conic-gradient(#4ade80 calc(var(--pct) * 1%), #292524 0);
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+        }
+        .calorie-ring.over {
+            background: conic-gradient(#f87171 calc(var(--pct) * 1%), #292524 0);
+        }
+        .calorie-ring-inner {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            background: #0c0a09;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .calorie-progress-track {
+            height: 8px;
+            background: #292524;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .calorie-progress-bar {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #166534, #4ade80);
+            border-radius: 999px;
+            transition: width 0.35s ease;
+        }
+        .calorie-progress-bar.over {
+            background: linear-gradient(90deg, #b45309, #f87171);
+        }
+        .calorie-macro-chip {
+            background: rgba(28, 25, 23, 0.85);
+            border: 1px solid #44403c;
+            border-radius: 1rem;
+            padding: 0.55rem 0.35rem;
+            text-align: center;
+        }
+        .calorie-capture {
+            background: #1c1917;
+            border: 1px solid #3f3a36;
+            border-radius: 1.6rem;
+            padding: 0.9rem;
+        }
+        .calorie-dropzone {
+            position: relative;
+            min-height: 220px;
+            border: 1.5px dashed #57534e;
+            border-radius: 1.25rem;
+            background:
+                radial-gradient(80% 70% at 50% 20%, rgba(22, 101, 52, 0.22), transparent 60%),
+                #141210;
+            overflow: hidden;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calorie-dropzone.has-image {
+            border-style: solid;
+            border-color: #4ade80;
+            min-height: 240px;
+        }
+        #calorie-preview-img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            background: #0c0a09;
+            display: block;
+        }
+        .calorie-dropzone-placeholder {
+            text-align: center;
+            padding: 1.6rem 1rem;
+            color: #e7e5e4;
+        }
+        .calorie-cam-orb {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 0.75rem;
+            border-radius: 1.25rem;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(180deg, #166534, #14532d);
+            box-shadow: 0 10px 24px rgba(22, 101, 52, 0.35);
+            color: #bbf7d0;
+            font-size: 1.45rem;
+        }
+        .calorie-analyzing-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(12, 10, 9, 0.78);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: #e7e5e4;
+            font-size: 0.85rem;
+            backdrop-filter: blur(4px);
+        }
+        .calorie-analyzing-overlay.hidden,
+        #calorie-goal-edit.hidden,
+        #calorie-result.hidden,
+        #calorie-error.hidden,
+        #calories-login-gate.hidden,
+        #calories-main.hidden,
+        #calorie-preview-img.hidden,
+        #calorie-dropzone-placeholder.hidden,
+        #calorie-clear-btn.hidden,
+        #calorie-today-empty.hidden,
+        #calorie-scale-hint.hidden,
+        #calorie-engine-hint.hidden {
+            display: none !important;
+        }
+        .quick-add-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        .quick-add-btn {
+            min-height: 58px;
+            text-align: left;
+            border: 1px solid #44403c;
+            background: #141210;
+            border-radius: 1rem;
+            padding: 0.55rem 0.7rem;
+            color: #e7e5e4;
+        }
+        .quick-add-btn:active {
+            border-color: #4ade80;
+            background: rgba(22, 101, 52, 0.28);
+        }
+        .quick-add-btn .qa-name {
+            font-weight: 700;
+            font-size: 0.82rem;
+            line-height: 1.2;
+        }
+        .quick-add-btn .qa-meta {
+            font-size: 0.65rem;
+            color: #a8a29e;
+            margin-top: 0.15rem;
+        }
+        .quick-add-btn .qa-count {
+            font-size: 0.65rem;
+            color: #86efac;
+            margin-top: 0.1rem;
+        }
+        .quick-custom-row {
+            display: grid;
+            grid-template-columns: 1fr 4.4rem 4.2rem auto;
+            gap: 0.35rem;
+            margin-top: 0.55rem;
+        }
+        .water-check-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .water-dot {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            border: 2px solid #44403c;
+            background: #141210;
+            color: #a8a29e;
+            font-size: 0.62rem;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+        }
+        .water-dot.on {
+            background: #0369a1;
+            border-color: #38bdf8;
+            color: #e0f2fe;
+        }
+        .water-action {
+            min-height: 40px;
+            border-radius: 0.9rem;
+            border: 1px solid #44403c;
+            background: #141210;
+            color: #e7e5e4;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0 0.7rem;
+        }
+        #calorie-analyze-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            filter: grayscale(0.25);
+        }
+        #calorie-goal-edit:not(.hidden) {
+            display: flex;
+        }
+        .calorie-action-btn {
+            min-height: 48px;
+            border-radius: 1rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .calorie-action-primary {
+            background: linear-gradient(180deg, #22c55e, #15803d);
+            color: #fff;
+        }
+        .calorie-action-ghost {
+            background: #292524;
+            border: 1px solid #57534e;
+            color: #e7e5e4;
+        }
+        .calorie-advanced {
+            border-top: 1px solid #3f3a36;
+            margin-top: 0.85rem;
+            padding-top: 0.35rem;
+        }
+        .calorie-advanced > summary {
+            list-style: none;
+            cursor: pointer;
+            color: #a8a29e;
+            font-size: 0.75rem;
+            padding: 0.55rem 0;
+            font-weight: 600;
+        }
+        .calorie-advanced > summary::-webkit-details-marker { display: none; }
+        .calorie-confidence-badge {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            background: rgba(22, 101, 52, 0.35);
+            border: 1px solid #4ade80;
+            color: #bbf7d0;
+            white-space: nowrap;
+        }
+        .calorie-result-card {
+            background:
+                linear-gradient(180deg, rgba(22, 101, 52, 0.16), transparent 42%),
+                #1c1917;
+            border: 1px solid #3f3a36;
+            border-radius: 1.6rem;
+            padding: 1.1rem;
+        }
+        .calorie-result-kcal-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.4rem;
+            margin: 0.35rem 0 0.9rem;
+        }
+        .calorie-entry-row {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            background: #1c1917;
+            border: 1px solid #3f3a36;
+            border-radius: 1.15rem;
+            padding: 0.7rem 0.8rem;
+        }
+        .calorie-entry-thumb {
+            width: 52px;
+            height: 52px;
+            border-radius: 0.9rem;
+            object-fit: cover;
+            background: #0c0a09;
+            flex-shrink: 0;
+        }
+        .calorie-entry-delete {
+            min-width: 44px;
+            min-height: 44px;
+            color: #a8a29e;
+            border-radius: 0.75rem;
+        }
+        .calorie-entry-delete:hover,
+        .calorie-entry-delete:active {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.12);
+        }
+        .calorie-oil-choice {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.7rem;
+            background: #292524;
+            border: 1px solid #44403c;
+            border-radius: 0.85rem;
+            padding: 0.45rem 0.55rem;
+            color: #e7e5e4;
+            min-height: 40px;
+        }
+        .calorie-oil-choice:has(input:checked) {
+            border-color: #4ade80;
+            background: #1a2e22;
+        }
+        .calorie-source-badge {
+            font-size: 0.6rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 999px;
+            border: 1px solid #4ade80;
+            color: #86efac;
+            white-space: nowrap;
+        }
+        .calorie-source-badge.fortify {
+            border-color: #fbbf24;
+            color: #fbbf24;
+        }
+        #calorie-result-items li {
+            background: #141210 !important;
+        }
+        .perf-card {
+            background: #292524;
+            border: 1px solid #44403c;
+            transition: transform 0.1s ease, border-color 0.1s ease;
+        }
+        .perf-card:hover {
+            transform: translateY(-1px);
+            border-color: #57534e;
+        }
+        .progress-up { color: #4ade80; }
+        .progress-flat { color: #f59e0b; }
+        .progress-down { color: #f87171; }
+
+        /* Mobile analysis enhancements */
+        #log-section-analysis canvas {
+            max-height: 280px;
+        }
+        #analysis-coach-insight {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .quick-add-btn {
+            background: #166534;
+            transition: all 0.1s;
+        }
+        .quick-add-btn:hover {
+            background: #14532d;
+            transform: scale(1.02);
+        }
+
+        .section-header {
+            font-size: 0.95rem;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+            color: #a8a29e;
+        }
+
+        /* Mobile-first Workout Log refinements */
+        @media (max-width: 380px) {
+            .log-card { padding: 0.75rem !important; }
+            .exercise-log-card { padding: 0.5rem !important; }
+            .set-row { font-size: 0.7rem; }
+            .log-input { font-size: 0.8rem; padding: 0.25rem 0.5rem; }
+            .volume-number { font-size: 2.25rem !important; }
+            .workout-history-card { font-size: 0.8rem; }
+            .exercise-log-card { font-size: 0.75rem; }
+        }
+        .touch-target {
+            min-height: 44px;
+            min-width: 44px;
+        }
+        /* Prevent overflow in bilingual names and history */
+        .exercise-log-card .font-semibold,
+        .workout-history-card,
+        .exercise-log-card {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+        }
+        /* Mobile specific for long Last lines and bilingual text */
+        @media (max-width: 380px) {
+            .exercise-log-card .text-\[10px\] {
+                font-size: 0.65rem !important;
+                line-height: 1.1;
+            }
+            .exercise-log-card {
+                font-size: 0.7rem;
+            }
+        }

@@ -619,12 +619,27 @@ function makeMiniLineChart(canvas, labels, a, b, aLabel, bLabel, aColor, bColor,
 function renderRecompTrend() {
     const bodyCanvas = document.getElementById('recomp-trend-body');
     const dietCanvas = document.getElementById('recomp-trend-diet');
-    if (typeof Chart === 'undefined' || !bodyCanvas || !dietCanvas) return;
+    const empty = document.getElementById('recomp-trend-empty');
+    const wrap = document.getElementById('recomp-trend-charts');
+    if (!bodyCanvas || !dietCanvas) return;
     const s = collectTrendSeries();
     const hasBody = s.weights.some(function (v) { return v != null; }) || s.bfs.some(function (v) { return v != null; });
     const hasFood = s.kcals.some(function (v) { return v != null; }) || s.proteins.some(function (v) { return v != null; });
-    const empty = document.getElementById('recomp-trend-empty');
-    if (empty) empty.classList.toggle('hidden', hasBody || hasFood);
+    if (!(hasBody || hasFood)) {
+        if (empty) empty.classList.remove('hidden');
+        if (wrap) wrap.classList.add('hidden');
+        if (recompTrendChart) { recompTrendChart.destroy(); recompTrendChart = null; }
+        if (recompDietChart) { recompDietChart.destroy(); recompDietChart = null; }
+        return;
+    }
+    if (typeof Chart === 'undefined') {
+        if (typeof ensureChartJs === 'function') {
+            ensureChartJs().then(function () { renderRecompTrend(); }).catch(function () {});
+        }
+        return;
+    }
+    if (empty) empty.classList.add('hidden');
+    if (wrap) wrap.classList.remove('hidden');
     if (recompTrendChart) { recompTrendChart.destroy(); recompTrendChart = null; }
     if (recompDietChart) { recompDietChart.destroy(); recompDietChart = null; }
     recompTrendChart = makeMiniLineChart(bodyCanvas, s.labels, s.weights, s.bfs, '體重', '體脂', '#4ade80', '#fbbf24', 'kg', '%');

@@ -1,24 +1,30 @@
 {
-  "name": "gym gym 日上",
-  "short_name": "gym gym 日上",
-  "description": "慈善賽訓練追蹤器 - 記錄訓練、分析進度、支援 Google Apps Script 雲端同步。支持朋友監督計劃。",
-  "start_url": "index.html",
+  "name": "Jeff Recomp 挑戰",
+  "short_name": "Recomp",
+  "description": "慈善賽訓練追蹤器 - 記錄訓練、分析進度、支援 Google Apps Script 雲端同步。",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#1c1917",
   "theme_color": "#166534",
   "orientation": "portrait-primary",
-  "scope": "./",
   "icons": [
     {
-      "src": "images/icon.jpeg",
+      "src": "images/icon-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "images/icon.jpeg",
+      "src": "images/icon-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]

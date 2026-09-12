@@ -1,0 +1,121 @@
+    <!-- 愚公移山 -->
+    <div id="content-millennium" class="tab-content hidden">
+        <div class="flex gap-2 mb-4 overflow-x-auto">
+            <button type="button" id="mill-sub-yugong" onclick="showMillenniumPanel('yugong')"
+                class="px-4 py-2 rounded-2xl text-sm font-semibold bg-[#166534] text-white">愚公移山</button>
+            <button type="button" id="mill-sub-rixing" onclick="showMillenniumPanel('rixing')"
+                class="px-4 py-2 rounded-2xl text-sm font-semibold bg-[#292524] border border-[#44403c]">日行千里</button>
+        </div>
+    <div id="content-yugong" class="millennium-panel">
+        <div class="section-card rounded-3xl p-4 sm:p-6 overflow-hidden">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-emerald-400">愚公移山</h2>
+                    <p class="text-xs sm:text-sm text-[#a8a29e]">慈善訓練噸數 · 逐噸逐噸移走座大山</p>
+                </div>
+                <div class="yugong-zoom-btns" role="group" aria-label="遠睇或近睇">
+                    <button type="button" onclick="nudgeYugongZoom(-1)" class="yugong-zoom-btn" aria-label="遠睇">− 遠睇</button>
+                    <button type="button" id="yugong-magnifier-btn" onclick="nudgeYugongZoom(1)" class="yugong-zoom-btn" aria-label="近睇">+ 近睇</button>
+                </div>
+            </div>
+
+            <div id="yugong-tab-loading" class="yugong-tab-loading hidden">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-emerald-400"></i>
+                <span>載入移山數據…</span>
+            </div>
+
+            <div id="yugong-tab-ready" class="hidden">
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span id="yugong-zoom-badge" class="yugong-zoom-badge">放大：最細 · 遠眺成座山</span>
+                <span id="yugong-earned-hint" class="text-[10px] sm:text-xs text-[#a8a29e]"></span>
+            </div>
+            <p id="yugong-zoom-scale-label" class="yugong-zoom-scale-label">最細 ━ 最細 ━ 最大（1/4）</p>
+            <p id="yugong-level-caption" class="text-xs text-emerald-300/90 mb-3 italic">慈善噸數累積緊…</p>
+
+            <div class="yugong-image-section">
+                <div id="yugong-scene" class="yugong-scene">
+                    <div id="yugong-image-frame" class="yugong-image-frame" onclick="cycleYugongZoom()" title="撳圖切換遠睇／近睇">
+                        <div id="yugong-scene-inner" class="yugong-scene-inner">
+                            <img id="yugong-mountain-img" src="images/可愛山圖1.png" alt="愚公移山 — 放大最細（遠眺成座山）" loading="lazy" draggable="false">
+                            <div id="yugong-speech" class="yugong-speech hidden"></div>
+                        </div>
+                    </div>
+                    <div class="yugong-scene-footer">
+                        <div id="yugong-progress-pct" class="yugong-progress-pct">移山進度 0.0%</div>
+                        <div id="yugong-zoom-dots" class="yugong-zoom-dots" aria-label="放大格數"></div>
+                    </div>
+                    <p class="yugong-tap-hint">撳圖，或者用遠睇／近睇</p>
+                </div>
+            </div>
+
+            <div class="yugong-stats-row">
+                <div class="yugong-bubble yugong-bubble-moved">
+                    <div class="yugong-bubble-label">已經搬咗</div>
+                    <div id="yugong-moved-tonnes" class="yugong-bubble-value">—</div>
+                    <div class="yugong-bubble-sub">全玩家合計</div>
+                </div>
+                <div class="yugong-bubble yugong-bubble-remaining">
+                    <div id="yugong-remaining-label" class="yugong-bubble-label">仲剩幾多</div>
+                    <div id="yugong-remaining-tonnes" class="yugong-bubble-value">—</div>
+                    <div id="yugong-remaining-sub" class="yugong-bubble-sub">未搬嘅山</div>
+                </div>
+            </div>
+
+            <div class="yugong-progress-bar-wrap mb-4" title="慈善移山總進度">
+                <div id="yugong-progress-bar" class="yugong-progress-bar" style="width: 0%"></div>
+            </div>
+
+            <div class="border-t border-[#44403c] pt-4 mb-4">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <h3 class="text-sm font-bold flex items-center gap-1.5">
+                        <span>🏆</span> 移山排行榜
+                    </h3>
+                    <button type="button" onclick="refreshYugongLeaderboard(true, { showLeaderboardSpinner: true })"
+                        class="text-[10px] sm:text-xs px-2.5 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 hover:text-emerald-300 text-[#a8a29e]">
+                        更新
+                    </button>
+                </div>
+                <p class="yugong-leaderboard-meta mb-2">全玩家累積搬咗幾多噸（慈善訓練量）</p>
+                <div id="yugong-leaderboard-loading" class="hidden text-xs text-[#a8a29e] py-3 text-center">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> 載入排行榜…
+                </div>
+                <div id="yugong-leaderboard-error" class="hidden text-xs text-red-400 py-2"></div>
+                <p id="yugong-leaderboard-rank-hint" class="hidden text-xs text-emerald-300/90 mb-2"></p>
+                <ol id="yugong-leaderboard-list" class="space-y-1.5 list-none p-0 m-0"></ol>
+            </div>
+
+            <div class="border-t border-[#44403c] pt-4">
+                <h3 class="text-sm font-bold mb-2.5 flex items-center gap-1.5">
+                    <span>💡</span> 移山貼士
+                </h3>
+                <ul id="yugong-suggestions" class="space-y-2"></ul>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日行千里 -->
+    <div id="content-rixing" class="millennium-panel hidden">
+        <div class="section-card rounded-3xl p-5 sm:p-6">
+            <h2 class="text-xl sm:text-2xl font-bold mb-1 text-emerald-400">日行千里</h2>
+            <p class="text-sm text-[#a8a29e] mb-4">用跑步機紀錄累積里程，穩步前進。</p>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-[#292524] rounded-2xl p-4">
+                    <div class="text-[11px] text-[#a8a29e]">今日里程</div>
+                    <div id="rixing-today-km" class="text-3xl font-bold text-emerald-400 tabular-nums mt-1">0.00 km</div>
+                </div>
+                <div class="bg-[#292524] rounded-2xl p-4">
+                    <div class="text-[11px] text-[#a8a29e]">近 7 日</div>
+                    <div id="rixing-week-km" class="text-3xl font-bold text-emerald-400 tabular-nums mt-1">0.00 km</div>
+                </div>
+            </div>
+            <div id="rixing-week-bars" class="grid grid-cols-7 gap-1.5 mb-4 min-h-[72px]"></div>
+            <div class="flex gap-2 mb-3">
+                <button type="button" onclick="startCardioFromRixing()" class="flex-1 py-2.5 bg-emerald-600 rounded-2xl text-sm font-semibold">記跑步機</button>
+            </div>
+            <h3 class="text-sm font-bold mb-2">最近有氧</h3>
+            <ul id="rixing-recent-list" class="space-y-2 text-sm text-[#a8a29e]"></ul>
+        </div>
+    </div>
+    </div>
+

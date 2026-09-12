@@ -836,6 +836,12 @@ function renderWeightAnalysis(exercise, cardsContainer, tableBody, countEl, insi
 }
 
 function renderAnalysisCharts(recordType, chartData) {
+    if (typeof Chart === 'undefined') {
+        if (typeof ensureChartJs === 'function') {
+            ensureChartJs().then(function () { renderAnalysisCharts(recordType, chartData); }).catch(function () {});
+        }
+        return;
+    }
     if (analysisChart1RM) { analysisChart1RM.destroy(); analysisChart1RM = null; }
     if (analysisChartVolume) { analysisChartVolume.destroy(); analysisChartVolume = null; }
 
@@ -1112,6 +1118,12 @@ function renderExerciseAnalysis() {
 
 // --- 整體數據 + 肌群分佈 + 每週圖表 ---
 function renderOverallStats() {
+    if (typeof Chart === 'undefined') {
+        if (typeof ensureChartJs === 'function') {
+            ensureChartJs().then(function () { renderOverallStats(); }).catch(function () {});
+        }
+        return;
+    }
     const totalWorkouts = workoutHistory.length;
     let totalSets = 0;
     let lifetimeWeightKg = 0;

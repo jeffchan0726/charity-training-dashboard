@@ -117,17 +117,48 @@ function renderOverviewDashboard() {
     const weightEl = document.getElementById('overview-weight');
     if (weightEl) {
         const w = (latest && latest.weight) || (typeof lastBodyWeightKg === 'number' ? lastBodyWeightKg : null);
-        weightEl.innerHTML = w ? (w + ' <span class="text-base font-medium text-[#a8a29e]">kg</span>') : '<span class="text-xl text-[#a8a29e]">未有</span>';
+        if (w) {
+            weightEl.className = 'text-3xl font-bold text-[#4ade80] mt-1';
+            weightEl.innerHTML = w + ' <span class="text-base font-medium text-[#a8a29e]">kg</span>';
+        } else {
+            weightEl.className = 'text-xl font-bold text-[#a8a29e] mt-1';
+            weightEl.textContent = '未有紀錄';
+        }
     }
     const kcalEl = document.getElementById('overview-kcal');
-    if (kcalEl) kcalEl.innerHTML = Math.round(kcalToday) + ' <span class="text-base font-medium text-[#a8a29e]">/ ' + goal + '</span>';
+    if (kcalEl) {
+        if (!currentUser) {
+            kcalEl.className = 'text-xl font-bold text-[#a8a29e] mt-1';
+            kcalEl.textContent = '登入後先有';
+        } else {
+            kcalEl.className = 'text-3xl font-bold text-[#4ade80] mt-1';
+            kcalEl.innerHTML = Math.round(kcalToday) + ' <span class="text-base font-medium text-[#a8a29e]">/ ' + goal + '</span>';
+        }
+    }
     const weekEl = document.getElementById('overview-week-workouts');
-    if (weekEl) weekEl.innerHTML = weekWorkouts + ' <span class="text-base font-medium text-[#a8a29e]">日</span>';
+    if (weekEl) {
+        if (!currentUser) {
+            weekEl.className = 'text-xl font-bold text-[#a8a29e] mt-1';
+            weekEl.textContent = '登入後先有';
+        } else {
+            weekEl.className = 'text-3xl font-bold text-[#4ade80] mt-1';
+            weekEl.innerHTML = weekWorkouts + ' <span class="text-base font-medium text-[#a8a29e]">日</span>';
+        }
+    }
     const yugongEl = document.getElementById('overview-yugong');
     if (yugongEl && typeof getYugongStats === 'function') {
         const st = getYugongStats();
-        yugongEl.textContent = (st.progressPct || 0).toFixed(1) + '%';
-    } else if (yugongEl) yugongEl.innerHTML = '<span class="text-xl text-[#a8a29e]">0%</span>';
+        if (st && st.movedTonnes > 0) {
+            yugongEl.className = 'text-3xl font-bold text-[#4ade80] mt-1';
+            yugongEl.textContent = (st.progressPct || 0).toFixed(1) + '%';
+        } else {
+            yugongEl.className = 'text-xl font-bold text-[#a8a29e] mt-1';
+            yugongEl.textContent = '去任務睇';
+        }
+    } else if (yugongEl) {
+        yugongEl.className = 'text-xl font-bold text-[#a8a29e] mt-1';
+        yugongEl.textContent = '去任務睇';
+    }
 
     const statusEl = document.getElementById('overview-today-status');
     const subEl = document.getElementById('overview-today-sub');
@@ -173,20 +204,31 @@ function renderOverviewDashboard() {
     const pGoal = typeof calorieDailyProteinGoal === 'number' ? calorieDailyProteinGoal : 0;
     const cGoal = typeof calorieDailyCarbGoal === 'number' ? calorieDailyCarbGoal : 0;
     const fGoal = typeof calorieDailyFatGoal === 'number' ? calorieDailyFatGoal : 0;
-    function fillOverviewMacro(lineEl, barEl, now, goal) {
-        if (lineEl) lineEl.textContent = goal ? (Math.round(now) + ' / ' + goal + ' g') : (Math.round(now) + ' g');
+    function fillOverviewMacro(lineEl, barEl, trackId, now, goalAmt) {
+        const track = document.getElementById(trackId);
+        const has = currentUser && goalAmt > 0;
+        if (lineEl) lineEl.textContent = has ? (Math.round(now) + ' / ' + goalAmt + ' g') : '—';
         if (barEl) {
-            barEl.style.width = (goal > 0 ? Math.min(100, Math.round((now / goal) * 100)) : 0) + '%';
-            barEl.classList.toggle('over', goal > 0 && now > goal + 8);
+            barEl.style.width = (has ? Math.min(100, Math.round((now / goalAmt) * 100)) : 0) + '%';
+            barEl.classList.toggle('over', has && now > goalAmt + 8);
         }
+        if (track) track.classList.toggle('hidden', !has);
     }
-    fillOverviewMacro(proteinLine, proteinBar, proteinNow, pGoal);
-    fillOverviewMacro(carbLine, carbBar, carbNow, cGoal);
-    fillOverviewMacro(fatLine, fatBar, fatNow, fGoal);
+    fillOverviewMacro(proteinLine, proteinBar, 'overview-protein-track', proteinNow, pGoal);
+    fillOverviewMacro(carbLine, carbBar, 'overview-carb-track', carbNow, cGoal);
+    fillOverviewMacro(fatLine, fatBar, 'overview-fat-track', fatNow, fGoal);
     const waterGoal = typeof getDailyWaterGoal === 'function' ? getDailyWaterGoal() : { ml: 3500 };
     const waterNow = typeof getTodayWaterMl === 'function' ? getTodayWaterMl() : 0;
-    if (waterLine) waterLine.textContent = (waterNow / 1000).toFixed(1) + ' / ' + (waterGoal.ml / 1000).toFixed(1) + ' L';
-    if (waterBar) waterBar.style.width = (waterGoal.ml > 0 ? Math.min(100, Math.round((waterNow / waterGoal.ml) * 100)) : 0) + '%';
+    const waterTrack = document.getElementById('overview-water-track');
+    if (waterLine) waterLine.textContent = currentUser
+        ? ((waterNow / 1000).toFixed(1) + ' / ' + (waterGoal.ml / 1000).toFixed(1) + ' L')
+        : '—';
+    if (waterBar) waterBar.style.width = (currentUser && waterGoal.ml > 0 ? Math.min(100, Math.round((waterNow / waterGoal.ml) * 100)) : 0) + '%';
+    if (waterTrack) waterTrack.classList.toggle('hidden', !currentUser);
+    const progressBars = document.getElementById('overview-progress-bars');
+    const progressEmpty = document.getElementById('overview-progress-empty');
+    if (progressBars) progressBars.classList.toggle('hidden', !currentUser);
+    if (progressEmpty) progressEmpty.classList.toggle('hidden', !!currentUser);
     const rec = typeof getRecommendedTrainingDay === 'function' ? getRecommendedTrainingDay() : null;
     const trained = typeof didTrainToday === 'function' && didTrainToday();
     if (planHint) {
@@ -746,6 +788,8 @@ function applyAutoDietGoals() {
 }
 
 let dietRefreshLock = false;
+let dietWeekPreviewIdx = null;
+
 function refreshDietFromBodyLog() {
     if (dietRefreshLock) {
         applyAutoDietGoals();
@@ -762,29 +806,73 @@ function refreshDietFromBodyLog() {
     }
 }
 
+function weekdayJsDay(monIdx) {
+    return Number(monIdx) === 6 ? 0 : Number(monIdx) + 1;
+}
+
+function paintMeDietGoalDisplays(m) {
+    if (!m) return;
+    const summaryNote = document.getElementById('calorie-macro-goal-summary');
+    if (summaryNote) {
+        summaryNote.textContent = '快速減磅 + 增肌 · ' + m.dayLabel +
+            ' · 蛋白 ' + m.protein + 'g · 碳水 ' + m.carbs + 'g · 脂肪 ' + m.fat + 'g · ' + m.kcal + ' kcal';
+    }
+    const pEl = document.getElementById('calorie-protein-goal-display');
+    const pNote = document.getElementById('calorie-protein-goal-note');
+    if (pEl) pEl.textContent = m.protein + ' g';
+    if (pNote) pNote.textContent = m.proteinNote;
+    const cEl = document.getElementById('calorie-carb-goal-display');
+    const cNote = document.getElementById('calorie-carb-goal-note');
+    if (cEl) cEl.textContent = m.carbs + ' g';
+    if (cNote) cNote.textContent = m.carbsNote;
+    const fEl = document.getElementById('calorie-fat-goal-display');
+    const fNote = document.getElementById('calorie-fat-goal-note');
+    if (fEl) fEl.textContent = m.fat + ' g';
+    if (fNote) fNote.textContent = m.fatNote;
+    const kcalMe = document.getElementById('calorie-kcal-goal-display');
+    if (kcalMe) kcalMe.textContent = m.kcal + ' kcal';
+    const kcalNoteMe = document.getElementById('calorie-kcal-goal-note');
+    if (kcalNoteMe) kcalNoteMe.textContent = m.kcalNote;
+}
+
+function selectDietWeekDay(idx) {
+    dietWeekPreviewIdx = idx;
+    const todayIdx = (new Date().getDay() === 0) ? 6 : new Date().getDay() - 1;
+    renderDietWeekBars();
+    if (idx === todayIdx) {
+        applyAutoDietGoals();
+        return;
+    }
+    const jsDay = weekdayJsDay(idx);
+    const trainDays = typeof getTrainWeekdays === 'function' ? getTrainWeekdays() : [1, 3, 5];
+    const isTrain = trainDays.indexOf(jsDay) >= 0;
+    const plan = buildDietGoalPlan({ rest: !isTrain, trained: isTrain });
+    paintMeDietGoalDisplays(plan);
+}
+
 function renderDietWeekBars() {
     const el = document.getElementById('diet-week-bars');
     if (!el) return;
-    applyAutoDietGoals();
-    const start = getWeekStart(new Date());
     const labels = ['一', '二', '三', '四', '五', '六', '日'];
-    const entries = Array.isArray(calorieLogEntries) ? calorieLogEntries : [];
-    const goal = typeof calorieDailyGoalKcal === 'number' ? calorieDailyGoalKcal : 2000;
-    const days = labels.map(function (lab, i) {
-        const ds = new Date(start); ds.setDate(start.getDate() + i);
-        const key = localDateStr(ds);
-        const kcal = entries.filter(function (e) { return e && e.date === key; })
-            .reduce(function (s, e) { return s + (Number(e.calories) || 0); }, 0);
-        return { lab: lab, kcal: kcal };
-    });
-    const max = Math.max(goal, ...days.map(function (d) { return d.kcal; }), 1);
-    el.innerHTML = days.map(function (d) {
-        const h = Math.round((d.kcal / max) * 72);
-        return '<div class="flex flex-col items-center justify-end gap-1"><div class="w-full bg-emerald-500/80 rounded-t" style="height:' + h + 'px"></div><span class="text-[9px] text-[#a8a29e]">' + d.lab + '</span></div>';
+    const todayIdx = (new Date().getDay() === 0) ? 6 : new Date().getDay() - 1;
+    const activeIdx = dietWeekPreviewIdx == null ? todayIdx : dietWeekPreviewIdx;
+    const trainDays = typeof getTrainWeekdays === 'function' ? getTrainWeekdays() : [1, 3, 5];
+    el.className = 'diet-week-chips';
+    el.innerHTML = labels.map(function (lab, i) {
+        const jsDay = weekdayJsDay(i);
+        const isTrain = trainDays.indexOf(jsDay) >= 0;
+        const plan = buildDietGoalPlan({ rest: !isTrain, trained: isTrain });
+        const on = i === activeIdx ? ' on' : '';
+        return '<button type="button" class="diet-week-chip' + on + '" aria-pressed="' + (i === activeIdx ? 'true' : 'false') + '" onclick="selectDietWeekDay(' + i + ')">' +
+            '<span>' + lab + '</span><span class="diet-week-chip-kcal">' + plan.kcal + '</span></button>';
     }).join('');
 }
 
 function copyLastCalorieMeal() {
+    if (typeof currentUser === 'undefined' || !currentUser) {
+        if (typeof showLoginModal === 'function') showLoginModal();
+        return;
+    }
     const list = Array.isArray(calorieLogEntries) ? calorieLogEntries : [];
     if (!list.length) {
         if (typeof showToast === 'function') showToast('未有上一餐');
@@ -895,5 +983,45 @@ function refreshAppShell() {
     if (typeof renderRecompTrend === 'function') renderRecompTrend();
     if (typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
 }
+
+function toggleAccountMenu() {
+    const menu = document.getElementById('accountMenu');
+    const btn = document.getElementById('accountMenuBtn');
+    if (!menu || !btn) return;
+    const open = menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', !open);
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function closeAccountMenu() {
+    const menu = document.getElementById('accountMenu');
+    const btn = document.getElementById('accountMenuBtn');
+    if (menu) {
+        menu.classList.add('hidden');
+        menu.hidden = true;
+    }
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+function applyAccountChrome(loggedIn) {
+    const loginBtn = document.getElementById('loginBtn');
+    const accountBtn = document.getElementById('accountMenuBtn');
+    const nameEl = document.getElementById('currentUserName');
+    if (nameEl && loggedIn) nameEl.textContent = currentUser || '';
+    if (loginBtn) loginBtn.classList.toggle('hidden', !!loggedIn);
+    if (accountBtn) accountBtn.classList.toggle('hidden', !loggedIn);
+    closeAccountMenu();
+    const logUserName = document.getElementById('logUserName');
+    if (logUserName) logUserName.textContent = loggedIn ? ('(' + currentUser + ')') : '';
+}
+
+document.addEventListener('click', function (e) {
+    const menu = document.getElementById('accountMenu');
+    const btn = document.getElementById('accountMenuBtn');
+    if (!menu || menu.classList.contains('hidden')) return;
+    if (btn && (btn.contains(e.target) || menu.contains(e.target))) return;
+    closeAccountMenu();
+});
 
 loadAppPrefs();

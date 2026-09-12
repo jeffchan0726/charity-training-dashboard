@@ -1,0 +1,350 @@
+    <!-- Workout Log - Professional Grade (Mobile-First) -->
+    <div id="content-log" class="tab-content hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <div>
+                <h3 class="font-bold text-lg sm:text-xl">訓練日誌 <span id="logUserName" class="text-[#4ade80]"></span></h3>
+                <p class="text-[10px] sm:text-xs text-[#a8a29e]">即時記組 • 慈善噸數追蹤</p>
+            </div>
+        </div>
+
+        <!-- Loading state inside Workout Log (requirement 1) -->
+        <div id="log-loading-state" class="hidden mb-6">
+            <div class="log-card rounded-3xl p-8 text-center border border-[#57534e]">
+                <i class="fa-solid fa-spinner fa-spin text-4xl text-emerald-400 mb-4"></i>
+                <div class="font-semibold text-base mb-2">正在載入訓練紀錄...</div>
+                <p class="text-sm text-[#a8a29e] mb-4 max-w-[260px] mx-auto">請稍候，數據會安全同步到你的帳號。載入完成後會自動顯示歷史記錄。</p>
+                <button id="log-retry-load-btn"
+                        onclick="retryLoadUserLogs()"
+                        class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-2xl text-sm font-semibold hidden">
+                    <i class="fa-solid fa-redo mr-1.5"></i> 重試載入
+                </button>
+                <div class="mt-3 text-[10px] text-[#a8a29e]">如果持續失敗，請檢查網絡或稍後再試。</div>
+            </div>
+        </div>
+
+        <!-- LIVE LOGGING PANEL - Immersive / Near Full-Screen Mode -->
+        <div id="live-log-panel" class="hidden mb-6">
+            <!-- Main immersive container using log-card style -->
+            <div class="immersive-container log-card rounded-3xl border border-emerald-900/50 flex flex-col overflow-hidden">
+                
+                <!-- STICKY TOP: Rest Timer (always visible) + header info -->
+                <div id="immersive-sticky-top" class="immersive-sticky-top px-4 sm:px-6 py-3 relative">
+                    <!-- Collapse/expand chevron: always visible, >=44px tap target, non-obtrusive -->
+                    <button id="immersive-collapse-btn"
+                            onclick="toggleImmersiveTopCollapse()"
+                            class="absolute top-2 right-2 z-[75] p-2 text-[#a8a29e] hover:text-emerald-300 active:bg-[#292524] active:text-white rounded-full bg-[#1c1917]/80 border border-[#57534e]/60"
+                            style="min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center;"
+                            aria-label="收合或展開頂部訓練資訊">
+                        <i id="immersive-collapse-icon" class="fa-solid fa-chevron-up text-lg transition-transform duration-200"></i>
+                    </button>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pr-10 sm:pr-12 immersive-header">
+                        <div class="flex items-center gap-x-3">
+                            <div class="text-emerald-400">
+                                <i class="fa-solid fa-stopwatch text-2xl"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-lg flex items-center gap-2">
+                                    <span id="training-mode-title">進行中訓練</span>
+                                    <span id="continue-badge" class="hidden text-[10px] px-2 py-0.5 bg-emerald-900/70 text-emerald-300 rounded-full font-medium">繼續今日訓練</span>
+                                </div>
+                                <div class="flex items-center gap-x-2 text-sm">
+                                    <label for="current-workout-date" class="sr-only">訓練日期</label>
+                                    <input type="date" id="current-workout-date" class="log-input px-3 py-1 rounded-xl text-sm w-auto" onchange="updateCurrentWorkoutDate()">
+                                    <span id="current-workout-exercise-count" class="mini-stat"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Dynamic Workout Sets bar (backend-driven, no hard-coded plans). Hidden when top is collapsed. -->
+                        <div id="workout-sets-bar" class="flex items-center gap-1.5 flex-wrap min-h-[28px]">
+                            <!-- Populated by renderWorkoutSetsBar() after loadWorkoutSets() -->
+                        </div>
+                    </div>
+
+                    <!-- Session Summary Bar -->
+                    <div class="bg-[#292524] rounded-2xl p-3 flex items-center justify-between text-sm session-summary">
+                        <div>
+                            <span class="text-[#a8a29e]">訓練量</span>
+                            <span id="session-volume" class="volume-number font-bold text-emerald-400 tabular-nums ml-2">0</span>
+                            <span id="session-volume-unit" class="text-xs text-[#a8a29e] ml-1">kg</span>
+                        </div>
+                        <div class="text-[#a8a29e]">
+                            <span id="session-sets-count">0 組</span>
+                            <span class="mx-1">•</span>
+                            <span id="session-tonnes" class="text-amber-400">0.00 t</span>
+                            <span id="sync-status" class="text-[10px] ml-1 text-emerald-300/70"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCROLLABLE MIDDLE: Exercises only -->
+                <div class="immersive-scroll px-4 sm:px-6 py-4">
+                    <div id="current-workout-exercises" class="space-y-3">
+                        <!-- Populated dynamically by JS -->
+                    </div>
+                </div>
+
+                <!-- Add Exercise: fixed above bottom bar, not inside scroll -->
+                <div class="immersive-add-exercise">
+                    <label for="add-exercise-input" class="text-xs text-[#a8a29e] mb-1.5 block">加入動作</label>
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div class="flex flex-1 gap-2 min-w-0">
+                            <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..."
+                                class="log-input flex-1 min-w-0 px-4 py-2.5 rounded-2xl text-sm"
+                                onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
+                            <datalist id="exercise-datalist"></datalist>
+                            <button onclick="addExerciseToCurrentWorkout()"
+                                class="px-4 py-2.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap flex-shrink-0">+ 加入</button>
+                        </div>
+                        <button onclick="showLibraryModal(true)"
+                            class="w-full sm:w-auto px-4 py-2.5 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524] whitespace-nowrap flex-shrink-0">動作庫</button>
+                    </div>
+                    <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 min-h-[1rem]"></div>
+                </div>
+
+                <!-- STICKY BOTTOM: Finish + Abandon buttons (address bar / safe-area safe) -->
+                <div class="immersive-sticky-bottom px-4 sm:px-6">
+                    <!-- Inner wrapper absorbs safe-area padding so buttons stay fully visible and tappable -->
+                    <div class="pt-3 pb-[max(env(safe-area-inset-bottom,14px),14px)]">
+                        <button id="immersive-finish-btn" onclick="finishCurrentWorkout()" 
+                            class="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white rounded-2xl text-base font-semibold flex items-center justify-center gap-x-2 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed disabled:bg-amber-800/70">
+                            <i class="fa-solid fa-flag-checkered"></i> 
+                            <span>完成訓練</span>
+                        </button>
+                        <div class="text-center mt-2">
+                            <button onclick="cancelCurrentWorkout()" class="text-xs text-red-400 hover:text-red-300 underline-offset-2 active:text-red-200">放棄本次訓練</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Quick Start / Empty State -->
+        <div id="log-empty-state" class="mb-6">
+            <div class="log-card rounded-3xl p-6 text-center">
+                <i class="fa-solid fa-dumbbell text-4xl text-emerald-400/70 mb-3"></i>
+                <div class="font-semibold mb-1">準備好訓練了嗎？</div>
+                <p class="text-sm text-[#a8a29e] max-w-md mx-auto mb-4">點擊開始新訓練，計時器幫助你在組間適當休息。</p>
+                <div class="flex flex-wrap justify-center gap-2">
+                    <button id="start-training-btn" onclick="startNewWorkout()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-semibold">開始新訓練</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub navigation for History / Analysis / Stats -->
+        <div id="log-sub-nav" class="flex gap-1.5 mb-3 text-sm border-b border-[#44403c] pb-2 overflow-x-auto">
+            <button onclick="showLogSubSection('history')" id="logsub-history"
+                class="log-subtab active px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap bg-[#292524]">訓練歷史</button>
+            <button onclick="showLogSubSection('analysis')" id="logsub-analysis"
+                class="log-subtab px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap hover:bg-[#292524]">單一動作分析</button>
+            <button onclick="showLogSubSection('stats')" id="logsub-stats"
+                class="log-subtab px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap hover:bg-[#292524]">整體數據</button>
+            <button onclick="showLogSubSection('calendar')" id="logsub-calendar"
+                class="log-subtab px-4 py-1.5 rounded-2xl text-xs font-medium whitespace-nowrap hover:bg-[#292524]">訓練日曆</button>
+        </div>
+
+        <!-- HISTORY -->
+        <div id="log-section-history">
+            <div class="flex items-center justify-between mb-2 px-1">
+                <div class="section-header">近期訓練</div>
+                <button onclick="exportAllData()" class="text-xs px-3 py-1 bg-[#292524] hover:bg-[#3f3a36] rounded-2xl flex items-center gap-x-1">
+                    <i class="fa-solid fa-download text-[10px]"></i> <span>匯出 CSV</span>
+                </button>
+            </div>
+            <div id="workout-history-list" class="flex flex-col gap-2">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- ANALYSIS: 單一動作分析 (Mobile-First Redesigned) -->
+        <div id="log-section-analysis" class="hidden">
+            <div class="log-card rounded-3xl p-4 sm:p-5">
+                <!-- Header: Exercise selector + Time Range (Mobile friendly) -->
+                <div class="flex flex-col gap-3 mb-4">
+                    <div>
+                        <div class="text-[10px] text-[#a8a29e] mb-1.5">分類篩選</div>
+                        <div id="analysis-category-filters" class="flex gap-1 overflow-x-auto pb-1 text-xs flex-nowrap">
+                            <!-- populated by JS -->
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="font-semibold text-sm whitespace-nowrap">單一動作分析</div>
+                        <select id="analysis-exercise-select" onchange="renderExerciseAnalysis()" 
+                                class="log-input px-3 py-1.5 rounded-2xl text-sm flex-1 min-w-[120px]">
+                            <!-- populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Time range - horizontal scroll friendly on mobile -->
+                    <div class="flex gap-1 overflow-x-auto pb-1 text-xs">
+                        <button data-range="30d" onclick="setAnalysisTimeRange('30d')" 
+                                class="time-range-btn px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">30 天</button>
+                        <button data-range="12w" onclick="setAnalysisTimeRange('12w')" 
+                                class="time-range-btn px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">12 週</button>
+                        <button data-range="all" onclick="setAnalysisTimeRange('all')" 
+                                class="time-range-btn active px-3 py-1 rounded-2xl border border-[#57534e] hover:border-emerald-600 whitespace-nowrap flex-shrink-0">全部</button>
+                        <button onclick="resetAnalysisToAllTime()" 
+                                class="px-3 py-1 text-[#a8a29e] hover:text-white text-xs flex-shrink-0">重置</button>
+                    </div>
+                </div>
+
+                <!-- 4 Key Stat Cards - 2x2 on mobile, responsive -->
+                <div class="grid grid-cols-2 gap-3 mb-5" id="analysis-key-cards">
+                    <!-- JS populated: Best e1RM, Total Volume, Best Weight, Sessions -->
+                </div>
+
+                <!-- Charts - Full width, stacked vertically, mobile optimized -->
+                <div class="space-y-4 mb-4">
+                    <!-- Primary trend chart (Volume / 距離 / 總支撐時間) -->
+                    <div>
+                        <div class="flex items-baseline justify-between mb-1.5 px-1">
+                            <div id="analysis-chart-primary-title" class="text-sm font-semibold">訓練量趨勢</div>
+                            <div class="text-[10px] text-[#a8a29e]">柱狀 + 線</div>
+                        </div>
+                        <div class="bg-[#1f1c1a] rounded-2xl p-2 border border-[#44403c]">
+                            <canvas id="chart-volume-trend" style="height: 260px; width: 100%;"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Secondary trend chart (e1RM / 最長支撐 / 最高速度) -->
+                    <div>
+                        <div class="flex items-baseline justify-between mb-1.5 px-1">
+                            <div id="analysis-chart-secondary-title" class="text-sm font-semibold">e1RM 進展曲線</div>
+                            <div class="text-[10px] text-[#a8a29e]">Line + 趨勢線</div>
+                        </div>
+                        <div class="bg-[#1f1c1a] rounded-2xl p-2 border border-[#44403c]">
+                            <canvas id="chart-e1rm-progress" style="height: 260px; width: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 教練分析卡片 (Professional Insight) -->
+                <div class="mb-4 p-4 rounded-2xl bg-gradient-to-br from-[#166534]/20 to-transparent border border-[#166534]/40">
+                    <div class="flex items-center gap-x-2 mb-2">
+                        <i class="fa-solid fa-chalkboard-user text-emerald-400"></i>
+                        <span class="text-sm font-semibold">教練洞見</span>
+                    </div>
+                    <div id="analysis-coach-insight" class="text-sm leading-relaxed text-[#d1d5db]">
+                        選擇一個動作後，這裡會顯示基於你的訓練歷史的簡單分析建議。
+                    </div>
+                </div>
+
+                <!-- History Table - Scrollable with date/weight filter -->
+                <div class="mt-2">
+                    <div class="flex items-center justify-between mb-2 px-1">
+                        <div class="text-xs font-medium text-[#a8a29e]">
+                            歷史組數 <span id="analysis-record-count" class="tabular-nums"></span>
+                        </div>
+                        <div class="flex gap-x-2 text-xs items-center">
+                            <span id="analysis-filter-label" class="text-[#a8a29e] whitespace-nowrap">最低</span>
+                            <input id="analysis-filter-input" type="number" step="1" placeholder="篩選" 
+                                   class="log-input w-16 px-2 py-0.5 text-xs rounded-xl" oninput="filterAnalysisTable()">
+                            <button onclick="filterAnalysisTable()" class="px-2 py-0.5 border border-[#57534e] rounded-xl">套用</button>
+                        </div>
+                    </div>
+
+                    <div id="analysis-table-wrapper" class="overflow-x-auto border border-[#57534e] rounded-2xl max-h-[240px]">
+                        <table class="w-full text-xs min-w-[580px]">
+                            <thead class="bg-[#292524] sticky top-0 z-10">
+                                <tr id="analysis-table-head-row">
+                                    <th class="py-2 px-3 text-left">日期</th>
+                                    <th class="py-2 px-2 text-center">重量</th>
+                                    <th class="py-2 px-2 text-center">次數</th>
+                                    <th class="py-2 px-2 text-center">訓練量</th>
+                                    <th class="py-2 px-2 text-center">e1RM</th>
+                                    <th class="py-2 px-3 text-left">備註</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analysis-sets-table" class="divide-y divide-[#44403c]"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-[10px] mt-1 text-[#a8a29e] px-1">向上捲動查看更多 • 受上方時間範圍限制</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OVERALL STATS -->
+        <div id="log-section-stats" class="hidden">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">目前連續訓練天數</div>
+                    <div id="stat-streak" class="text-4xl font-bold text-emerald-400 mt-1">--</div>
+                    <div class="text-xs">天</div>
+                </div>
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">累計訓練量</div>
+                    <div id="stat-lifetime-volume" class="text-4xl font-bold text-emerald-400 mt-1 tabular-nums">--</div>
+                    <div class="text-xs"><span id="stat-lifetime-tonnes">--</span> 噸</div>
+                </div>
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">總訓練次數</div>
+                    <div id="stat-total-workouts" class="text-4xl font-bold text-emerald-400 mt-1">--</div>
+                    <div class="text-xs">已記錄 <span id="stat-total-sets">--</span> 組</div>
+                </div>
+                <div class="log-card rounded-3xl p-4">
+                    <div class="text-xs text-[#a8a29e]">個人紀錄</div>
+                    <div id="stat-pr-count" class="text-4xl font-bold text-amber-400 mt-1">--</div>
+                    <div class="text-xs">已達成 PR 次數</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <div class="log-card rounded-3xl p-5">
+                    <div class="section-header mb-3">終身肌群訓練量分佈</div>
+                    <canvas id="chart-bodypart" height="140"></canvas>
+                </div>
+                <div class="log-card rounded-3xl p-5">
+                    <div class="section-header mb-3">近 8 週訓練量趨勢</div>
+                    <canvas id="chart-weekly-volume" height="140"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- CALENDAR + MUSCLE VOLUME -->
+        <div id="log-section-calendar" class="hidden">
+            <div class="log-card rounded-3xl p-5">
+                <!-- Advanced Calendar Header -->
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-x-1">
+                        <button onclick="prevMonth()" 
+                                class="px-2.5 py-1 text-xl leading-none text-emerald-300 hover:text-emerald-400 active:bg-[#252321] rounded-xl transition-colors"
+                                title="上個月">←</button>
+                        <span id="calendar-title" class="section-header text-base font-semibold tabular-nums px-2">2026 年 6 月</span>
+                        <button onclick="nextMonth()" 
+                                class="px-2.5 py-1 text-xl leading-none text-emerald-300 hover:text-emerald-400 active:bg-[#252321] rounded-xl transition-colors"
+                                title="下個月">→</button>
+                    </div>
+                    <button onclick="showAllWorkoutDates()" 
+                            class="text-[11px] px-3 py-1 rounded-2xl bg-[#292524] hover:bg-[#3f3a36] text-emerald-300 border border-[#44403c] active:bg-[#3f3a36]">
+                        顯示所有有記錄嘅日期
+                    </button>
+                </div>
+
+                <!-- Weekday headers -->
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] text-[#a8a29e] font-medium mb-1">
+                    <div>日</div>
+                    <div>一</div>
+                    <div>二</div>
+                    <div>三</div>
+                    <div>四</div>
+                    <div>五</div>
+                    <div>六</div>
+                </div>
+
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-[10px]"></div>
+                <div class="mt-3 text-xs text-[#a8a29e]">點擊有顏色日子可查看詳情（支援多場合併顯示）。顏色深淺代表相對訓練量。</div>
+
+                <div class="mt-6">
+                    <div class="section-header mb-2">肌群訓練量（最近30天）</div>
+                    <div id="muscle-volume-bars" class="space-y-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4 text-[10px] text-[#a8a29e] px-1 flex items-center gap-x-3">
+            <span>數據儲存在本機 + 盡可能同步到你的帳號。</span>
+            <button onclick="importDataPrompt()" class="underline hover:no-underline">匯入 JSON 備份</button>
+        </div>
+    </div>
+

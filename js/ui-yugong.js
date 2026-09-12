@@ -114,6 +114,10 @@ function cycleYugongZoom() {
     setYugongZoom(yugongViewZoom >= YUGONG_ZOOM_MAX ? 1 : yugongViewZoom + 1, true);
 }
 
+function nudgeYugongZoom(delta) {
+    setYugongZoom(yugongViewZoom + (delta > 0 ? 1 : -1), true);
+}
+
 function setYugongZoom(step, animate) {
     const next = Math.max(1, Math.min(YUGONG_ZOOM_MAX, parseInt(step, 10) || 1));
     if (next === yugongViewZoom && animate) {
@@ -137,16 +141,19 @@ function renderYugongZoomDots() {
 
 function renderYugongTab(opts = {}) {
     const panel = document.getElementById('content-yugong');
-    if (!panel || panel.classList.contains('hidden')) return;
+    if (!panel) return;
 
     const stats = getYugongStats();
     const { movedTonnes, remainingTonnes, progressPct } = stats;
     const zoomCfg = getYugongZoomConfig(yugongViewZoom);
     const progressMilestone = progressPct >= 100 && yugongLastProgressPct < 100;
+    const done = progressPct >= 100;
     yugongLastProgressPct = progressPct;
 
     const movedEl = document.getElementById('yugong-moved-tonnes');
     const remainEl = document.getElementById('yugong-remaining-tonnes');
+    const remainLabel = document.getElementById('yugong-remaining-label');
+    const remainSub = document.getElementById('yugong-remaining-sub');
     const pctEl = document.getElementById('yugong-progress-pct');
     const barEl = document.getElementById('yugong-progress-bar');
     const badgeEl = document.getElementById('yugong-zoom-badge');
@@ -159,8 +166,10 @@ function renderYugongTab(opts = {}) {
     const sceneEl = document.getElementById('yugong-scene');
 
     if (movedEl) movedEl.textContent = movedTonnes.toFixed(2) + ' 噸';
-    if (remainEl) remainEl.textContent = remainingTonnes.toFixed(2) + ' 噸';
-    if (pctEl) pctEl.textContent = '移山進度 ' + progressPct.toFixed(1) + '%';
+    if (remainEl) remainEl.textContent = done ? '0 噸' : (remainingTonnes.toFixed(2) + ' 噸');
+    if (remainLabel) remainLabel.textContent = done ? '已經搬晒' : '仲剩幾多';
+    if (remainSub) remainSub.textContent = done ? '目標完成' : '未搬嘅山';
+    if (pctEl) pctEl.textContent = done ? '移山進度 100% · 完成' : ('移山進度 ' + progressPct.toFixed(1) + '%');
     if (barEl) barEl.style.width = progressPct + '%';
     if (badgeEl) {
         badgeEl.textContent = '放大：' + zoomCfg.zoomLabel + ' · ' + zoomCfg.viewLabel;
@@ -170,11 +179,20 @@ function renderYugongTab(opts = {}) {
         scaleEl.textContent = '最細 ━ ' + zoomCfg.zoomLabel + ' ━ 最大（' + yugongViewZoom + '/' + YUGONG_ZOOM_MAX + '）';
     }
     if (hintEl) {
-        hintEl.textContent = progressPct >= 100
+        hintEl.textContent = done
             ? '搬晒座山喇 — 繼續操，保持習慣呀！'
-            : '撳圖或者 Q→Q 由最細放到最大，四格任睇';
+            : '撳圖，或者用遠睇／近睇';
     }
-    if (captionEl) captionEl.textContent = zoomCfg.caption;
+    if (captionEl) {
+        captionEl.textContent = done
+            ? '恭喜！已經搬晒座山 — 繼續操，保持習慣呀！'
+            : zoomCfg.caption;
+    }
+
+    if (panel.classList.contains('hidden') && !opts.force) {
+        renderYugongSuggestions(stats);
+        return;
+    }
 
     if (imgEl && innerEl) {
         const applyImage = () => {

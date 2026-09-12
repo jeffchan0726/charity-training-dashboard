@@ -285,8 +285,18 @@ function triggerUniqueHealthImport() {
         if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
-    const el = document.getElementById('unique-health-file');
-    if (el) el.click();
+    const go = function () {
+        const el = document.getElementById('unique-health-file');
+        if (el) el.click();
+    };
+    if (typeof XLSX === 'undefined' && typeof ensureXlsx === 'function') {
+        if (typeof showToast === 'function') showToast('載入匯入元件…');
+        ensureXlsx().then(go).catch(function () {
+            if (typeof showToast === 'function') showToast('匯入元件載入失敗');
+        });
+        return;
+    }
+    go();
 }
 
 function onUniqueHealthFile(ev) {
