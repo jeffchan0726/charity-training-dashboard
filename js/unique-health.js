@@ -285,6 +285,10 @@ function triggerUniqueHealthImport() {
         if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
+    if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) {
+        if (typeof showToast === 'function') showToast('身體日誌只限 Jeff 使用');
+        return;
+    }
     const go = function () {
         const el = document.getElementById('unique-health-file');
         if (el) el.click();
@@ -359,7 +363,8 @@ function mergeUniqueHealthRecords(incoming, options) {
 }
 
 function isBodyLogUserLoggedIn() {
-    return typeof currentUser !== 'undefined' && !!currentUser;
+    return typeof currentUser !== 'undefined' && !!currentUser &&
+        (typeof isJeffDietUser !== 'function' || isJeffDietUser());
 }
 
 function syncBodyLogToSheet(entries) {

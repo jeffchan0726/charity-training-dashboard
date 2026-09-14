@@ -1,6 +1,32 @@
 // js/utils.js
 // Utility functions extracted for architecture refactor (Option A)
 
+const DIET_OWNER_USERNAME = 'jeff';
+
+/** Diet / weight / nutrition / body-log surfaces are private to user `jeff`. */
+function isJeffDietUser() {
+    if (typeof currentUser === 'undefined' || !currentUser) return false;
+    return String(currentUser).toLowerCase().replace(/[^a-z0-9]/g, '') === DIET_OWNER_USERNAME;
+}
+
+function applyJeffDietVisibility() {
+    const on = isJeffDietUser();
+    if (document.body) document.body.classList.toggle('diet-owner', on);
+    const tab = document.getElementById('tab-calories');
+    if (tab) {
+        tab.hidden = !on;
+        tab.setAttribute('aria-hidden', on ? 'false' : 'true');
+        if (!on) {
+            tab.classList.remove('active', 'bg-[#166534]', 'text-white');
+            tab.setAttribute('aria-selected', 'false');
+        }
+    }
+    const cal = document.getElementById('content-calories');
+    if (!on && cal && !cal.classList.contains('hidden')) {
+        if (typeof switchTab === 'function') switchTab('overview');
+    }
+}
+
 // Date utilities (centralized to avoid duplication and timezone bugs)
 function getLocalDateString(date = new Date()) {
     // 統一本地日期字串（YYYY-MM-DD），使用本地時間（香港 UTC+8）

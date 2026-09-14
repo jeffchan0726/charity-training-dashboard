@@ -4,10 +4,10 @@
                 <div class="section-card rounded-3xl p-4">
                     <div class="text-[11px] uppercase tracking-widest text-emerald-300 font-bold">今日</div>
                     <div id="overview-today-status" class="text-lg font-bold mt-1">歡迎嚟 Jeff Recomp 挑戰</div>
-                    <p id="overview-today-sub" class="text-xs text-[#a8a29e] mt-1">可以先睇訓練計劃同任務；記訓練同飲食要登入。</p>
-                    <div class="grid grid-cols-2 gap-2 mt-3">
+                    <p id="overview-today-sub" class="text-xs text-[#a8a29e] mt-1">可以先睇訓練計劃同任務；記訓練要登入。</p>
+                    <div class="grid grid-cols-2 gap-2 mt-3" id="overview-cta-row">
                         <button type="button" onclick="switchTab('log')" class="px-3 py-2.5 min-h-[44px] bg-emerald-600 rounded-2xl text-sm font-semibold">開始訓練</button>
-                        <button type="button" onclick="switchTab('calories')" class="px-3 py-2.5 min-h-[44px] border border-[#57534e] rounded-2xl text-sm font-semibold">記一餐</button>
+                        <button type="button" onclick="switchTab('calories')" class="px-3 py-2.5 min-h-[44px] border border-[#57534e] rounded-2xl text-sm font-semibold jeff-diet-only">記一餐</button>
                     </div>
                 </div>
                 <div class="section-card rounded-3xl p-4">
@@ -19,11 +19,11 @@
                     </div>
                 </div>
                 <div class="overview-stats-grid grid grid-cols-2 gap-3">
-                    <div class="section-card rounded-3xl p-4">
+                    <div class="section-card rounded-3xl p-4 jeff-diet-only">
                         <div class="text-xs text-[#a8a29e]">最新體重</div>
                         <div id="overview-weight" class="text-xl font-bold text-[#a8a29e] mt-1">未有紀錄</div>
                     </div>
-                    <div class="section-card rounded-3xl p-4">
+                    <div class="section-card rounded-3xl p-4 jeff-diet-only">
                         <div class="text-xs text-[#a8a29e]">今日熱量</div>
                         <div id="overview-kcal" class="text-xl font-bold text-[#a8a29e] mt-1">登入後先有</div>
                     </div>
@@ -36,7 +36,7 @@
                         <div id="overview-yugong" class="text-xl font-bold text-[#a8a29e] mt-1">去任務睇</div>
                     </div>
                 </div>
-                <div class="section-card rounded-3xl p-4" id="overview-progress-card">
+                <div class="section-card rounded-3xl p-4 jeff-diet-only" id="overview-progress-card">
                     <div class="text-sm font-bold mb-2">今日進度</div>
                     <p id="overview-progress-empty" class="text-xs text-[#a8a29e]">登入之後會喺呢度顯示蛋白／碳水／脂肪／飲水。</p>
                     <div id="overview-progress-bars" class="space-y-2 hidden">
@@ -59,7 +59,7 @@
                     </div>
                     <p id="overview-plan-hint" class="text-[11px] text-[#a8a29e] mt-2"></p>
                 </div>
-                <div class="section-card rounded-3xl p-4">
+                <div class="section-card rounded-3xl p-4 jeff-diet-only" id="overview-morning-card">
                     <div class="text-sm font-bold mb-2">朝早固定</div>
                     <div id="overview-morning-list" class="space-y-1.5"></div>
                 </div>

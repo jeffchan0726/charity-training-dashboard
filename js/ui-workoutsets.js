@@ -110,8 +110,6 @@ function renderWorkoutSetsBar() {
 }
 
 function loadWorkoutSet(set) {
-    const isFullscreen = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
-
     if (!set || !set.exercises || !set.exercises.length) return;
 
     const wasAlreadyTraining = !!currentWorkout;
@@ -145,18 +143,16 @@ function loadWorkoutSet(set) {
         renderWorkoutSetsBar();
     }
 
-    // Auto-collapse the top sticky bar (header + timer hidden) after the user selects a training set.
-    // Only the session-summary bar remains visible. This gives more room for the exercise list right after picking a 訓練組合.
-    if (isFullscreen) {
+    // Auto-collapse 「進行中訓練」 header after picking a day / set (一鍵開訓 included).
+    // Check AFTER startNewWorkout so newly entered fullscreen still collapses.
+    if (typeof setImmersiveTopCollapsed === 'function') {
+        setImmersiveTopCollapsed(true);
+    } else if (typeof toggleImmersiveTopCollapse === 'function') {
         const topBar = document.getElementById('immersive-sticky-top');
         if (topBar && !topBar.classList.contains('collapsed')) {
-            if (typeof toggleImmersiveTopCollapse === 'function') {
-                toggleImmersiveTopCollapse();
-            }
+            toggleImmersiveTopCollapse();
         }
     }
-
-    // Explicit guarantee: we never want to exit full-screen just because user loaded a preset Set.
 }
 
 function showWorkoutSetModal(set = null) {

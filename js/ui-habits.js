@@ -422,6 +422,10 @@ function getProteinCupTarget() {
 function renderMorningChecklist() {
     const el = document.getElementById('overview-morning-list');
     if (!el) return;
+    if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) {
+        el.innerHTML = '';
+        return;
+    }
     const wheyN = typeof countTodayQuick === 'function' ? countTodayQuick('whey_cup') : 0;
     const coffeeN = typeof countTodayQuick === 'function' ? countTodayQuick('coffee') : 0;
     const wheyTarget = getProteinCupTarget();
@@ -459,6 +463,7 @@ function addMorningCup(kind) {
         if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
+    if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) return;
     if (typeof commitQuickFoodEntry !== 'function') return;
     if (kind !== 'coffee') {
         const n = typeof countTodayQuick === 'function' ? countTodayQuick('whey_cup') : 0;
@@ -478,6 +483,7 @@ function addMorningCup(kind) {
 }
 
 function removeMorningCup(kind) {
+    if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) return;
     if (typeof deleteLastQuickFood !== 'function') return;
     const ok = deleteLastQuickFood(kind === 'coffee' ? 'coffee' : 'whey_cup');
     if (!ok && typeof showToast === 'function') {
@@ -502,6 +508,7 @@ function toggleMorningItem(id) {
         if (typeof showLoginModal === 'function') showLoginModal();
         return;
     }
+    if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) return;
     if (id === 'morningSupp') {
         setMorningSupps(!morningSuppsDone());
         return;

@@ -82,13 +82,16 @@ function exitImmersiveMode() {
         isInFullScreenTraining = false;
 
         // Reset collapse state for next training session (always start expanded)
-        const topBar = document.getElementById('immersive-sticky-top');
-        if (topBar) topBar.classList.remove('collapsed');
-        _immersiveTopCollapsed = false;
-        const ic = document.getElementById('immersive-collapse-icon');
-        if (ic) {
-            ic.classList.remove('fa-chevron-down');
-            ic.classList.add('fa-chevron-up');
+        if (typeof setImmersiveTopCollapsed === 'function') setImmersiveTopCollapsed(false);
+        else {
+            const topBar = document.getElementById('immersive-sticky-top');
+            if (topBar) topBar.classList.remove('collapsed');
+            _immersiveTopCollapsed = false;
+            const ic = document.getElementById('immersive-collapse-icon');
+            if (ic) {
+                ic.classList.remove('fa-chevron-down');
+                ic.classList.add('fa-chevron-up');
+            }
         }
 
         const panel = document.getElementById('live-log-panel');
@@ -193,18 +196,15 @@ function exitImmersiveMode() {
     }
 }
 
-// === Immersive sticky top collapse/expand ===
-// Mobile-friendly: 44px+ tap target (top-right), Tailwind transition + class toggle.
-// When collapsed (.collapsed added): hides the header (title + sets-bar).
-// ONLY the session-summary bar remains visible (volume / sets / tonnes stats).
-function toggleImmersiveTopCollapse() {
+function setImmersiveTopCollapsed(collapsed) {
     const top = document.getElementById('immersive-sticky-top');
     if (!top) return;
-    _immersiveTopCollapsed = !_immersiveTopCollapsed;
-    top.classList.toggle('collapsed', _immersiveTopCollapsed);
+    collapsed = !!collapsed;
+    _immersiveTopCollapsed = collapsed;
+    top.classList.toggle('collapsed', collapsed);
     const icon = document.getElementById('immersive-collapse-icon');
     if (icon) {
-        if (_immersiveTopCollapsed) {
+        if (collapsed) {
             icon.classList.remove('fa-chevron-up');
             icon.classList.add('fa-chevron-down');
         } else {
@@ -212,4 +212,12 @@ function toggleImmersiveTopCollapse() {
             icon.classList.add('fa-chevron-up');
         }
     }
+}
+
+// === Immersive sticky top collapse/expand ===
+// Mobile-friendly: 44px+ tap target (top-right), Tailwind transition + class toggle.
+// When collapsed (.collapsed added): hides the header (title + sets-bar).
+// ONLY the session-summary bar remains visible (volume / sets / tonnes stats).
+function toggleImmersiveTopCollapse() {
+    setImmersiveTopCollapsed(!_immersiveTopCollapsed);
 }

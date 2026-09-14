@@ -64,7 +64,8 @@ function saveCalorieLog() {
 }
 
 function isCaloriesUserLoggedIn() {
-    return typeof currentUser !== 'undefined' && !!currentUser;
+    return typeof currentUser !== 'undefined' && !!currentUser &&
+        (typeof isJeffDietUser !== 'function' || isJeffDietUser());
 }
 
 function initCaloriesTab() {
@@ -109,6 +110,11 @@ function bindCalorieListeners() {
 function renderCaloriesTab() {
     const gate = document.getElementById('calories-login-gate');
     const main = document.getElementById('calories-main');
+    if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) {
+        if (gate) gate.classList.add('hidden');
+        if (main) main.classList.add('hidden');
+        return;
+    }
     const loggedIn = isCaloriesUserLoggedIn();
 
     if (gate) gate.classList.toggle('hidden', loggedIn);

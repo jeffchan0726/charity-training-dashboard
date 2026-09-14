@@ -371,11 +371,23 @@ html.mobile-app {
     max-width: 430px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0;
     background: #141210;
     border-top: 1px solid #44403c;
     padding: 0.25rem 0.2rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.diet-owner .app-bottom-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+body:not(.diet-owner) .jeff-diet-only {
+    display: none !important;
+}
+
+body:not(.diet-owner) #overview-cta-row {
+    grid-template-columns: 1fr;
 }
 
 .app-bottom-nav .nav-tab {

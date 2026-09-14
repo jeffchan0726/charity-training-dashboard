@@ -217,6 +217,7 @@
                 const accountBtn = document.getElementById('accountMenuBtn');
                 if (accountBtn) accountBtn.classList.add('hidden');
             }
+            if (typeof applyJeffDietVisibility === 'function') applyJeffDietVisibility();
             const logUserName = document.getElementById('logUserName');
             if (logUserName) logUserName.textContent = "";
             renderLogTable();
@@ -1880,6 +1881,9 @@
             // 無多餘 debug
             // 加入 null check，穩定支援 isInitializing 及 fullscreen 模式
             try {
+                if (tab === 'calories' && typeof isJeffDietUser === 'function' && !isJeffDietUser()) {
+                    tab = 'overview';
+                }
                 try {
                     window.scrollTo(0, 0);
                     const main = document.getElementById('app-main');

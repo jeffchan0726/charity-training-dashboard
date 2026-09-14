@@ -65,6 +65,14 @@ function startTrainingDay(dayId) {
     if (typeof loadWorkoutSet === 'function') {
         loadWorkoutSet({ name: day.fullName, exercises: day.exercises, isPreset: true });
     }
+    const inFs = document.body.classList.contains('fullscreen-training') ||
+        (typeof isInFullScreenTraining !== 'undefined' && isInFullScreenTraining);
+    if (!inFs && typeof enterImmersiveMode === 'function') {
+        const panel = document.getElementById('live-log-panel');
+        if (panel) panel.classList.remove('hidden');
+        enterImmersiveMode();
+    }
+    if (typeof setImmersiveTopCollapsed === 'function') setImmersiveTopCollapsed(true);
 }
 
 function startCardioFromRixing() {
@@ -98,6 +106,7 @@ function localDateStr(d) {
 }
 
 function renderOverviewDashboard() {
+    if (typeof applyJeffDietVisibility === 'function') applyJeffDietVisibility();
     const todayStr = typeof getTodayStr === 'function' ? getTodayStr() : new Date().toISOString().slice(0, 10);
     const history = Array.isArray(workoutHistory) ? workoutHistory : [];
     const trainedToday = history.some(function (w) { return w && w.date === todayStr; });
@@ -171,7 +180,11 @@ function renderOverviewDashboard() {
     }
     if (subEl) {
         if (!currentUser) {
-            subEl.textContent = '登入之後就可以記訓練同飲食。';
+            subEl.textContent = '登入之後就可以記訓練。';
+        } else if (typeof isJeffDietUser !== 'function' || !isJeffDietUser()) {
+            if (trainedToday) subEl.textContent = '今日已完成訓練。';
+            else if (rest) subEl.textContent = '今日休息日。';
+            else subEl.textContent = '今日未訓練。';
         } else {
             applyAutoDietGoals();
             const kcalGoal = typeof calorieDailyGoalKcal === 'number' ? calorieDailyGoalKcal : goal;
@@ -394,6 +407,10 @@ function saveBodyLogEntry() {
     if (typeof currentUser === 'undefined' || !currentUser) {
         if (typeof showLoginModal === 'function') showLoginModal();
         if (typeof showToast === 'function') showToast('請先登入，身體日誌只存 Google Sheet');
+        return;
+    }
+    if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) {
+        if (typeof showToast === 'function') showToast('身體日誌只限 Jeff 使用');
         return;
     }
     const list = getBodyLog().filter(function (e) {
@@ -930,14 +947,15 @@ function suggestProgressiveOverload(exerciseName) {
 }
 
 function exportLocalBackup() {
+    const jeff = typeof isJeffDietUser === 'function' && isJeffDietUser();
     const payload = {
         exportedAt: new Date().toISOString(),
         user: currentUser || 'guest',
         workoutHistory: workoutHistory || [],
-        calorieLogEntries: calorieLogEntries || [],
-        waterByDate: typeof waterByDate !== 'undefined' ? waterByDate : {},
+        calorieLogEntries: jeff ? (calorieLogEntries || []) : [],
+        waterByDate: jeff && typeof waterByDate !== 'undefined' ? waterByDate : {},
         habits: { prefs: typeof habitPrefs !== 'undefined' ? habitPrefs : {}, days: typeof habitDays !== 'undefined' ? habitDays : {} },
-        bodyLog: getBodyLog()
+        bodyLog: jeff ? getBodyLog() : []
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -949,14 +967,22 @@ function exportLocalBackup() {
 function onAppTabShown(tab) {
     if (tab === 'overview') renderOverviewDashboard();
     if (tab === 'millennium') showMillenniumPanel('yugong');
-    if (tab === 'calories') applyAutoDietGoals();
+    if (tab === 'calories') {
+        if (typeof isJeffDietUser === 'function' && !isJeffDietUser()) {
+            if (typeof switchTab === 'function') switchTab('overview');
+            return;
+        }
+        applyAutoDietGoals();
+    }
     if (tab === 'supplement' && typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
     if (tab === 'training') markTrainingRestDay();
     if (tab === 'me') {
-        if (typeof loadBodyLogsFromSheet === 'function') loadBodyLogsFromSheet();
-        renderBodyLog();
-        renderDietWeekBars();
-        if (typeof renderRecompTrend === 'function') renderRecompTrend();
+        if (typeof isJeffDietUser === 'function' && isJeffDietUser()) {
+            if (typeof loadBodyLogsFromSheet === 'function') loadBodyLogsFromSheet();
+            renderBodyLog();
+            renderDietWeekBars();
+            if (typeof renderRecompTrend === 'function') renderRecompTrend();
+        }
         if (typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
     }
     if (tab === 'yugong') {
@@ -970,17 +996,20 @@ function onAppTabShown(tab) {
 function loadAppPrefs() {
     clearBodyLogLocalStorage();
     if (typeof loadHabitsLocal === 'function') loadHabitsLocal();
-    applyAutoDietGoals();
+    if (typeof isJeffDietUser === 'function' && isJeffDietUser()) applyAutoDietGoals();
     if (typeof renderTrainWeekStrip === 'function') renderTrainWeekStrip();
     if (typeof renderMorningChecklist === 'function') renderMorningChecklist();
+    if (typeof applyJeffDietVisibility === 'function') applyJeffDietVisibility();
 }
 
 function refreshAppShell() {
     loadAppPrefs();
     renderOverviewDashboard();
-    renderBodyLog();
-    renderDietWeekBars();
-    if (typeof renderRecompTrend === 'function') renderRecompTrend();
+    if (typeof isJeffDietUser === 'function' && isJeffDietUser()) {
+        renderBodyLog();
+        renderDietWeekBars();
+        if (typeof renderRecompTrend === 'function') renderRecompTrend();
+    }
     if (typeof renderSupplementChecklist === 'function') renderSupplementChecklist();
 }
 
@@ -1014,6 +1043,7 @@ function applyAccountChrome(loggedIn) {
     closeAccountMenu();
     const logUserName = document.getElementById('logUserName');
     if (logUserName) logUserName.textContent = loggedIn ? ('(' + currentUser + ')') : '';
+    if (typeof applyJeffDietVisibility === 'function') applyJeffDietVisibility();
 }
 
 document.addEventListener('click', function (e) {
