@@ -153,6 +153,9 @@ function loadWorkoutSet(set) {
             toggleImmersiveTopCollapse();
         }
     }
+    if (typeof setImmersiveAddExerciseCollapsed === 'function') {
+        setImmersiveAddExerciseCollapsed(true);
+    }
 }
 
 function showWorkoutSetModal(set = null) {

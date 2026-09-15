@@ -59,6 +59,7 @@ let editingSetExercises = [];
 
 // Immersive mode collapse state
 let _immersiveTopCollapsed = false;
+let _immersiveAddExerciseCollapsed = false;
 
 // Analysis UI state (charts + time range filter) - moved here as part of A refactor
 let analysisTimeRange = 'all'; // 'all' | '12w' | '30d'

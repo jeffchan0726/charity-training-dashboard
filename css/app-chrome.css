@@ -690,6 +690,9 @@
             border-top: 1px solid #57534e;
             padding: 12px 1rem 10px;
         }
+        .immersive-add-exercise.collapsed {
+            display: none !important;
+        }
         @media (min-width: 640px) {
             .immersive-add-exercise {
                 padding-left: 1.5rem;

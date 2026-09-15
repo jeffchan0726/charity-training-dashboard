@@ -73,6 +73,7 @@ function startTrainingDay(dayId) {
         enterImmersiveMode();
     }
     if (typeof setImmersiveTopCollapsed === 'function') setImmersiveTopCollapsed(true);
+    if (typeof setImmersiveAddExerciseCollapsed === 'function') setImmersiveAddExerciseCollapsed(true);
 }
 
 function startCardioFromRixing() {

@@ -93,6 +93,7 @@ function exitImmersiveMode() {
                 ic.classList.add('fa-chevron-up');
             }
         }
+        if (typeof setImmersiveAddExerciseCollapsed === 'function') setImmersiveAddExerciseCollapsed(false);
 
         const panel = document.getElementById('live-log-panel');
         if (panel) {
@@ -218,6 +219,23 @@ function setImmersiveTopCollapsed(collapsed) {
 // Mobile-friendly: 44px+ tap target (top-right), Tailwind transition + class toggle.
 // When collapsed (.collapsed added): hides the header (title + sets-bar).
 // ONLY the session-summary bar remains visible (volume / sets / tonnes stats).
+function setImmersiveAddExerciseCollapsed(collapsed) {
+    collapsed = !!collapsed;
+    _immersiveAddExerciseCollapsed = collapsed;
+    const box = document.getElementById('immersive-add-exercise')
+        || document.querySelector('.immersive-add-exercise');
+    if (box) box.classList.toggle('collapsed', collapsed);
+    const toggle = document.getElementById('immersive-add-exercise-toggle');
+    if (toggle) {
+        toggle.hidden = !collapsed;
+        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    }
+}
+
+function toggleImmersiveAddExercise() {
+    setImmersiveAddExerciseCollapsed(!_immersiveAddExerciseCollapsed);
+}
+
 function toggleImmersiveTopCollapse() {
     setImmersiveTopCollapsed(!_immersiveTopCollapsed);
 }

@@ -84,9 +84,15 @@
                     </div>
                 </div>
 
-                <!-- Add Exercise: fixed above bottom bar, not inside scroll -->
-                <div class="immersive-add-exercise">
-                    <label for="add-exercise-input" class="text-xs text-[#a8a29e] mb-1.5 block">加入動作</label>
+                <!-- Add Exercise: fixed above bottom bar, not inside scroll. Auto-hidden after 一鍵開訓. -->
+                <div class="immersive-add-exercise" id="immersive-add-exercise">
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <label for="add-exercise-input" class="text-xs text-[#a8a29e]">加入動作</label>
+                        <button type="button" id="immersive-add-exercise-collapse-btn"
+                            onclick="setImmersiveAddExerciseCollapsed(true)"
+                            class="text-xs text-[#a8a29e] min-h-[44px] min-w-[44px] px-2 rounded-xl"
+                            aria-label="收起加入動作">收起</button>
+                    </div>
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                         <div class="flex flex-1 gap-2 min-w-0">
                             <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..."
@@ -111,8 +117,11 @@
                             <i class="fa-solid fa-flag-checkered"></i> 
                             <span>完成訓練</span>
                         </button>
-                        <div class="text-center mt-2">
-                            <button onclick="cancelCurrentWorkout()" class="text-xs text-red-400 hover:text-red-300 underline-offset-2 active:text-red-200">放棄本次訓練</button>
+                        <div class="text-center mt-2 flex items-center justify-center gap-4">
+                            <button type="button" id="immersive-add-exercise-toggle"
+                                onclick="setImmersiveAddExerciseCollapsed(false)"
+                                class="text-xs text-[#a8a29e] hover:text-emerald-300 underline-offset-2 min-h-[44px] px-2" hidden>加入動作</button>
+                            <button onclick="cancelCurrentWorkout()" class="text-xs text-red-400 hover:text-red-300 underline-offset-2 active:text-red-200 min-h-[44px] px-2">放棄本次訓練</button>
                         </div>
                     </div>
                 </div>
