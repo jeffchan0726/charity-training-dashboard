@@ -65,6 +65,9 @@ function enterImmersiveMode() {
         if (typeof renderWorkoutSetsBar === 'function') {
             renderWorkoutSetsBar();
         }
+        if (typeof setImmersiveAddExerciseCollapsed === 'function') {
+            setImmersiveAddExerciseCollapsed(true);
+        }
     } catch (err) {
         console.error('Error in enterImmersiveMode, attempting cleanup', err);
         // safety
@@ -227,8 +230,13 @@ function setImmersiveAddExerciseCollapsed(collapsed) {
     if (box) box.classList.toggle('collapsed', collapsed);
     const toggle = document.getElementById('immersive-add-exercise-toggle');
     if (toggle) {
-        toggle.hidden = !collapsed;
         toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        toggle.setAttribute('aria-label', collapsed ? '展開加入動作' : '收起加入動作');
+    }
+    const icon = document.getElementById('immersive-add-exercise-icon');
+    if (icon) {
+        icon.classList.toggle('fa-chevron-up', !collapsed);
+        icon.classList.toggle('fa-chevron-down', collapsed);
     }
 }
 

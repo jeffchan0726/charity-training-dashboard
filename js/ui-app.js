@@ -89,6 +89,7 @@ function startCardioFromRixing() {
         if (typeof renderCurrentWorkout === 'function') renderCurrentWorkout();
         if (typeof saveWorkoutData === 'function') saveWorkoutData();
     }
+    if (typeof setImmersiveAddExerciseCollapsed === 'function') setImmersiveAddExerciseCollapsed(true);
 }
 
 function getWeekStart(d) {

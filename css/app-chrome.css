@@ -688,9 +688,27 @@
             flex-shrink: 0;
             background: #1c1917;
             border-top: 1px solid #57534e;
-            padding: 12px 1rem 10px;
+            padding: 4px 1rem 10px;
+        }
+        .immersive-add-exercise-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            min-height: 44px;
+            padding: 0 4px;
+            color: #a8a29e;
+            font-size: 12px;
+            background: transparent;
+            border: 0;
+        }
+        .immersive-add-exercise-toggle:active {
+            color: #86efac;
         }
         .immersive-add-exercise.collapsed {
+            padding-bottom: 4px;
+        }
+        .immersive-add-exercise.collapsed .immersive-add-exercise-body {
             display: none !important;
         }
         @media (min-width: 640px) {

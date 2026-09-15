@@ -951,6 +951,9 @@
 
             // Immediate auto-save of the new/ resumed session
             saveWorkoutData();
+            if (typeof setImmersiveAddExerciseCollapsed === 'function') {
+                setImmersiveAddExerciseCollapsed(true);
+            }
         }
 
         function updateCurrentWorkoutDate() {

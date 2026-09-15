@@ -1,5 +1,5 @@
 // Recomp PWA: precache shell only. 動作圖／山圖／xlsx 按需要 cache-on-demand。
-const CACHE_NAME = 'recomp-charity-v2.4.4';
+const CACHE_NAME = 'recomp-charity-v2.4.5';
 
 const CORE_ASSETS = [
   './',

@@ -84,28 +84,32 @@
                     </div>
                 </div>
 
-                <!-- Add Exercise: fixed above bottom bar, not inside scroll. Auto-hidden after 一鍵開訓. -->
+                <!-- Add Exercise: collapsible, auto-hidden in immersive training (一鍵開訓 / 跑步機 / 開始新訓練) -->
                 <div class="immersive-add-exercise" id="immersive-add-exercise">
-                    <div class="flex items-center justify-between gap-2 mb-1.5">
-                        <label for="add-exercise-input" class="text-xs text-[#a8a29e]">加入動作</label>
-                        <button type="button" id="immersive-add-exercise-collapse-btn"
-                            onclick="setImmersiveAddExerciseCollapsed(true)"
-                            class="text-xs text-[#a8a29e] min-h-[44px] min-w-[44px] px-2 rounded-xl"
-                            aria-label="收起加入動作">收起</button>
-                    </div>
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <div class="flex flex-1 gap-2 min-w-0">
-                            <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..."
-                                class="log-input flex-1 min-w-0 px-4 py-2.5 rounded-2xl text-sm"
-                                onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
-                            <datalist id="exercise-datalist"></datalist>
-                            <button onclick="addExerciseToCurrentWorkout()"
-                                class="px-4 py-2.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap flex-shrink-0">+ 加入</button>
+                    <button type="button" id="immersive-add-exercise-toggle"
+                        onclick="toggleImmersiveAddExercise()"
+                        class="immersive-add-exercise-toggle"
+                        aria-expanded="true"
+                        aria-controls="immersive-add-exercise-body">
+                        <span>加入動作</span>
+                        <i id="immersive-add-exercise-icon" class="fa-solid fa-chevron-up" aria-hidden="true"></i>
+                    </button>
+                    <div id="immersive-add-exercise-body" class="immersive-add-exercise-body">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <div class="flex flex-1 gap-2 min-w-0">
+                                <label for="add-exercise-input" class="sr-only">輸入或選擇動作</label>
+                                <input id="add-exercise-input" list="exercise-datalist" placeholder="輸入或選擇動作..."
+                                    class="log-input flex-1 min-w-0 px-4 py-2.5 rounded-2xl text-sm"
+                                    onkeydown="if(event.key==='Enter') addExerciseToCurrentWorkout()">
+                                <datalist id="exercise-datalist"></datalist>
+                                <button onclick="addExerciseToCurrentWorkout()"
+                                    class="px-4 py-2.5 bg-[#166534] hover:bg-emerald-800 rounded-2xl text-sm font-medium whitespace-nowrap flex-shrink-0">+ 加入</button>
+                            </div>
+                            <button onclick="showLibraryModal(true)"
+                                class="w-full sm:w-auto px-4 py-2.5 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524] whitespace-nowrap flex-shrink-0">動作庫</button>
                         </div>
-                        <button onclick="showLibraryModal(true)"
-                            class="w-full sm:w-auto px-4 py-2.5 text-sm border border-[#57534e] rounded-2xl hover:bg-[#292524] whitespace-nowrap flex-shrink-0">動作庫</button>
+                        <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 min-h-[1rem]"></div>
                     </div>
-                    <div id="last-performed-hint" class="text-xs text-emerald-300/80 mt-1.5 min-h-[1rem]"></div>
                 </div>
 
                 <!-- STICKY BOTTOM: Finish + Abandon buttons (address bar / safe-area safe) -->
@@ -117,10 +121,7 @@
                             <i class="fa-solid fa-flag-checkered"></i> 
                             <span>完成訓練</span>
                         </button>
-                        <div class="text-center mt-2 flex items-center justify-center gap-4">
-                            <button type="button" id="immersive-add-exercise-toggle"
-                                onclick="setImmersiveAddExerciseCollapsed(false)"
-                                class="text-xs text-[#a8a29e] hover:text-emerald-300 underline-offset-2 min-h-[44px] px-2" hidden>加入動作</button>
+                        <div class="text-center mt-2">
                             <button onclick="cancelCurrentWorkout()" class="text-xs text-red-400 hover:text-red-300 underline-offset-2 active:text-red-200 min-h-[44px] px-2">放棄本次訓練</button>
                         </div>
                     </div>
