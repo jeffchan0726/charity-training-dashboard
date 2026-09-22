@@ -222,6 +222,10 @@ function updateSetField(exIdx, setIdx, field, value) {
 
 function collectExerciseVolumeByDate(exerciseName) {
     const byDate = {};
+    function setVolume(s) {
+        if (typeof calculateSetVolume === 'function') return calculateSetVolume(s, exerciseName) || 0;
+        return (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
+    }
     function addWorkout(w) {
         if (!w || !w.exercises) return;
         const d = typeof normalizeDateToLocal === 'function'
@@ -231,11 +235,16 @@ function collectExerciseVolumeByDate(exerciseName) {
         const ex = (w.exercises || []).find(function (e) { return e && e.name === exerciseName; });
         if (!ex || !ex.sets || !ex.sets.length) return;
         let vol = 0;
-        ex.sets.forEach(function (s) {
-            if (typeof calculateSetVolume === 'function') vol += calculateSetVolume(s, exerciseName) || 0;
-            else vol += (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
+        let set1 = 0;
+        ex.sets.forEach(function (s, i) {
+            const v = setVolume(s);
+            vol += v;
+            if (i === 0) set1 = v;
         });
-        if (vol > 0) byDate[d] = (byDate[d] || 0) + vol;
+        if (vol <= 0) return;
+        if (!byDate[d]) byDate[d] = { total: 0, set1: 0 };
+        byDate[d].total += vol;
+        if (!byDate[d].set1 && set1 > 0) byDate[d].set1 = set1;
     }
     const liveDate = (typeof currentWorkout !== 'undefined' && currentWorkout)
         ? (typeof normalizeDateToLocal === 'function'
@@ -257,7 +266,13 @@ function getExerciseVolumeLastDays(exerciseName, n) {
     return Object.keys(byDate).sort().slice(-n).map(function (d) {
         const parts = d.split('-');
         const label = parts.length === 3 ? (Number(parts[1]) + '/' + Number(parts[2])) : d;
-        return { date: d, volume: Math.round(byDate[d]), label: label };
+        const row = byDate[d];
+        return {
+            date: d,
+            volume: Math.round(row.total),
+            set1: Math.round(row.set1 || 0),
+            label: label
+        };
     });
 }
 
@@ -273,10 +288,19 @@ function renderMiniVolumeSparkline(points) {
     const n = points.length;
     const innerW = w - padL - padR;
     const innerH = h - padT - padB;
+    function yFor(val) {
+        return padT + (1 - (val || 0) / max) * innerH;
+    }
     const coords = points.map(function (p, i) {
         const x = padL + (n === 1 ? innerW / 2 : i * innerW / (n - 1));
-        const y = padT + (1 - p.volume / max) * innerH;
-        return { x: x, y: y, label: p.label, volume: p.volume };
+        return {
+            x: x,
+            y: yFor(p.volume),
+            y1: yFor(p.set1),
+            label: p.label,
+            volume: p.volume,
+            set1: p.set1
+        };
     });
     const barW = Math.max(10, innerW / n * 0.42);
     const bars = coords.map(function (c) {
@@ -289,20 +313,31 @@ function renderMiniVolumeSparkline(points) {
     const line = coords.map(function (c, i) {
         return (i ? 'L' : 'M') + c.x.toFixed(1) + ',' + c.y.toFixed(1);
     }).join(' ');
+    const hasSet1 = coords.some(function (c) { return c.set1 > 0; });
+    const dash = hasSet1 ? coords.map(function (c, i) {
+        return (i ? 'L' : 'M') + c.x.toFixed(1) + ',' + c.y1.toFixed(1);
+    }).join(' ') : '';
     const dots = coords.map(function (c) {
         return '<circle cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="2.6" fill="#86efac" stroke="#166534" stroke-width="1"/>';
     }).join('');
+    const dashDots = hasSet1 ? coords.map(function (c) {
+        if (!c.set1) return '';
+        return '<circle cx="' + c.x.toFixed(1) + '" cy="' + c.y1.toFixed(1) + '" r="2" fill="#a7f3d0" stroke="#166534" stroke-width="0.8"/>';
+    }).join('') : '';
     const labels = coords.map(function (c) {
         return '<text x="' + c.x.toFixed(1) + '" y="' + (h - 3) + '" text-anchor="middle" fill="#a8a29e" font-size="8">' +
             (typeof escapeHtml === 'function' ? escapeHtml(c.label) : c.label) + '</text>';
     }).join('');
-    const aria = points.map(function (p) { return p.label + ' ' + p.volume + 'kg'; }).join('，');
+    const aria = points.map(function (p) {
+        return p.label + ' 總' + p.volume + 'kg' + (p.set1 ? (' 第1組' + p.set1 + 'kg') : '');
+    }).join('，');
     return '<div class="ex-volume-spark-wrap" aria-label="近4日重量×次數：' +
         (typeof escapeAttr === 'function' ? escapeAttr(aria) : aria) + '">' +
         '<svg class="ex-volume-spark" viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" focusable="false">' +
         bars +
         '<path d="' + line + '" fill="none" stroke="#4ade80" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
-        dots + labels +
+        (dash ? '<path d="' + dash + '" fill="none" stroke="#a7f3d0" stroke-width="1.6" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round"/>' : '') +
+        dots + dashDots + labels +
         '</svg></div>';
 }
 
