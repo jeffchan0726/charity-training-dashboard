@@ -341,6 +341,20 @@ function renderMiniVolumeSparkline(points) {
         '</svg></div>';
 }
 
+function getMatchingLastSet(ex) {
+    if (!ex || !ex.name) return null;
+    const nextIdx = (ex.sets && ex.sets.length) ? ex.sets.length : 0;
+    if (typeof getLastPerformedSetForComparison === 'function') {
+        const match = getLastPerformedSetForComparison(ex.name, nextIdx);
+        if (match) return match;
+    }
+    const perf = (typeof lastPerformed !== 'undefined' && lastPerformed) ? lastPerformed[ex.name] : null;
+    if (perf && perf.sets && perf.sets.length) {
+        return perf.sets[Math.min(nextIdx, perf.sets.length - 1)];
+    }
+    return null;
+}
+
 function renderCurrentWorkout() {
 
     const container = document.getElementById('current-workout-exercises');
@@ -589,15 +603,12 @@ function renderCurrentWorkout() {
     currentWorkout.exercises.forEach((ex, idx) => {
         const recordType = typeof getExerciseRecordType === 'function'
             ? getExerciseRecordType(ex.name) : 'weight';
+        const source = getMatchingLastSet(ex);
         if (recordType === 'treadmill') {
             const dEl = document.getElementById(`set-duration-${idx}`);
             const iEl = document.getElementById(`set-incline-${idx}`);
             const sEl = document.getElementById(`set-speed-${idx}`);
-            if (!dEl) return;
-            const source = (ex.sets && ex.sets.length > 0) ? ex.sets[ex.sets.length - 1]
-                : (lastPerformed[ex.name] && lastPerformed[ex.name].sets
-                    ? lastPerformed[ex.name].sets.slice(-1)[0] : null);
-            if (!source) return;
+            if (!dEl || !source) return;
             if (!dEl.value && source.duration != null) dEl.value = source.duration;
             if (iEl && !iEl.value && source.incline != null) iEl.value = source.incline;
             if (sEl && !sEl.value && source.speed != null) sEl.value = source.speed;
@@ -606,8 +617,6 @@ function renderCurrentWorkout() {
             const rEl = document.getElementById(`set-reps-hold-${idx}`);
             const bwEl = document.getElementById(`set-body-weight-${idx}`);
             if (!dEl) return;
-            const source = (ex.sets && ex.sets.length > 0) ? ex.sets[ex.sets.length-1]
-                          : (lastPerformed[ex.name] && lastPerformed[ex.name].sets ? lastPerformed[ex.name].sets.slice(-1)[0] : null);
             if (source) {
                 if (dEl && !dEl.value && source.duration != null) dEl.value = source.duration;
                 if (rEl && !rEl.value && source.reps != null) rEl.value = source.reps;
@@ -620,9 +629,6 @@ function renderCurrentWorkout() {
             const bwEl = document.getElementById(`set-body-weight-${idx}`);
             const rEl = document.getElementById(`set-reps-${idx}`);
             if (!bwEl || !rEl || (bwEl.value && rEl.value)) return;
-            const source = (ex.sets && ex.sets.length > 0) ? ex.sets[ex.sets.length - 1]
-                : (lastPerformed[ex.name] && lastPerformed[ex.name].sets
-                    ? lastPerformed[ex.name].sets.slice(-1)[0] : null);
             if (source) {
                 if (!bwEl.value) bwEl.value = source.body_weight || '';
                 if (!rEl.value) rEl.value = source.reps || '';
@@ -634,14 +640,6 @@ function renderCurrentWorkout() {
             const wEl = document.getElementById(`set-weight-${idx}`);
             const rEl = document.getElementById(`set-reps-${idx}`);
             if (!wEl || !rEl || (wEl.value && rEl.value)) return;
-
-            let source = null;
-            if (ex.sets && ex.sets.length > 0) {
-                source = ex.sets[ex.sets.length - 1];
-            } else {
-                const perf = lastPerformed[ex.name];
-                if (perf && perf.sets && perf.sets.length > 0) source = perf.sets[perf.sets.length - 1];
-            }
             if (source) {
                 if (!wEl.value) wEl.value = source.weight || '';
                 if (!rEl.value) rEl.value = source.reps || '';
