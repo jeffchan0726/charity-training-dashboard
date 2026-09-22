@@ -411,12 +411,12 @@ function renderCurrentWorkout() {
                     </div>
                 </div>
 
-                <div class="mt-1.5 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5">
-                    <button onclick="copyLastToExercise(${exIdx})"
-                            class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上次</button>
-                    ${sparkHtml || '<div class="min-h-[44px]"></div>'}
-                    <button onclick="copyPrevSetToExercise(${exIdx})"
-                            class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上組</button>
+                <div class="ex-action-row">
+                    <button type="button" onclick="copyLastToExercise(${exIdx})"
+                            class="ex-action-chip">使用上次</button>
+                    ${sparkHtml || '<div class="ex-volume-spark-wrap ex-volume-spark-empty"></div>'}
+                    <button type="button" onclick="copyPrevSetToExercise(${exIdx})"
+                            class="ex-action-chip">使用上組</button>
                 </div>
 
                 ${isTreadmill ? `
