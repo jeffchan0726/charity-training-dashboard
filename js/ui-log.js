@@ -220,6 +220,92 @@ function updateSetField(exIdx, setIdx, field, value) {
     saveWorkoutData();
 }
 
+function collectExerciseVolumeByDate(exerciseName) {
+    const byDate = {};
+    function addWorkout(w) {
+        if (!w || !w.exercises) return;
+        const d = typeof normalizeDateToLocal === 'function'
+            ? normalizeDateToLocal(w.date)
+            : String(w.date || '').slice(0, 10);
+        if (!d) return;
+        const ex = (w.exercises || []).find(function (e) { return e && e.name === exerciseName; });
+        if (!ex || !ex.sets || !ex.sets.length) return;
+        let vol = 0;
+        ex.sets.forEach(function (s) {
+            if (typeof calculateSetVolume === 'function') vol += calculateSetVolume(s, exerciseName) || 0;
+            else vol += (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
+        });
+        if (vol > 0) byDate[d] = (byDate[d] || 0) + vol;
+    }
+    const liveDate = (typeof currentWorkout !== 'undefined' && currentWorkout)
+        ? (typeof normalizeDateToLocal === 'function'
+            ? normalizeDateToLocal(currentWorkout.date)
+            : String(currentWorkout.date || '').slice(0, 10))
+        : '';
+    (typeof workoutHistory !== 'undefined' ? workoutHistory : []).forEach(function (w) {
+        if (liveDate && (typeof normalizeDateToLocal === 'function'
+            ? normalizeDateToLocal(w.date) : String(w.date || '').slice(0, 10)) === liveDate) return;
+        addWorkout(w);
+    });
+    if (typeof currentWorkout !== 'undefined' && currentWorkout) addWorkout(currentWorkout);
+    return byDate;
+}
+
+function getExerciseVolumeLastDays(exerciseName, n) {
+    n = n || 4;
+    const byDate = collectExerciseVolumeByDate(exerciseName);
+    return Object.keys(byDate).sort().slice(-n).map(function (d) {
+        const parts = d.split('-');
+        const label = parts.length === 3 ? (Number(parts[1]) + '/' + Number(parts[2])) : d;
+        return { date: d, volume: Math.round(byDate[d]), label: label };
+    });
+}
+
+function renderMiniVolumeSparkline(points) {
+    if (!points || points.length < 2) return '';
+    const w = 160;
+    const h = 58;
+    const padL = 10;
+    const padR = 10;
+    const padT = 8;
+    const padB = 16;
+    const max = Math.max.apply(null, points.map(function (p) { return p.volume; })) || 1;
+    const n = points.length;
+    const innerW = w - padL - padR;
+    const innerH = h - padT - padB;
+    const coords = points.map(function (p, i) {
+        const x = padL + (n === 1 ? innerW / 2 : i * innerW / (n - 1));
+        const y = padT + (1 - p.volume / max) * innerH;
+        return { x: x, y: y, label: p.label, volume: p.volume };
+    });
+    const barW = Math.max(10, innerW / n * 0.42);
+    const bars = coords.map(function (c) {
+        const bh = Math.max(2, (c.volume / max) * innerH);
+        const y = padT + innerH - bh;
+        return '<rect x="' + (c.x - barW / 2).toFixed(1) + '" y="' + y.toFixed(1) +
+            '" width="' + barW.toFixed(1) + '" height="' + bh.toFixed(1) +
+            '" rx="3" fill="rgba(74,222,128,0.38)"/>';
+    }).join('');
+    const line = coords.map(function (c, i) {
+        return (i ? 'L' : 'M') + c.x.toFixed(1) + ',' + c.y.toFixed(1);
+    }).join(' ');
+    const dots = coords.map(function (c) {
+        return '<circle cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="2.6" fill="#86efac" stroke="#166534" stroke-width="1"/>';
+    }).join('');
+    const labels = coords.map(function (c) {
+        return '<text x="' + c.x.toFixed(1) + '" y="' + (h - 3) + '" text-anchor="middle" fill="#a8a29e" font-size="8">' +
+            (typeof escapeHtml === 'function' ? escapeHtml(c.label) : c.label) + '</text>';
+    }).join('');
+    const aria = points.map(function (p) { return p.label + ' ' + p.volume + 'kg'; }).join('，');
+    return '<div class="ex-volume-spark-wrap" aria-label="近4日重量×次數：' +
+        (typeof escapeAttr === 'function' ? escapeAttr(aria) : aria) + '">' +
+        '<svg class="ex-volume-spark" viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" focusable="false">' +
+        bars +
+        '<path d="' + line + '" fill="none" stroke="#4ade80" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+        dots + labels +
+        '</svg></div>';
+}
+
 function renderCurrentWorkout() {
 
     const container = document.getElementById('current-workout-exercises');
@@ -283,6 +369,11 @@ function renderCurrentWorkout() {
             setsListHtml = `<div class="mt-1 px-1 text-[10px] text-[#a8a29e]">尚未有組數</div>`;
         }
 
+        const sparkPoints = (!isTreadmill && !isHold)
+            ? getExerciseVolumeLastDays(ex.name, 4)
+            : [];
+        const sparkHtml = renderMiniVolumeSparkline(sparkPoints);
+
         html += `
             <div class="exercise-log-card bg-[#252321] rounded-2xl p-2 border border-[#57534e] relative" data-ex-idx="${exIdx}">
                 <div class="absolute top-1 right-1 flex items-center gap-0.5 z-10">
@@ -317,13 +408,14 @@ function renderCurrentWorkout() {
                             ${isBodyweight ? '<span class="text-[9px] px-1.5 py-0.5 bg-violet-900/50 text-violet-300 rounded-full">體重+次數</span>' : ''}
                         </div>
                         ${lastHtml ? `<div class="text-[10px] text-emerald-300/80 mt-0.5">${lastHtml}</div>` : ''}
-                        <button onclick="copyLastToExercise(${exIdx})" 
-                                class="mt-1 text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上次</button>
                     </div>
                 </div>
 
-                <div class="mb-0.5 flex justify-end">
-                    <button onclick="copyPrevSetToExercise(${exIdx})" 
+                <div class="mt-1.5 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5">
+                    <button onclick="copyLastToExercise(${exIdx})"
+                            class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上次</button>
+                    ${sparkHtml || '<div class="min-h-[44px]"></div>'}
+                    <button onclick="copyPrevSetToExercise(${exIdx})"
                             class="text-[10px] px-2 py-0.5 bg-[#166534]/70 hover:bg-emerald-800 active:bg-emerald-900 rounded text-white">使用上組</button>
                 </div>
 
