@@ -82,22 +82,26 @@ function fillExerciseInputsFromLast(ex, idx, force) {
 
 function onHeavierWeightReps(exIdx) {
     const hint = document.getElementById('volume-target-' + exIdx);
+    const tip = document.getElementById('overload-tip-' + exIdx);
     const ex = currentWorkout && currentWorkout.exercises[exIdx];
     const wEl = document.getElementById('set-weight-' + exIdx);
     const rEl = document.getElementById('set-reps-' + exIdx);
     if (!ex || !wEl || !rEl) return;
+    if (tip && !tip.dataset.base) tip.dataset.base = tip.textContent;
     const baseline = getMatchingLastSet(ex);
     const plan = (baseline && typeof repsToBeatLastVolume === 'function')
         ? repsToBeatLastVolume(baseline.weight, baseline.reps, wEl.value)
         : null;
     if (!plan) {
         if (hint) hint.textContent = '';
+        if (tip && tip.dataset.base) tip.textContent = tip.dataset.base;
         const typed = Number(wEl.value);
         if (baseline && typed === Number(baseline.weight) && baseline.reps) rEl.value = baseline.reps;
         return;
     }
-    rEl.value = plan.reps;
-    if (hint) hint.textContent = '要做到 ' + plan.reps + ' 下先重過上次（' + plan.newVol + ' > ' + plan.lastVol + '）';
+    rEl.value = String(plan.reps);
+    if (hint) hint.textContent = '要做到 ' + plan.reps + ' 下（' + plan.newVol + ' > 上次 ' + plan.lastVol + '）';
+    if (tip) tip.textContent = String(wEl.value) + 'kg × ' + plan.reps;
 }
 
 function focusExerciseEntry(exIdx, recordType) {
@@ -546,7 +550,7 @@ function renderCurrentWorkout() {
         if (lastPerf && lastPerf.sets && lastPerf.sets.length) {
             const lastDate = lastPerf.date ? `（${escapeHtml(lastPerf.date)}）` : '';
             const overload = typeof suggestProgressiveOverload === 'function' ? suggestProgressiveOverload(ex.name) : '';
-            lastHtml = `<div>上次${lastDate}：${overload ? ' <span class="text-emerald-300">' + escapeHtml(overload) + '</span>' : ''}</div>`;
+            lastHtml = `<div>上次${lastDate}：${overload ? ' <span class="text-emerald-300" id="overload-tip-' + exIdx + '">' + escapeHtml(overload) + '</span>' : ''}</div>`;
             lastPerf.sets.forEach((s, i) => {
                 const display = typeof formatSetDisplay === 'function'
                     ? formatSetDisplay(ex.name, s)
@@ -710,7 +714,9 @@ function renderCurrentWorkout() {
                     <div class="col-span-5">
                         <label for="set-weight-${exIdx}" class="text-[9px] text-[#a8a29e] mb-0.5 block">重量 (kg)</label>
                         <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg"
+                               inputmode="decimal"
                                oninput="onHeavierWeightReps(${exIdx})"
+                               onchange="onHeavierWeightReps(${exIdx})"
                                class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
                     </div>
                     <div class="col-span-4">
