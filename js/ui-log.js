@@ -607,13 +607,7 @@ function renderCurrentWorkout() {
                     </div>
                 </div>
 
-                <div class="ex-action-row">
-                    <button type="button" onclick="copyLastToExercise(${exIdx})"
-                            class="ex-action-chip">使用上次</button>
-                    ${sparkHtml || '<div class="ex-volume-spark-wrap ex-volume-spark-empty"></div>'}
-                    <button type="button" onclick="copyPrevSetToExercise(${exIdx})"
-                            class="ex-action-chip">使用上組</button>
-                </div>
+                ${(!isTreadmill && !isHold) ? `<div class="ex-action-row">${sparkHtml || '<div class="ex-volume-spark-wrap ex-volume-spark-empty"></div>'}</div>` : ''}
 
                 ${isTreadmill ? `
                 <div class="mt-2 grid grid-cols-12 gap-1.5 items-end">

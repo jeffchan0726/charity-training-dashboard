@@ -117,6 +117,10 @@
             gap: 8px;
             margin-top: 6px;
         }
+        .ex-action-row:has(.ex-volume-spark-empty) {
+            display: none;
+            margin: 0;
+        }
         .ex-action-chip {
             flex: 0 0 auto;
             width: auto;
