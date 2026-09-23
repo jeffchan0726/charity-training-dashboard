@@ -2177,20 +2177,26 @@
                 }
                 const logUserName = document.getElementById('logUserName');
                 if (logUserName) logUserName.textContent = `(${currentUser})`;
+                if (typeof loadWorkoutData === 'function') {
+                    try { loadWorkoutData({ skipHistory: false }); } catch (_) {}
+                }
+                if (typeof rebuildLastPerformed === 'function') {
+                    try { rebuildLastPerformed(); } catch (_) {}
+                }
                 if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
 
-                // 背景靜默載入雲端數據；log tab 未打開唔顯示 loading（撳入去應即時有內容）
+                // 先用本機快取即時開畫面，雲端喺背景更新，唔阻塞登入。
                 showInitialSyncStatus('loading');
                 if (typeof bootstrapGoogleCloudData === 'function') {
-                    await bootstrapGoogleCloudData();
-                } else {
-                    await loadUserLogs();
+                    bootstrapGoogleCloudData().catch(function () {});
+                } else if (typeof loadUserLogs === 'function') {
+                    loadUserLogs({ silent: true }).catch(function () {});
                 }
             } else {
                 if (typeof applyAccountChrome === 'function') applyAccountChrome(false);
                 if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                 if (typeof bootstrapGoogleCloudData === 'function') {
-                    await bootstrapGoogleCloudData();
+                    bootstrapGoogleCloudData().catch(function () {});
                 }
             }
 
@@ -2305,5 +2311,5 @@
             }
         });
 
-        if (document.readyState === 'complete') initialize();
-        else window.addEventListener('load', initialize);
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize);
+        else initialize();

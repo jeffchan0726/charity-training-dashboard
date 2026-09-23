@@ -872,39 +872,42 @@ async function bootstrapGoogleCloudData(options = {}) {
             );
         }
 
-        if (typeof prefetchYugongLeaderboard === 'function') {
-            tasks.push(
-                prefetchYugongLeaderboard(force).catch(err => {
-                    console.warn('[bootstrapGoogleCloudData] yugong prefetch failed:', err);
-                })
-            );
-        }
-
-        if (currentUser && typeof loadBodyLogsFromSheet === 'function') {
-            tasks.push(
-                Promise.resolve(loadBodyLogsFromSheet()).catch(err => {
-                    console.warn('[bootstrapGoogleCloudData] body log failed:', err);
-                })
-            );
-        }
-
-        if (currentUser && typeof loadCalorieLogsFromSheet === 'function') {
-            tasks.push(
-                Promise.resolve(loadCalorieLogsFromSheet()).catch(err => {
-                    console.warn('[bootstrapGoogleCloudData] calorie log failed:', err);
-                })
-            );
-        }
-
-        if (currentUser && typeof loadHabitsFromSheet === 'function') {
-            tasks.push(
-                Promise.resolve(loadHabitsFromSheet()).catch(err => {
-                    console.warn('[bootstrapGoogleCloudData] habits failed:', err);
-                })
-            );
-        }
-
         await Promise.all(tasks);
+
+        const later = [];
+        if (typeof prefetchYugongLeaderboard === 'function') {
+            later.push(function () {
+                return prefetchYugongLeaderboard(force).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] yugong prefetch failed:', err);
+                });
+            });
+        }
+        if (currentUser && typeof loadBodyLogsFromSheet === 'function') {
+            later.push(function () {
+                return Promise.resolve(loadBodyLogsFromSheet()).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] body log failed:', err);
+                });
+            });
+        }
+        if (currentUser && typeof loadCalorieLogsFromSheet === 'function') {
+            later.push(function () {
+                return Promise.resolve(loadCalorieLogsFromSheet()).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] calorie log failed:', err);
+                });
+            });
+        }
+        if (currentUser && typeof loadHabitsFromSheet === 'function') {
+            later.push(function () {
+                return Promise.resolve(loadHabitsFromSheet()).catch(err => {
+                    console.warn('[bootstrapGoogleCloudData] habits failed:', err);
+                });
+            });
+        }
+        if (later.length) {
+            setTimeout(function () {
+                Promise.all(later.map(function (fn) { return fn(); })).catch(function () {});
+            }, 600);
+        }
 
         if (typeof primeYugongTabFromPrefetch === 'function') {
             try { primeYugongTabFromPrefetch(); } catch (_) {}

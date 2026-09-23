@@ -1,5 +1,5 @@
 // Recomp PWA: precache shell only. 動作圖／山圖／xlsx 按需要 cache-on-demand。
-const CACHE_NAME = 'recomp-charity-v2.4.10';
+const CACHE_NAME = 'recomp-charity-v2.4.11';
 
 const CORE_ASSETS = [
   './',
@@ -63,15 +63,16 @@ self.addEventListener('fetch', (event) => {
 
   if (isShellRequest(req.url)) {
     event.respondWith(
-      fetch(req).then((res) => {
-        if (res && res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
-          const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
-        }
-        return res;
-      }).catch(() => caches.match(req).then((cached) => {
-        return cached || caches.match('index.html') || new Response('Offline', { status: 503 });
-      }))
+      caches.match(req).then((cached) => {
+        const fresh = fetch(req).then((res) => {
+          if (res && res.status === 200 && (res.type === 'basic' || res.type === 'cors')) {
+            const copy = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+          }
+          return res;
+        }).catch(() => cached || caches.match('index.html'));
+        return cached || fresh;
+      })
     );
     return;
   }

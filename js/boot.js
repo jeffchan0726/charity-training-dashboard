@@ -1,6 +1,6 @@
 // js/boot.js — 組裝 partials，再按順序載入 app scripts（GitHub Pages 相對路徑）
 (function () {
-    var VERSION = '2.4.10';
+    var VERSION = '2.4.11';
     var PARTIALS = [
         'partials/overview.html',
         'partials/schedule.html',
@@ -42,18 +42,31 @@
         return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'v=' + VERSION;
     }
 
-    function loadScript(src) {
+    function loadScriptsInOrder(srcs) {
         return new Promise(function (resolve, reject) {
-            var s = document.createElement('script');
-            s.src = withV(src);
-            s.onload = function () { resolve(); };
-            s.onerror = function () { reject(new Error('Failed to load ' + src)); };
-            document.body.appendChild(s);
+            var left = srcs.length;
+            if (!left) { resolve(); return; }
+            var failed = false;
+            srcs.forEach(function (src) {
+                var s = document.createElement('script');
+                s.src = withV(src);
+                s.async = false;
+                s.onload = function () {
+                    if (failed) return;
+                    if (--left === 0) resolve();
+                };
+                s.onerror = function () {
+                    if (failed) return;
+                    failed = true;
+                    reject(new Error('Failed to load ' + src));
+                };
+                document.body.appendChild(s);
+            });
         });
     }
 
     function fetchText(url) {
-        return fetch(withV(url), { cache: 'no-cache' }).then(function (res) {
+        return fetch(withV(url)).then(function (res) {
             if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url);
             return res.text();
         });
@@ -72,11 +85,7 @@
     Promise.all(PARTIALS.map(fetchText)).then(function (chunks) {
         var host = document.getElementById('app-panels');
         if (host) host.innerHTML = chunks.join('\n');
-        var seq = Promise.resolve();
-        SCRIPTS.forEach(function (src) {
-            seq = seq.then(function () { return loadScript(src); });
-        });
-        return seq;
+        return loadScriptsInOrder(SCRIPTS);
     }).then(function () {
         var splash = document.getElementById('app-boot-splash');
         if (splash) splash.classList.add('hidden');
