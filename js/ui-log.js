@@ -80,7 +80,7 @@ function fillExerciseInputsFromLast(ex, idx, force) {
     onHeavierWeightReps(idx);
 }
 
-function onHeavierWeightReps(exIdx) {
+function onHeavierWeightReps(exIdx, immediate) {
     const hint = document.getElementById('volume-target-' + exIdx);
     const tip = document.getElementById('overload-tip-' + exIdx);
     const ex = currentWorkout && currentWorkout.exercises[exIdx];
@@ -89,6 +89,16 @@ function onHeavierWeightReps(exIdx) {
     if (!ex || !wEl || !rEl) return;
     if (tip && !tip.dataset.base) tip.dataset.base = tip.textContent;
     const baseline = getMatchingLastSet(ex);
+    const nw = Number(wEl.value);
+    const lighter = !!(baseline && nw > 0 && nw < Number(baseline.weight));
+    if (lighter && !immediate) {
+        clearTimeout(onHeavierWeightReps._timer);
+        onHeavierWeightReps._timer = setTimeout(function () {
+            onHeavierWeightReps(exIdx, true);
+        }, 280);
+        return;
+    }
+    clearTimeout(onHeavierWeightReps._timer);
     const plan = (baseline && typeof repsToBeatLastVolume === 'function')
         ? repsToBeatLastVolume(baseline.weight, baseline.reps, wEl.value)
         : null;
@@ -710,7 +720,7 @@ function renderCurrentWorkout() {
                         <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg"
                                inputmode="decimal"
                                oninput="onHeavierWeightReps(${exIdx})"
-                               onchange="onHeavierWeightReps(${exIdx})"
+                               onchange="onHeavierWeightReps(${exIdx}, true)"
                                class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
                     </div>
                     <div class="col-span-4">

@@ -353,12 +353,12 @@ function calculateSetVolume(set, exName) {
     return w * r;
 }
 
-/** 新重量要重過上一組（重量×次數）最少要幾多下。唔加重就唔建議。 */
+/** 新重量（重啲或者輕啲）要高過上一組重量×次數，最少要幾多下。重量一樣就唔改。 */
 function repsToBeatLastVolume(lastWeight, lastReps, newWeight) {
     const lw = Number(lastWeight) || 0;
     const lr = Number(lastReps) || 0;
     const nw = Number(newWeight) || 0;
-    if (!(lw > 0) || !(lr > 0) || !(nw > lw)) return null;
+    if (!(lw > 0) || !(lr > 0) || !(nw > 0) || nw === lw) return null;
     const lastVol = lw * lr;
     const reps = Math.floor(lastVol / nw) + 1;
     if (!isFinite(reps) || reps < 1 || reps > 999) return null;
