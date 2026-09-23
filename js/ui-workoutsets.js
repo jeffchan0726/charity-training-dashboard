@@ -116,7 +116,7 @@ function loadWorkoutSet(set) {
 
     if (!currentWorkout) {
         // This will go through the guarded startNewWorkout (which will enter fullscreen only if not already in it)
-        startNewWorkout();
+        startNewWorkout(null, { skipRender: true });
     }
 
     // Append the set's exercises (deduped)
@@ -138,9 +138,11 @@ function loadWorkoutSet(set) {
     }
     saveWorkoutData();
 
-    // Re-render the sets bar while in fullscreen so it stays fresh and interactive
+    // 收起頂欄之後先畫 Workout Sets，唔好阻開訓第一下嘅點擊。
     if (typeof renderWorkoutSetsBar === 'function') {
-        renderWorkoutSetsBar();
+        setTimeout(function () {
+            try { renderWorkoutSetsBar(); } catch (_) {}
+        }, 0);
     }
 
     // Auto-collapse 「進行中訓練」 header after picking a day / set (一鍵開訓 included).

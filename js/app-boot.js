@@ -304,64 +304,72 @@
                     throw new Error(msg);
                 }
                 workoutLogs = logs;
-                renderLogTable();
+                const applyCloudLogs = function () {
+                    const inTraining = document.body.classList.contains('fullscreen-training');
+                    if (!inTraining) renderLogTable();
 
-                try {
-                    const localSnapshot = typeof getLocalHistoryFromStorage === 'function'
-                        ? getLocalHistoryFromStorage()
-                        : (Array.isArray(workoutHistory) ? JSON.parse(JSON.stringify(workoutHistory)) : []);
+                    try {
+                        const localSnapshot = Array.isArray(workoutHistory) ? workoutHistory : [];
 
-                    const cloudHistory = typeof rebuildWorkoutsFromLogRows === 'function'
-                        ? rebuildWorkoutsFromLogRows(logs)
-                        : [];
+                        const cloudHistory = typeof rebuildWorkoutsFromLogRows === 'function'
+                            ? rebuildWorkoutsFromLogRows(logs)
+                            : [];
 
-                    workoutHistory = typeof mergeCloudAndLocalHistory === 'function'
-                        ? mergeCloudAndLocalHistory(cloudHistory, localSnapshot)
-                        : (cloudHistory.length ? cloudHistory : localSnapshot);
+                        workoutHistory = typeof mergeCloudAndLocalHistory === 'function'
+                            ? mergeCloudAndLocalHistory(cloudHistory, localSnapshot)
+                            : (cloudHistory.length ? cloudHistory : localSnapshot);
 
-                    if (typeof dedupeWorkoutHistoryBySessionId === 'function') {
-                        workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+                        if (typeof dedupeWorkoutHistoryBySessionId === 'function') {
+                            workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+                        }
+                        if (typeof _histVolumeIndex !== 'undefined') {
+                            _histVolumeIndex = null;
+                            _histVolumeSig = '';
+                        }
+
+                        if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
+                        if (typeof saveWorkoutData === 'function') saveWorkoutData();
+                    } catch (e) {
+                        console.warn('Backend data load failed, using local cache', e);
+                        if (typeof restoreLocalWorkoutCacheAfterCloudLoadFail === 'function') {
+                            restoreLocalWorkoutCacheAfterCloudLoadFail();
+                        }
                     }
-                    (workoutHistory || []).forEach(w => {
-                        if (typeof dedupeWorkoutSets === 'function') dedupeWorkoutSets(w);
-                    });
 
-                    if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
-                    if (typeof saveWorkoutData === 'function') saveWorkoutData();
-                } catch (e) {
-                    console.warn('Backend data load failed, using local cache', e);
-                    if (typeof restoreLocalWorkoutCacheAfterCloudLoadFail === 'function') {
-                        restoreLocalWorkoutCacheAfterCloudLoadFail();
+                    try {
+                        const stillTraining = document.body.classList.contains('fullscreen-training');
+                        if (!stillTraining) {
+                            if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                            if (typeof renderOverallStats === 'function') renderOverallStats();
+                            if (typeof renderCalendar === 'function') renderCalendar();
+                            if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
+                            if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
+                        }
+                    } catch (err) {
+                        console.warn('post loadUserLogs render error (non-fatal):', err);
                     }
-                }
 
-                // Refresh rich UI views
-                try {
-                    if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
-                    if (typeof renderOverallStats === 'function') renderOverallStats();
-                    if (typeof renderCalendar === 'function') renderCalendar();
-                    if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
-                } catch (err) {
-                    console.warn('post loadUserLogs render error (non-fatal):', err);
-                }
+                    try { updateStartTrainingButton(); } catch (e) {}
 
-                // 更新「開始新訓練 / 繼續今日訓練」按鈕
-                try { updateStartTrainingButton(); } catch (e) {}
-                try {
-                    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
-                } catch (e) {}
+                    cloudLogsReady = true;
+                    if (typeof finalizeLogTabUiReady === 'function') {
+                        finalizeLogTabUiReady();
+                    } else {
+                        if (loadingEl) loadingEl.classList.add('hidden');
+                        if (emptyState) emptyState.style.display = '';
+                        if (subNav) subNav.style.visibility = '';
+                    }
 
-                cloudLogsReady = true;
-                if (typeof finalizeLogTabUiReady === 'function') {
-                    finalizeLogTabUiReady();
+                    showInitialSyncStatus('success');
+                };
+
+                if (document.body.classList.contains('fullscreen-training')) {
+                    const later = function () { try { applyCloudLogs(); } catch (e) { console.warn(e); } };
+                    if (typeof requestIdleCallback === 'function') requestIdleCallback(later, { timeout: 2500 });
+                    else setTimeout(later, 700);
                 } else {
-                    if (loadingEl) loadingEl.classList.add('hidden');
-                    if (emptyState) emptyState.style.display = '';
-                    if (subNav) subNav.style.visibility = '';
+                    applyCloudLogs();
                 }
-
-                // 右上角成功提示
-                showInitialSyncStatus('success');
 
             } catch (err) {
                 console.error('[loadUserLogs] getLogs / rebuild failed:', err);
@@ -390,7 +398,7 @@
                 // 還原其他內容（本地資料）
                 if (emptyState) emptyState.style.display = '';
                 if (subNav) subNav.style.visibility = '';
-                if (historyList) {
+                if (historyList && !document.body.classList.contains('fullscreen-training')) {
                     try { if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory(); } catch (_) {}
                 }
 
@@ -756,7 +764,10 @@
             }
         }
 
-        function startNewWorkout(dateStr = null) {
+        function startNewWorkout(dateStr = null, options = null) {
+            const opts = (dateStr && typeof dateStr === 'object') ? dateStr : (options || {});
+            if (dateStr && typeof dateStr === 'object') dateStr = null;
+            const skipRender = opts.skipRender === true;
             const alreadyInFullscreen = document.body.classList.contains('fullscreen-training') || isInFullScreenTraining;
 
             if (!currentUser) {
@@ -887,7 +898,7 @@
 
             // Defensive renders - these functions should also be null-safe internally, but guard the calls
             try {
-                renderCurrentWorkout();
+                if (!skipRender) renderCurrentWorkout();
             } catch (e) {}
             try {
                 updateSessionSummary();
@@ -924,9 +935,9 @@
 
             // Always re-render the dynamic Workout Sets bar (important for full-screen) - now instant if cached
             if (typeof renderWorkoutSetsBar === 'function') {
-                try {
-                    renderWorkoutSetsBar();
-                } catch (e) {}
+                setTimeout(function () {
+                    try { renderWorkoutSetsBar(); } catch (_) {}
+                }, 0);
             }
 
             // Trigger background refresh if no cache or stale (non-blocking)
@@ -940,7 +951,7 @@
                 // Enter immersive full-screen training mode
                 if (typeof enterImmersiveMode === 'function') {
                     try {
-                        enterImmersiveMode();
+                        enterImmersiveMode(skipRender ? { skipRender: true } : undefined);
                     } catch (e) {
                         // fallback: at least show the panel
                         const p = document.getElementById('live-log-panel');
@@ -1359,7 +1370,7 @@
             // Show modal - force high z for fullscreen, remove hidden, add flex
             // Robust show for both normal and fullscreen-training modes
             // Use very high z so it overlays the immersive panel (z-60/z-70) and stickies
-            modal.style.zIndex = '90';
+            modal.style.zIndex = '240';
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
@@ -2008,6 +2019,7 @@
                 // log tab 專用：切換過去之後 refresh 歷史/統計/日曆（logged-in）
                 if (tab === 'log') {
                     setTimeout(() => {
+                        if (document.body.classList.contains('fullscreen-training')) return;
                         try {
                             if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
                             if (typeof renderOverallStats === 'function') renderOverallStats();

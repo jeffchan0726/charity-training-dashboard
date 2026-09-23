@@ -1,7 +1,8 @@
 // js/fullscreen.js
 // Fullscreen / immersive training mode logic extracted as part of architecture refactor (Option A)
 
-function enterImmersiveMode() {
+function enterImmersiveMode(options) {
+    const skipRender = !!(options && options.skipRender);
     try {
         // Use fullscreen-training class for true full-screen immersive mode
         document.body.classList.add('fullscreen-training');
@@ -11,24 +12,22 @@ function enterImmersiveMode() {
 
         const panel = document.getElementById('live-log-panel');
         if (panel) {
-            // Robust move to body for fixed positioning: this prevents the panel from being trapped in a hidden ancestor (#content-log may have 'hidden' from tab state) which can cause the entire immersive view to appear blank or not render.
+            // Move onto document.body so #app-shell overflow doesn't clip or steal taps.
             if (!immersivePanelOriginalParent) {
                 immersivePanelOriginalParent = panel.parentNode;
             }
-            const shell = document.getElementById('app-shell') || document.body;
-            if (immersivePanelOriginalParent && panel.parentNode !== shell) {
-                shell.appendChild(panel);
+            if (panel.parentNode !== document.body) {
+                document.body.appendChild(panel);
             }
-            // Ensure it pops to full viewport (CSS rules handle most, but force important styles)
             panel.style.position = 'fixed';
             panel.style.inset = '0';
-            panel.style.zIndex = '60';
+            panel.style.zIndex = '100';
             panel.style.margin = '0';
             panel.style.borderRadius = '0';
             panel.style.backgroundColor = '#1c1917';
             panel.style.overflow = 'hidden';
-            panel.style.height = '100dvh';  /* reinforce dynamic viewport height */
-            panel.classList.remove('hidden');  // ensure visible
+            panel.style.height = '100dvh';
+            panel.classList.remove('hidden');
         }
 
         const container = panel ? panel.querySelector('.immersive-container') : null;
@@ -55,19 +54,21 @@ function enterImmersiveMode() {
         // After forcing the immersive layout styles, re-render the key Workout Log training UI elements.
         // This ensures #current-workout-exercises, session summary, and sets bar are populated and visible in the new fixed/flex context.
         // Only the log-related training region is affected; other tabs remain intact in DOM for restore on exit.
-        if (typeof renderCurrentWorkout === 'function') renderCurrentWorkout();
+        if (!skipRender && typeof renderCurrentWorkout === 'function') renderCurrentWorkout();
         if (typeof updateSessionSummary === 'function') updateSessionSummary();
 
-        // Auto-save when entering full screen
-        saveWorkoutData();
+        if (typeof saveWorkoutData === 'function') saveWorkoutData();
 
-        // Re-render Workout Sets bar AFTER the panel and container have been forced into full-screen styles.
+        // 組數列收起之後先畫，避免開訓當下主線程被一排按鈕卡住。
         if (typeof renderWorkoutSetsBar === 'function') {
-            renderWorkoutSetsBar();
+            setTimeout(function () {
+                try { renderWorkoutSetsBar(); } catch (_) {}
+            }, 0);
         }
         if (typeof setImmersiveAddExerciseCollapsed === 'function') {
             setImmersiveAddExerciseCollapsed(true);
         }
+        if (panel) panel.style.touchAction = 'manipulation';
     } catch (err) {
         console.error('Error in enterImmersiveMode, attempting cleanup', err);
         // safety
@@ -147,6 +148,17 @@ function exitImmersiveMode() {
         if (topHeader) topHeader.style.display = '';
         const subNav = document.getElementById('log-sub-nav');
         if (subNav) subNav.style.display = '';
+
+        if (typeof _exerciseDragState !== 'undefined') _exerciseDragState = null;
+        document.body.classList.remove('exercise-drag-active');
+
+        if (typeof flushWorkoutDataSave === 'function') flushWorkoutDataSave();
+
+        setTimeout(function () {
+            if (document.body.classList.contains('fullscreen-training')) return;
+            try { if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory(); } catch (_) {}
+            try { if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog(); } catch (_) {}
+        }, 0);
 
         // Cleanup any lingering debug listeners (defensive)
         const scrollArea = document.querySelector('.immersive-scroll');

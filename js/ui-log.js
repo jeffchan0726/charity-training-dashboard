@@ -220,43 +220,85 @@ function updateSetField(exIdx, setIdx, field, value) {
     saveWorkoutData();
 }
 
-function collectExerciseVolumeByDate(exerciseName) {
-    const byDate = {};
-    function setVolume(s) {
-        if (typeof calculateSetVolume === 'function') return calculateSetVolume(s, exerciseName) || 0;
-        return (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
+let _histVolumeIndex = null;
+let _histVolumeSig = '';
+
+function historyVolumeSignature() {
+    const list = (typeof workoutHistory !== 'undefined' && workoutHistory) ? workoutHistory : [];
+    let sig = String(list.length);
+    const n = Math.min(list.length, 20);
+    for (let i = 0; i < n; i++) {
+        const w = list[i];
+        sig += '|' + (w && (w.id || w.date) || '');
+        (w && w.exercises || []).forEach(function (ex) {
+            sig += '.' + ((ex && ex.sets) ? ex.sets.length : 0);
+        });
     }
+    return sig;
+}
+
+function getHistoryVolumeIndex() {
+    const sig = historyVolumeSignature();
+    if (_histVolumeIndex && _histVolumeSig === sig) return _histVolumeIndex;
+    const index = {};
     function addWorkout(w) {
         if (!w || !w.exercises) return;
         const d = typeof normalizeDateToLocal === 'function'
             ? normalizeDateToLocal(w.date)
             : String(w.date || '').slice(0, 10);
         if (!d) return;
-        const ex = (w.exercises || []).find(function (e) { return e && e.name === exerciseName; });
-        if (!ex || !ex.sets || !ex.sets.length) return;
-        let vol = 0;
-        let set1 = 0;
-        ex.sets.forEach(function (s, i) {
-            const v = setVolume(s);
-            vol += v;
-            if (i === 0) set1 = v;
+        w.exercises.forEach(function (ex) {
+            if (!ex || !ex.name || !ex.sets || !ex.sets.length) return;
+            let vol = 0;
+            let set1 = 0;
+            ex.sets.forEach(function (s, i) {
+                const v = typeof calculateSetVolume === 'function'
+                    ? (calculateSetVolume(s, ex.name) || 0)
+                    : ((parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0));
+                vol += v;
+                if (i === 0) set1 = v;
+            });
+            if (vol <= 0) return;
+            if (!index[ex.name]) index[ex.name] = {};
+            if (!index[ex.name][d]) index[ex.name][d] = { total: 0, set1: 0 };
+            index[ex.name][d].total += vol;
+            if (!index[ex.name][d].set1 && set1 > 0) index[ex.name][d].set1 = set1;
         });
-        if (vol <= 0) return;
-        if (!byDate[d]) byDate[d] = { total: 0, set1: 0 };
-        byDate[d].total += vol;
-        if (!byDate[d].set1 && set1 > 0) byDate[d].set1 = set1;
     }
-    const liveDate = (typeof currentWorkout !== 'undefined' && currentWorkout)
-        ? (typeof normalizeDateToLocal === 'function'
-            ? normalizeDateToLocal(currentWorkout.date)
-            : String(currentWorkout.date || '').slice(0, 10))
-        : '';
-    (typeof workoutHistory !== 'undefined' ? workoutHistory : []).forEach(function (w) {
-        if (liveDate && (typeof normalizeDateToLocal === 'function'
-            ? normalizeDateToLocal(w.date) : String(w.date || '').slice(0, 10)) === liveDate) return;
-        addWorkout(w);
+    (typeof workoutHistory !== 'undefined' ? workoutHistory : []).forEach(addWorkout);
+    _histVolumeIndex = index;
+    _histVolumeSig = sig;
+    return index;
+}
+
+function collectExerciseVolumeByDate(exerciseName) {
+    const byDate = {};
+    const hist = getHistoryVolumeIndex()[exerciseName] || {};
+    Object.keys(hist).forEach(function (d) {
+        byDate[d] = { total: hist[d].total, set1: hist[d].set1 };
     });
-    if (typeof currentWorkout !== 'undefined' && currentWorkout) addWorkout(currentWorkout);
+    const live = (typeof currentWorkout !== 'undefined' && currentWorkout) ? currentWorkout : null;
+    const liveDate = live
+        ? (typeof normalizeDateToLocal === 'function'
+            ? normalizeDateToLocal(live.date)
+            : String(live.date || '').slice(0, 10))
+        : '';
+    if (liveDate) delete byDate[liveDate];
+    if (live && live.exercises) {
+        const ex = live.exercises.find(function (e) { return e && e.name === exerciseName; });
+        if (ex && ex.sets && ex.sets.length && liveDate) {
+            let vol = 0;
+            let set1 = 0;
+            ex.sets.forEach(function (s, i) {
+                const v = typeof calculateSetVolume === 'function'
+                    ? (calculateSetVolume(s, exerciseName) || 0)
+                    : ((parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0));
+                vol += v;
+                if (i === 0) set1 = v;
+            });
+            if (vol > 0) byDate[liveDate] = { total: vol, set1: set1 };
+        }
+    }
     return byDate;
 }
 
@@ -443,7 +485,7 @@ function renderCurrentWorkout() {
                     </button>
                 </div>
                 <div class="flex gap-2 items-start">
-                    <img src="${imgSrc}" 
+                    <img src="${imgSrc}" loading="lazy" decoding="async" alt=""
                          class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer exercise-detail-trigger"
                          data-exercise-name="${exNameAttr}"
                          onerror="this.onerror=null;this.src='images/icon.jpeg';">
@@ -948,29 +990,37 @@ function onExerciseDragHandlePointerDown(e, exIdx, context = 'current') {
     const card = handle.closest('.exercise-log-card');
     if (!card) return;
 
-    e.preventDefault();
     _exerciseDragState = {
         fromIdx: exIdx,
         card,
         pointerId: e.pointerId,
         hoverCard: card,
-        context
+        context,
+        startX: e.clientX,
+        startY: e.clientY,
+        dragging: false,
+        handle
     };
-
-    try { handle.setPointerCapture(e.pointerId); } catch (_) {}
-    card.classList.add('exercise-dragging');
-    document.body.classList.add('exercise-drag-active');
 }
 
 function onExerciseDragHandlePointerMove(e) {
     if (!_exerciseDragState || e.pointerId !== _exerciseDragState.pointerId) return;
+    if (!_exerciseDragState.dragging) {
+        const dx = e.clientX - _exerciseDragState.startX;
+        const dy = e.clientY - _exerciseDragState.startY;
+        if ((dx * dx + dy * dy) < 64) return;
+        _exerciseDragState.dragging = true;
+        try { _exerciseDragState.handle.setPointerCapture(e.pointerId); } catch (_) {}
+        _exerciseDragState.card.classList.add('exercise-dragging');
+        document.body.classList.add('exercise-drag-active');
+    }
     e.preventDefault();
 
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    const targetCard = el?.closest?.('.exercise-log-card');
+    const targetCard = el && el.closest ? el.closest('.exercise-log-card') : null;
     const containerSel = _getExerciseDragContainerSel(_exerciseDragState.context);
 
-    document.querySelectorAll(`${containerSel} .exercise-log-card`).forEach(c => {
+    document.querySelectorAll(containerSel + ' .exercise-log-card').forEach(c => {
         c.classList.remove('exercise-drag-over');
     });
 
@@ -983,27 +1033,38 @@ function onExerciseDragHandlePointerMove(e) {
 function onExerciseDragHandlePointerUp(e) {
     if (!_exerciseDragState || e.pointerId !== _exerciseDragState.pointerId) return;
 
-    const { fromIdx, card, hoverCard, context } = _exerciseDragState;
-    const containerSel = _getExerciseDragContainerSel(context);
+    const state = _exerciseDragState;
+    _exerciseDragState = null;
     try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
 
-    card?.classList.remove('exercise-dragging');
-    document.querySelectorAll(`${containerSel} .exercise-log-card`).forEach(c => {
+    state.card?.classList.remove('exercise-dragging');
+    document.querySelectorAll(_getExerciseDragContainerSel(state.context) + ' .exercise-log-card').forEach(c => {
         c.classList.remove('exercise-drag-over');
     });
     document.body.classList.remove('exercise-drag-active');
 
-    if (hoverCard && hoverCard.dataset.exIdx != null) {
-        const toIdx = parseInt(hoverCard.dataset.exIdx, 10);
-        if (!isNaN(toIdx)) _moveExerciseByContext(context, fromIdx, toIdx);
-    }
+    if (!state.dragging) return;
 
-    _exerciseDragState = null;
+    if (state.hoverCard && state.hoverCard.dataset.exIdx != null) {
+        const toIdx = parseInt(state.hoverCard.dataset.exIdx, 10);
+        if (!isNaN(toIdx)) _moveExerciseByContext(state.context, state.fromIdx, toIdx);
+    }
 }
 
 function onExerciseDragHandlePointerCancel(e) {
     onExerciseDragHandlePointerUp(e);
 }
+
+document.addEventListener('pointerup', function (e) {
+    if (_exerciseDragState && e.pointerId === _exerciseDragState.pointerId) {
+        onExerciseDragHandlePointerUp(e);
+    }
+}, true);
+document.addEventListener('pointercancel', function (e) {
+    if (_exerciseDragState && e.pointerId === _exerciseDragState.pointerId) {
+        onExerciseDragHandlePointerUp(e);
+    }
+}, true);
 
 window.startHoldTimer = startHoldTimer;
 window.stopHoldTimer = stopHoldTimer;

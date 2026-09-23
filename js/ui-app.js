@@ -52,6 +52,26 @@ function showMillenniumPanel(panel) {
     if (panel === 'rixing') renderRixingTab();
 }
 
+function activateLogTabQuiet() {
+    const logContent = document.getElementById('content-log');
+    if (!logContent) return;
+    document.querySelectorAll('.tab-content').forEach(function (el) {
+        if (el && el.classList) el.classList.add('hidden');
+    });
+    document.querySelectorAll('.nav-tab').forEach(function (el) {
+        if (el && el.classList) el.classList.remove('active', 'bg-[#166534]', 'text-white');
+    });
+    logContent.classList.remove('hidden');
+    const logTabBtn = document.getElementById('tab-log');
+    if (logTabBtn) logTabBtn.classList.add('active', 'bg-[#166534]', 'text-white');
+    document.querySelectorAll('#main-bottom-nav [role="tab"]').forEach(function (btn) {
+        btn.setAttribute('aria-selected', btn.id === 'tab-log' ? 'true' : 'false');
+    });
+    try {
+        if (location.hash !== '#log') history.replaceState(null, '', '#log');
+    } catch (e) {}
+}
+
 function startTrainingDay(dayId) {
     if (typeof currentUser === 'undefined' || !currentUser) {
         if (typeof showLoginModal === 'function') showLoginModal();
@@ -61,7 +81,8 @@ function startTrainingDay(dayId) {
         return Number(d.id) === Number(dayId);
     });
     if (!day) return;
-    if (typeof switchTab === 'function') switchTab('log');
+    // 唔好走 switchTab：嗰條路會即刻重畫歷史／日曆，同埋再打一次雲端，開訓當下會卡住撳唔到。
+    activateLogTabQuiet();
     if (typeof loadWorkoutSet === 'function') {
         loadWorkoutSet({ name: day.fullName, exercises: day.exercises, isPreset: true });
     }
@@ -70,7 +91,7 @@ function startTrainingDay(dayId) {
     if (!inFs && typeof enterImmersiveMode === 'function') {
         const panel = document.getElementById('live-log-panel');
         if (panel) panel.classList.remove('hidden');
-        enterImmersiveMode();
+        enterImmersiveMode({ skipRender: true });
     }
     if (typeof setImmersiveTopCollapsed === 'function') setImmersiveTopCollapsed(true);
     if (typeof setImmersiveAddExerciseCollapsed === 'function') setImmersiveAddExerciseCollapsed(true);
@@ -810,6 +831,7 @@ let dietRefreshLock = false;
 let dietWeekPreviewIdx = null;
 
 function refreshDietFromBodyLog() {
+    if (document.body.classList.contains('fullscreen-training')) return;
     if (dietRefreshLock) {
         applyAutoDietGoals();
         return;

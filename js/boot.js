@@ -1,6 +1,6 @@
 // js/boot.js — 組裝 partials，再按順序載入 app scripts（GitHub Pages 相對路徑）
 (function () {
-    var VERSION = '2.4.11';
+    var VERSION = '2.4.13';
     var PARTIALS = [
         'partials/overview.html',
         'partials/schedule.html',

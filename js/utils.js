@@ -206,7 +206,29 @@ function dedupeWorkoutHistoryBySessionId(history) {
     return out;
 }
 
-function saveWorkoutData() {
+let _workoutSaveTimer = null;
+
+function flushWorkoutDataSave() {
+    if (_workoutSaveTimer) {
+        clearTimeout(_workoutSaveTimer);
+        _workoutSaveTimer = null;
+    }
+    _writeWorkoutDataNow();
+}
+
+function saveWorkoutData(immediate) {
+    if (immediate === true) {
+        flushWorkoutDataSave();
+        return;
+    }
+    if (_workoutSaveTimer) return;
+    _workoutSaveTimer = setTimeout(function () {
+        _workoutSaveTimer = null;
+        _writeWorkoutDataNow();
+    }, 60);
+}
+
+function _writeWorkoutDataNow() {
     try {
         const data = {
             history: workoutHistory,
@@ -222,6 +244,9 @@ function saveWorkoutData() {
         localStorage.setItem(getUserStorageKey(), JSON.stringify(data));
     } catch (e) { console.warn('Local storage save failed', e); }
 }
+
+window.addEventListener('pagehide', flushWorkoutDataSave);
+window.addEventListener('beforeunload', flushWorkoutDataSave);
 
 function loadWorkoutData(options = {}) {
     const skipHistory = options.skipHistory === true;
@@ -673,7 +698,7 @@ function getLocalHistoryFromStorage() {
 }
 
 function mergeCloudAndLocalHistory(cloudHistory, localHistory) {
-    const cloud = (cloudHistory || []).map(w => dedupeWorkoutSets(JSON.parse(JSON.stringify(w))));
+    const cloud = (cloudHistory || []).map(w => dedupeWorkoutSets(w));
     const local = localHistory || [];
     const cloudSids = new Set(cloud.map(w => getWorkoutSessionId(w)).filter(Boolean));
     const keepLocal = [];
