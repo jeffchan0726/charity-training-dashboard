@@ -353,6 +353,22 @@ function calculateSetVolume(set, exName) {
     return w * r;
 }
 
+/** 新重量要重過上一組（重量×次數）最少要幾多下。唔加重就唔建議。 */
+function repsToBeatLastVolume(lastWeight, lastReps, newWeight) {
+    const lw = Number(lastWeight) || 0;
+    const lr = Number(lastReps) || 0;
+    const nw = Number(newWeight) || 0;
+    if (!(lw > 0) || !(lr > 0) || !(nw > lw)) return null;
+    const lastVol = lw * lr;
+    const reps = Math.floor(lastVol / nw) + 1;
+    if (!isFinite(reps) || reps < 1 || reps > 999) return null;
+    const nice = function (n) {
+        const x = Math.round(Number(n) * 10) / 10;
+        return Math.abs(x - Math.round(x)) < 0.001 ? String(Math.round(x)) : String(x);
+    };
+    return { reps: reps, lastVol: nice(lastVol), newVol: nice(nw * reps) };
+}
+
 function calculateWorkoutTotals(workout) {
     let weightKg = 0;
     let distanceKm = 0;

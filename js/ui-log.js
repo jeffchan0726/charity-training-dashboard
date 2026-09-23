@@ -77,6 +77,27 @@ function fillExerciseInputsFromLast(ex, idx, force) {
     if (!force && wEl.value && rEl.value) return;
     if (force || !wEl.value) wEl.value = source.weight || '';
     if (force || !rEl.value) rEl.value = source.reps || '';
+    onHeavierWeightReps(idx);
+}
+
+function onHeavierWeightReps(exIdx) {
+    const hint = document.getElementById('volume-target-' + exIdx);
+    const ex = currentWorkout && currentWorkout.exercises[exIdx];
+    const wEl = document.getElementById('set-weight-' + exIdx);
+    const rEl = document.getElementById('set-reps-' + exIdx);
+    if (!ex || !wEl || !rEl) return;
+    const baseline = getMatchingLastSet(ex);
+    const plan = (baseline && typeof repsToBeatLastVolume === 'function')
+        ? repsToBeatLastVolume(baseline.weight, baseline.reps, wEl.value)
+        : null;
+    if (!plan) {
+        if (hint) hint.textContent = '';
+        const typed = Number(wEl.value);
+        if (baseline && typed === Number(baseline.weight) && baseline.reps) rEl.value = baseline.reps;
+        return;
+    }
+    rEl.value = plan.reps;
+    if (hint) hint.textContent = '要做到 ' + plan.reps + ' 下先重過上次（' + plan.newVol + ' > ' + plan.lastVol + '）';
 }
 
 function focusExerciseEntry(exIdx, recordType) {
@@ -688,7 +709,8 @@ function renderCurrentWorkout() {
                 <div class="mt-2 grid grid-cols-12 gap-1.5 items-end">
                     <div class="col-span-5">
                         <label for="set-weight-${exIdx}" class="text-[9px] text-[#a8a29e] mb-0.5 block">重量 (kg)</label>
-                        <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg" 
+                        <input id="set-weight-${exIdx}" type="number" step="0.5" placeholder="kg"
+                               oninput="onHeavierWeightReps(${exIdx})"
                                class="log-input w-full px-2 py-1.5 rounded-2xl text-sm text-center">
                     </div>
                     <div class="col-span-4">
@@ -703,6 +725,7 @@ function renderCurrentWorkout() {
                         </button>
                     </div>
                 </div>
+                <div id="volume-target-${exIdx}" class="volume-target-hint"></div>
                 `}
 
                 <div class="sets-list mt-1">

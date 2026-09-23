@@ -133,6 +133,15 @@
         .ex-action-chip:active {
             background: #14532d;
         }
+        .volume-target-hint {
+            margin: 4px 2px 0;
+            font-size: 11px;
+            line-height: 1.35;
+            color: #86efac;
+        }
+        .volume-target-hint:empty {
+            display: none;
+        }
         .ex-volume-spark-wrap {
             flex: 1 1 auto;
             min-width: 0;
