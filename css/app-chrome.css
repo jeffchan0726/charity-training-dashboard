@@ -621,7 +621,6 @@
             -webkit-user-select: none;
         }
 
-        body.server-syncing-lock #start-training-btn,
         body.server-syncing-lock .workout-history-card,
         body.server-syncing-lock .calendar-workout-day {
             pointer-events: none;

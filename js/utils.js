@@ -257,7 +257,10 @@ function loadWorkoutData(options = {}) {
             if (!skipHistory) {
                 workoutHistory = dedupeWorkoutHistoryBySessionId(data.history || []);
                 if (typeof refreshWorkoutTotals === 'function') {
-                    workoutHistory.forEach(w => refreshWorkoutTotals(w));
+                    workoutHistory.forEach(w => {
+                        if (w && typeof w.totalVolume === 'number' && typeof w.totalDistanceKm === 'number') return;
+                        refreshWorkoutTotals(w);
+                    });
                 }
                 // Strip legacy rpe from history sets (RPE feature removed)
                 workoutHistory.forEach(w => {
@@ -314,6 +317,7 @@ function loadWorkoutData(options = {}) {
         exerciseLibrary = EXERCISES.map(e => ({name: e.name, category: e.muscle_group}));
         workoutHistory = [];
     }
+    workoutDataLoaded = true;
 }
 
 // Other small utils can be added here later
@@ -697,8 +701,30 @@ function getLocalHistoryFromStorage() {
     }
 }
 
-function mergeCloudAndLocalHistory(cloudHistory, localHistory) {
-    const cloud = (cloudHistory || []).map(w => dedupeWorkoutSets(w));
+function historySyncSignature(list) {
+    let s = '';
+    (list || []).forEach(function (w) {
+        s += (w && (w.id || w.date) || '') + '#';
+        ((w && w.exercises) || []).forEach(function (ex) {
+            s += (ex && ex.name || '') + ':';
+            ((ex && ex.sets) || []).forEach(function (set) {
+                s += (set.weight || 0) + 'x' + (set.reps || 0) + 'x' + (set.volume || 0) + 'x' + (set.duration || 0) + ';';
+            });
+        });
+        s += '|';
+    });
+    return s;
+}
+
+function mergeCloudAndLocalHistory(cloudHistory, localHistory, options) {
+    const protectIds = (options && options.protectIds) || null;
+    let cloud = (cloudHistory || []).map(w => dedupeWorkoutSets(w));
+    if (typeof localSessionTombstones !== 'undefined' && localSessionTombstones.size) {
+        cloud = cloud.filter(function (w) {
+            const sid = String(getWorkoutSessionId(w) || '');
+            return !sid || !localSessionTombstones.has(sid);
+        });
+    }
     const local = localHistory || [];
     const cloudSids = new Set(cloud.map(w => getWorkoutSessionId(w)).filter(Boolean));
     const keepLocal = [];
@@ -709,18 +735,59 @@ function mergeCloudAndLocalHistory(cloudHistory, localHistory) {
         const hasLocalOnlySets = (w.exercises || []).some(ex =>
             (ex.sets || []).some(s => !getSetCloudLogId(s) || s._syncDirty)
         );
+        const everProtected = typeof sessionProtectGen !== 'undefined'
+            && sessionProtectGen[String(sid)] != null;
         if (!sid) {
             if (hasLocalOnlySets || pending) keepLocal.push(w);
             return;
         }
-        if (!cloudSids.has(sid) && (hasLocalOnlySets || pending)) {
+        // 雲端仲未有呢場：本地未同步、待重試，或者本頁剛寫過，都要留低。
+        if (!cloudSids.has(sid) && (hasLocalOnlySets || pending || everProtected || (protectIds && protectIds.has(String(sid))))) {
             keepLocal.push(w);
         }
     });
+    let merged;
     if (cloud.length === 0 && local.length > 0) {
-        return dedupeWorkoutHistoryBySessionId(local);
+        const kept = local.filter(function (w) {
+            const sid = String(getWorkoutSessionId(w) || '');
+            return !sid || typeof localSessionTombstones === 'undefined' || !localSessionTombstones.has(sid);
+        });
+        merged = dedupeWorkoutHistoryBySessionId(kept);
+    } else {
+        merged = dedupeWorkoutHistoryBySessionId([...keepLocal, ...cloud]);
     }
-    return dedupeWorkoutHistoryBySessionId([...keepLocal, ...cloud]);
+    const preferIds = new Set();
+    if (protectIds && protectIds.size) {
+        protectIds.forEach(function (id) { preferIds.add(String(id)); });
+    }
+    local.forEach(function (w) {
+        const sid = String(getWorkoutSessionId(w) || '');
+        if (!sid) return;
+        const pending = (typeof pendingWorkoutSyncQueue !== 'undefined' ? pendingWorkoutSyncQueue : [])
+            .some(e => String(e.sessionId) === sid);
+        if (pending) preferIds.add(sid);
+    });
+    if (preferIds.size) {
+        const localBySid = {};
+        local.forEach(function (w) {
+            const sid = String(getWorkoutSessionId(w) || '');
+            if (sid && preferIds.has(sid)) localBySid[sid] = w;
+        });
+        const seen = new Set();
+        merged = merged.map(function (w) {
+            const sid = String(getWorkoutSessionId(w) || '');
+            if (sid && localBySid[sid]) {
+                seen.add(sid);
+                return localBySid[sid];
+            }
+            return w;
+        });
+        Object.keys(localBySid).forEach(function (sid) {
+            if (!seen.has(sid)) merged.unshift(localBySid[sid]);
+        });
+        merged = dedupeWorkoutHistoryBySessionId(merged);
+    }
+    return merged;
 }
 
 function rebuildWorkoutsFromLogRows(rows) {
@@ -841,6 +908,7 @@ function upsertWorkoutInHistory(workout) {
     if (typeof refreshWorkoutTotals === 'function') refreshWorkoutTotals(record);
     workoutHistory.unshift(record);
     workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+    if (typeof protectWorkoutSession === 'function') protectWorkoutSession(getWorkoutSessionId(record));
     if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
     return record;
 }
@@ -1124,6 +1192,7 @@ function applyContinueWorkoutFinishToLocalHistory(workout) {
     if (typeof refreshWorkoutTotals === 'function') refreshWorkoutTotals(record);
     workoutHistory.unshift(record);
     workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+    if (typeof protectWorkoutSession === 'function') protectWorkoutSession(getWorkoutSessionId(record));
     if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
     return record;
 }
@@ -1278,11 +1347,4 @@ function guardServerSyncing(message) {
 function updateInteractionLock() {
     const locked = isServerSyncing();
     document.body.classList.toggle('server-syncing-lock', locked);
-
-    const startBtn = document.getElementById('start-training-btn');
-    if (startBtn) {
-        startBtn.disabled = locked;
-        startBtn.classList.toggle('opacity-55', locked);
-        startBtn.classList.toggle('cursor-not-allowed', locked);
-    }
 }

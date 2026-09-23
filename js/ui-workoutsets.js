@@ -115,9 +115,9 @@ function loadWorkoutSet(set) {
     const wasAlreadyTraining = !!currentWorkout;
 
     if (!currentWorkout) {
-        // This will go through the guarded startNewWorkout (which will enter fullscreen only if not already in it)
         startNewWorkout(null, { skipRender: true });
     }
+    if (!currentWorkout) return;
 
     // Append the set's exercises (deduped)
     set.exercises.forEach(name => {

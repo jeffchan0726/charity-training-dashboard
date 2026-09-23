@@ -38,6 +38,37 @@ let lastSyncError = null;
 let pendingWorkoutSyncQueue = []; // { sessionId, workout, notes } — 完成訓練同步失敗時待重試
 let retryGlobalSyncInFlight = false;
 let cloudLogsReady = false; // getLogs + workoutHistory 重建已完成
+let cloudLogsApplyPending = false; // getLogs 已返，合併延後到閒時
+let workoutDataRevision = 0;
+let workoutDataLoaded = false;
+const sessionProtectGen = {};
+const localSessionTombstones = new Set();
+
+function touchWorkoutRevision() {
+    workoutDataRevision++;
+}
+
+function protectWorkoutSession(sid) {
+    touchWorkoutRevision();
+    const id = String(sid || '').trim();
+    if (id) sessionProtectGen[id] = workoutDataRevision;
+}
+
+function tombstoneWorkoutSession(sid) {
+    touchWorkoutRevision();
+    const id = String(sid || '').trim();
+    if (!id) return;
+    localSessionTombstones.add(id);
+    delete sessionProtectGen[id];
+}
+
+function protectedSessionIdsSince(rev) {
+    const ids = new Set();
+    Object.keys(sessionProtectGen).forEach(function (sid) {
+        if (sessionProtectGen[sid] > rev) ids.add(sid);
+    });
+    return ids;
+}
 let isSavingHistory = false;
 let isDeletingHistory = false;
 let sessionCloudDeletedIds = new Set(); // 本 session 已背景 deleteLog 的 id，避免 finish 重複刪

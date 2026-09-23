@@ -156,7 +156,7 @@
                     }
                     updateUIAfterLogin();
                     if (typeof bootstrapGoogleCloudData === 'function') {
-                        await bootstrapGoogleCloudData();
+                        bootstrapGoogleCloudData().catch(function () {});
                     }
                     if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                     try {
@@ -273,10 +273,13 @@
 
             cloudLogsReady = false;
             if (!silent) {
-                if (loadingEl) loadingEl.classList.remove('hidden');
-                if (emptyState) emptyState.style.display = 'none';
-                if (historyList) historyList.innerHTML = '';
-                if (subNav) subNav.style.visibility = 'hidden';
+                const hasLocalHistory = Array.isArray(workoutHistory) && workoutHistory.length > 0;
+                if (!hasLocalHistory) {
+                    if (loadingEl) loadingEl.classList.remove('hidden');
+                    if (emptyState) emptyState.style.display = 'none';
+                    if (historyList) historyList.innerHTML = '';
+                    if (subNav) subNav.style.visibility = 'hidden';
+                }
             }
 
             // 右上角也顯示簡短狀態（保留但次要）
@@ -294,6 +297,7 @@
             });
 
             try {
+                const revAtFetch = (typeof workoutDataRevision === 'number') ? workoutDataRevision : 0;
                 const logs = await callAppsScript("getLogs");
                 if (!Array.isArray(logs)) {
                     const msg = (logs && logs.message) ? logs.message : 'getLogs 回傳格式錯誤';
@@ -305,30 +309,37 @@
                 }
                 workoutLogs = logs;
                 const applyCloudLogs = function () {
-                    const inTraining = document.body.classList.contains('fullscreen-training');
-                    if (!inTraining) renderLogTable();
-
+                    const protectIds = (typeof protectedSessionIdsSince === 'function')
+                        ? protectedSessionIdsSince(revAtFetch)
+                        : null;
+                    let changed = true;
                     try {
                         const localSnapshot = Array.isArray(workoutHistory) ? workoutHistory : [];
+                        const beforeSig = (typeof historySyncSignature === 'function')
+                            ? historySyncSignature(localSnapshot)
+                            : '';
 
                         const cloudHistory = typeof rebuildWorkoutsFromLogRows === 'function'
                             ? rebuildWorkoutsFromLogRows(logs)
                             : [];
 
-                        workoutHistory = typeof mergeCloudAndLocalHistory === 'function'
-                            ? mergeCloudAndLocalHistory(cloudHistory, localSnapshot)
+                        const merged = typeof mergeCloudAndLocalHistory === 'function'
+                            ? mergeCloudAndLocalHistory(cloudHistory, localSnapshot, { protectIds: protectIds })
                             : (cloudHistory.length ? cloudHistory : localSnapshot);
 
-                        if (typeof dedupeWorkoutHistoryBySessionId === 'function') {
-                            workoutHistory = dedupeWorkoutHistoryBySessionId(workoutHistory);
+                        const afterSig = (typeof historySyncSignature === 'function')
+                            ? historySyncSignature(merged)
+                            : 'changed';
+                        changed = beforeSig !== afterSig;
+                        if (changed) {
+                            workoutHistory = merged;
+                            if (typeof _histVolumeIndex !== 'undefined') {
+                                _histVolumeIndex = null;
+                                _histVolumeSig = '';
+                            }
+                            if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
+                            if (typeof saveWorkoutData === 'function') saveWorkoutData();
                         }
-                        if (typeof _histVolumeIndex !== 'undefined') {
-                            _histVolumeIndex = null;
-                            _histVolumeSig = '';
-                        }
-
-                        if (typeof rebuildLastPerformed === 'function') rebuildLastPerformed();
-                        if (typeof saveWorkoutData === 'function') saveWorkoutData();
                     } catch (e) {
                         console.warn('Backend data load failed, using local cache', e);
                         if (typeof restoreLocalWorkoutCacheAfterCloudLoadFail === 'function') {
@@ -338,12 +349,11 @@
 
                     try {
                         const stillTraining = document.body.classList.contains('fullscreen-training');
-                        if (!stillTraining) {
-                            if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
-                            if (typeof renderOverallStats === 'function') renderOverallStats();
-                            if (typeof renderCalendar === 'function') renderCalendar();
-                            if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis();
-                            if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
+                        if (changed && !stillTraining) {
+                            const logEl = document.getElementById('content-log');
+                            const logVisible = logEl && !logEl.classList.contains('hidden');
+                            if (logVisible && typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+                            if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                         }
                     } catch (err) {
                         console.warn('post loadUserLogs render error (non-fatal):', err);
@@ -352,6 +362,7 @@
                     try { updateStartTrainingButton(); } catch (e) {}
 
                     cloudLogsReady = true;
+                    cloudLogsApplyPending = false;
                     if (typeof finalizeLogTabUiReady === 'function') {
                         finalizeLogTabUiReady();
                     } else {
@@ -363,13 +374,15 @@
                     showInitialSyncStatus('success');
                 };
 
-                if (document.body.classList.contains('fullscreen-training')) {
-                    const later = function () { try { applyCloudLogs(); } catch (e) { console.warn(e); } };
-                    if (typeof requestIdleCallback === 'function') requestIdleCallback(later, { timeout: 2500 });
-                    else setTimeout(later, 700);
-                } else {
-                    applyCloudLogs();
-                }
+                cloudLogsApplyPending = true;
+                const later = function () {
+                    try { applyCloudLogs(); } catch (e) {
+                        console.warn(e);
+                        cloudLogsApplyPending = false;
+                    }
+                };
+                if (typeof requestIdleCallback === 'function') requestIdleCallback(later, { timeout: 1600 });
+                else setTimeout(later, 80);
 
             } catch (err) {
                 console.error('[loadUserLogs] getLogs / rebuild failed:', err);
@@ -775,9 +788,7 @@
                 return;
             }
 
-            if (guardServerSyncing('同步中，請稍候再開始或繼續訓練')) return;
-
-            // 自動恢復未完成訓練的提示已完全停用（按用戶要求）
+            // 背景同步唔好擋開訓。上一場備份同記組可以同時進行。
             // 不再彈出 showUnfinishedWorkoutModal()
             // 如有 currentWorkout（來自 localStorage），會直接重用（或由「今日繼續」邏輯處理）
 
@@ -1495,10 +1506,13 @@
             exitImmersiveMode();
 
             // 3. 立即刷新歷史（用戶可即時看到新紀錄）
-            try { renderWorkoutHistory(); } catch (e) {}
-            try { renderOverallStats(); } catch (e) {}
-            try { renderCalendar(); } catch (e) {}
-            try { updateExerciseSelectForAnalysis(); } catch (e) {}
+            try {
+                const sub = (typeof currentLogSub !== 'undefined') ? currentLogSub : 'history';
+                if (sub === 'stats' && typeof renderOverallStats === 'function') renderOverallStats();
+                else if (sub === 'calendar' && typeof renderCalendar === 'function') renderCalendar();
+                else if (sub === 'analysis' && typeof renderExerciseAnalysis === 'function') renderExerciseAnalysis();
+                else if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
+            } catch (e) {}
             try { updateStartTrainingButton(); } catch (e) {}
 
             // 4. 簡單即時 toast（無阻塞，快速消失）
@@ -1713,7 +1727,7 @@
                     }
                 }
 
-                if (typeof loadWorkoutData === 'function') {
+                if (typeof loadWorkoutData === 'function' && !workoutDataLoaded) {
                     loadWorkoutData({ skipHistory: false });
                 }
 
@@ -1740,11 +1754,7 @@
                     // 首次 focus 也觸發一次
                 }
 
-                // Initial renders - each wrapped individually for partial failure tolerance
-                try { if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory(); } catch (e) { console.warn('renderWorkoutHistory init error (non-fatal):', e); }
-                try { if (typeof updateExerciseSelectForAnalysis === 'function') updateExerciseSelectForAnalysis(); } catch (e) { console.warn('updateExerciseSelectForAnalysis init error (non-fatal):', e); }
-                try { if (typeof renderOverallStats === 'function') renderOverallStats(); } catch (e) { console.warn('renderOverallStats init error (non-fatal):', e); }
-                try { if (typeof renderCalendar === 'function') renderCalendar(); } catch (e) { console.warn('renderCalendar init error (non-fatal):', e); }
+                // 日曆、統計、分析圖等用戶打開嗰個分頁先畫，避免一開 app 就卡住。
 
                 // 初始化開始訓練按鈕狀態（今日繼續智能）
                 try { updateStartTrainingButton(); } catch (e) {}
@@ -1862,7 +1872,7 @@
                     }
                     updateUIAfterLogin();
                     if (typeof bootstrapGoogleCloudData === 'function') {
-                        await bootstrapGoogleCloudData();
+                        bootstrapGoogleCloudData().catch(function () {});
                     }
                     if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
                     try {
@@ -1965,13 +1975,15 @@
                 } catch (e) {}
 
                 if (tab === 'log' && currentUser) {
-                    if (loadUserLogsInFlight) {
-                        const loadingEl = document.getElementById('log-loading-state');
-                        if (loadingEl) loadingEl.classList.remove('hidden');
-                        const emptyState = document.getElementById('log-empty-state');
-                        const subNav = document.getElementById('log-sub-nav');
-                        if (emptyState) emptyState.style.display = 'none';
-                        if (subNav) subNav.style.visibility = 'hidden';
+                    if (loadUserLogsInFlight || cloudLogsApplyPending) {
+                        if (loadUserLogsInFlight && !(Array.isArray(workoutHistory) && workoutHistory.length)) {
+                            const loadingEl = document.getElementById('log-loading-state');
+                            if (loadingEl) loadingEl.classList.remove('hidden');
+                            const emptyState = document.getElementById('log-empty-state');
+                            const subNav = document.getElementById('log-sub-nav');
+                            if (emptyState) emptyState.style.display = 'none';
+                            if (subNav) subNav.style.visibility = 'hidden';
+                        }
                     } else if (cloudLogsReady) {
                         if (typeof finalizeLogTabUiReady === 'function') finalizeLogTabUiReady();
                     } else if (typeof loadUserLogs === 'function') {
@@ -2021,10 +2033,11 @@
                     setTimeout(() => {
                         if (document.body.classList.contains('fullscreen-training')) return;
                         try {
-                            if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
-                            if (typeof renderOverallStats === 'function') renderOverallStats();
-                            if (typeof renderCalendar === 'function') renderCalendar();
-                            if (typeof currentLogSub !== 'undefined' && currentLogSub === 'analysis' && typeof renderExerciseAnalysis === 'function') renderExerciseAnalysis();
+                            const sub = (typeof currentLogSub !== 'undefined') ? currentLogSub : 'history';
+                            if (sub === 'stats' && typeof renderOverallStats === 'function') renderOverallStats();
+                            else if (sub === 'calendar' && typeof renderCalendar === 'function') renderCalendar();
+                            else if (sub === 'analysis' && typeof renderExerciseAnalysis === 'function') renderExerciseAnalysis();
+                            else if (typeof renderWorkoutHistory === 'function') renderWorkoutHistory();
                         } catch (e) { /* non-fatal */ }
                     }, 80);
                 }

@@ -2,22 +2,20 @@
 // History rendering, grouping, detail view, and edit modal logic
 // Extracted as part of A (architecture refactor) to modularize the monolithic script.
 
+let historyDatesShown = 12;
+
 function renderWorkoutHistory() {
     const container = document.getElementById('workout-history-list');
     if (!container) return;
-    (workoutHistory || []).forEach(w => {
-        if (typeof dedupeWorkoutSets === 'function') dedupeWorkoutSets(w);
-    });
     container.innerHTML = '';
     if (!workoutHistory || workoutHistory.length === 0) {
         container.innerHTML = `<div class="col-span-full text-center py-6 text-sm text-[#a8a29e]">尚未記錄任何訓練。請在上方開始！</div>`;
         return;
     }
 
-    // 使用共用 grouping 函數，確保與 renderCalendar() 邏輯完全一致
     const grouped = groupWorkoutsByDate();
-    // 由新到舊排序
-    const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a)).slice(0, 5);
+    const allDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+    const dates = allDates.slice(0, historyDatesShown);
 
     dates.forEach((d) => {
         const g = grouped[d];
@@ -57,6 +55,18 @@ function renderWorkoutHistory() {
 
         container.appendChild(card);
     });
+
+    if (allDates.length > dates.length) {
+        const more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'w-full mt-1 px-4 py-3 min-h-[44px] rounded-2xl bg-[#292524] text-sm text-[#e7e5e4]';
+        more.textContent = '顯示更多（仲有 ' + (allDates.length - dates.length) + ' 日）';
+        more.onclick = function () {
+            historyDatesShown += 20;
+            renderWorkoutHistory();
+        };
+        container.appendChild(more);
+    }
 }
 
 function showWorkoutDetail(workout, historyIndex) {
@@ -534,6 +544,11 @@ function moveExerciseInHistory(fromIdx, toIdx) {
 function applyHistoryEditLocally(viewing, historyIndex, isDayGroup, dateStr) {
     const d = normalizeDateToLocal(dateStr);
     const record = JSON.parse(JSON.stringify(viewing));
+    const sid = typeof getWorkoutSessionId === 'function' ? getWorkoutSessionId(record) : (record.id || record.session_id || '');
+    if (typeof protectWorkoutSession === 'function' && sid) protectWorkoutSession(sid);
+    (record._sessionIds || []).forEach(function (extra) {
+        if (typeof protectWorkoutSession === 'function') protectWorkoutSession(extra);
+    });
 
     if (isDayGroup) {
         workoutHistory = workoutHistory.filter(w => normalizeDateToLocal(w.date) !== d);
@@ -704,6 +719,10 @@ async function deleteHistoryWorkout() {
             if (sid) sessionIdsToDelete.push(String(sid));
         }
         const cloudSids = [...new Set(sessionIdsToDelete.map(s => String(s).trim()).filter(Boolean))];
+        cloudSids.forEach(function (sid) {
+            if (typeof tombstoneWorkoutSession === 'function') tombstoneWorkoutSession(sid);
+        });
+        if (typeof touchWorkoutRevision === 'function' && !cloudSids.length) touchWorkoutRevision();
 
         // 本地先刪（即時）
         if (isDayGroup) {

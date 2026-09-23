@@ -2,6 +2,131 @@
 // Workout Log UI rendering and editing functions
 // Extracted as part of A (architecture refactor) to reduce monolithic index.html
 
+function buildLoggedSetsHtml(ex, exIdx) {
+    if (!ex || !ex.sets || !ex.sets.length) {
+        return `<div class="mt-1 px-1 text-[10px] text-[#a8a29e]">尚未有組數</div>`;
+    }
+    let setsListHtml = '';
+    ex.sets.forEach((set, sIdx) => {
+        const setText = typeof formatSetDisplay === 'function'
+            ? formatSetDisplay(ex.name, set)
+            : `${set.weight || 0}kg × ${set.reps || 0}`;
+        const cmpBadge = typeof formatSetComparisonBadge === 'function'
+            ? formatSetComparisonBadge(ex.name, set, sIdx)
+            : '';
+        setsListHtml += `
+                    <div class="flex items-center justify-between gap-2 px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
+                        <span class="font-medium min-w-0 truncate">set ${sIdx + 1}：${escapeHtml(setText)}</span>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            ${cmpBadge}
+                            <button type="button" onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded" title="刪除此組"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                    </div>`;
+    });
+    return `<div class="mt-2 space-y-0.5">${setsListHtml}</div>`;
+}
+
+function fillExerciseInputsFromLast(ex, idx, force) {
+    if (!ex) return;
+    const recordType = typeof getExerciseRecordType === 'function'
+        ? getExerciseRecordType(ex.name) : 'weight';
+    const source = getMatchingLastSet(ex);
+    if (recordType === 'treadmill') {
+        const dEl = document.getElementById(`set-duration-${idx}`);
+        const iEl = document.getElementById(`set-incline-${idx}`);
+        const sEl = document.getElementById(`set-speed-${idx}`);
+        if (!dEl || !source) return;
+        if (force || !dEl.value) dEl.value = source.duration != null ? source.duration : '';
+        if (iEl && (force || !iEl.value) && source.incline != null) iEl.value = source.incline;
+        if (sEl && (force || !sEl.value) && source.speed != null) sEl.value = source.speed;
+        return;
+    }
+    if (recordType === 'time_reps') {
+        const dEl = document.getElementById(`set-duration-${idx}`);
+        const rEl = document.getElementById(`set-reps-hold-${idx}`);
+        const bwEl = document.getElementById(`set-body-weight-${idx}`);
+        if (!dEl) return;
+        if (source) {
+            if (force || !dEl.value) dEl.value = source.duration != null ? source.duration : '';
+            if (rEl && (force || !rEl.value) && source.reps != null) rEl.value = source.reps;
+            if (bwEl && (force || !bwEl.value) && source.body_weight != null) bwEl.value = source.body_weight;
+        } else if (bwEl && !bwEl.value && typeof getLastBodyWeightKg === 'function') {
+            const bw = getLastBodyWeightKg();
+            if (bw > 0) bwEl.value = bw;
+        }
+        return;
+    }
+    if (recordType === 'bodyweight') {
+        const bwEl = document.getElementById(`set-body-weight-${idx}`);
+        const rEl = document.getElementById(`set-reps-${idx}`);
+        if (!bwEl || !rEl) return;
+        if (!force && bwEl.value && rEl.value) return;
+        if (source) {
+            if (force || !bwEl.value) bwEl.value = source.body_weight || '';
+            if (force || !rEl.value) rEl.value = source.reps || '';
+        } else if (!bwEl.value && typeof getLastBodyWeightKg === 'function') {
+            const bw = getLastBodyWeightKg();
+            if (bw > 0) bwEl.value = bw;
+        }
+        return;
+    }
+    const wEl = document.getElementById(`set-weight-${idx}`);
+    const rEl = document.getElementById(`set-reps-${idx}`);
+    if (!wEl || !rEl) return;
+    if (!source) return;
+    if (!force && wEl.value && rEl.value) return;
+    if (force || !wEl.value) wEl.value = source.weight || '';
+    if (force || !rEl.value) rEl.value = source.reps || '';
+}
+
+function focusExerciseEntry(exIdx, recordType) {
+    let id = `set-weight-${exIdx}`;
+    if (recordType === 'treadmill' || recordType === 'time_reps') id = `set-duration-${exIdx}`;
+    else if (recordType === 'bodyweight') id = `set-reps-${exIdx}`;
+    const el = document.getElementById(id);
+    if (!el) return;
+    try {
+        el.focus({ preventScroll: true });
+        if (typeof el.select === 'function') el.select();
+    } catch (_) {
+        try { el.focus(); } catch (e) {}
+    }
+}
+
+function refreshLoggedSets(exIdx) {
+    const ex = currentWorkout && currentWorkout.exercises[exIdx];
+    const card = document.querySelector('#current-workout-exercises .exercise-log-card[data-ex-idx="' + exIdx + '"]');
+    if (!ex || !card) return false;
+    const list = card.querySelector('.sets-list');
+    if (list) list.innerHTML = buildLoggedSetsHtml(ex, exIdx);
+    const recordType = typeof getExerciseRecordType === 'function'
+        ? getExerciseRecordType(ex.name) : 'weight';
+    if (recordType !== 'treadmill' && recordType !== 'time_reps' && typeof getExerciseVolumeLastDays === 'function') {
+        const spark = renderMiniVolumeSparkline(getExerciseVolumeLastDays(ex.name, 4));
+        const old = card.querySelector('.ex-volume-spark-wrap');
+        if (old) {
+            const wrap = document.createElement('div');
+            wrap.innerHTML = spark || '<div class="ex-volume-spark-wrap ex-volume-spark-empty"></div>';
+            if (wrap.firstElementChild) old.replaceWith(wrap.firstElementChild);
+        }
+    }
+    return true;
+}
+
+function commitExerciseSetChange(exIdx, recordType, focusEntry) {
+    const ex = currentWorkout && currentWorkout.exercises[exIdx];
+    const scroll = document.querySelector('.immersive-scroll');
+    const top = scroll ? scroll.scrollTop : 0;
+    if (ex && refreshLoggedSets(exIdx)) {
+        fillExerciseInputsFromLast(ex, exIdx, true);
+        if (typeof updateSessionSummary === 'function') updateSessionSummary();
+    } else if (typeof renderCurrentWorkout === 'function') {
+        renderCurrentWorkout();
+        if (scroll) scroll.scrollTop = top;
+    }
+    if (focusEntry) focusExerciseEntry(exIdx, recordType);
+}
+
 function addSetToExercise(exIdx) {
     if (!currentWorkout) return;
     const ex = currentWorkout.exercises[exIdx];
@@ -124,37 +249,11 @@ function addSetToExercise(exIdx) {
     }
 
     ex.sets.push(newSet);
-
-    if (recordType === 'treadmill') {
-        const dEl = document.getElementById(`set-duration-${exIdx}`);
-        const iEl = document.getElementById(`set-incline-${exIdx}`);
-        const sEl = document.getElementById(`set-speed-${exIdx}`);
-        if (dEl) dEl.value = newSet.duration || '';
-        if (iEl) iEl.value = newSet.incline ?? '';
-        if (sEl) sEl.value = newSet.speed || '';
-    } else if (recordType === 'time_reps') {
-        const dEl = document.getElementById(`set-duration-${exIdx}`);
-        const rEl = document.getElementById(`set-reps-hold-${exIdx}`);
-        const bwEl = document.getElementById(`set-body-weight-${exIdx}`);
-        if (dEl) dEl.value = newSet.duration || '';
-        if (rEl) rEl.value = newSet.reps || '';
-        if (bwEl && newSet.body_weight) bwEl.value = newSet.body_weight;
-    } else if (recordType === 'bodyweight') {
-        const bwEl = document.getElementById(`set-body-weight-${exIdx}`);
-        const repsInput = document.getElementById(`set-reps-${exIdx}`);
-        if (bwEl) bwEl.value = newSet.body_weight || '';
-        if (repsInput) repsInput.value = newSet.reps || '';
-    } else {
-        const weightInput = document.getElementById(`set-weight-${exIdx}`);
-        const repsInput = document.getElementById(`set-reps-${exIdx}`);
-        if (weightInput) weightInput.value = newSet.weight || '';
-        if (repsInput) repsInput.value = newSet.reps || '';
-    }
-
-    renderCurrentWorkout();
-    updateSessionSummary();
+    commitExerciseSetChange(exIdx, recordType, true);
     saveWorkoutData();
-    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
+    if (!document.body.classList.contains('fullscreen-training') && typeof refreshDietFromBodyLog === 'function') {
+        refreshDietFromBodyLog();
+    }
 
     if (currentUser && currentWorkout && currentWorkout.id) {
         backgroundSyncNewSet(ex.name, newSet, currentWorkout.id);
@@ -190,10 +289,13 @@ function deleteSet(exIdx, setIdx) {
         backgroundDeleteLog(logId);
     }
 
-    renderCurrentWorkout();
-    updateSessionSummary();
+    const recordType = typeof getExerciseRecordType === 'function'
+        ? getExerciseRecordType(ex.name) : 'weight';
+    commitExerciseSetChange(exIdx, recordType, false);
     saveWorkoutData();
-    if (typeof refreshDietFromBodyLog === 'function') refreshDietFromBodyLog();
+    if (!document.body.classList.contains('fullscreen-training') && typeof refreshDietFromBodyLog === 'function') {
+        refreshDietFromBodyLog();
+    }
 }
 
 function updateSetField(exIdx, setIdx, field, value) {
@@ -436,29 +538,7 @@ function renderCurrentWorkout() {
         const muscle = escapeHtml(getMuscleGroup(ex.name));
         const exNameAttr = escapeAttr(ex.name);
         const exNameHtml = escapeHtml(ex.name);
-
-        let setsListHtml = '';
-        if (ex.sets.length > 0) {
-            ex.sets.forEach((set, sIdx) => {
-                const setText = typeof formatSetDisplay === 'function'
-                    ? formatSetDisplay(ex.name, set)
-                    : `${set.weight || 0}kg × ${set.reps || 0}`;
-                const cmpBadge = typeof formatSetComparisonBadge === 'function'
-                    ? formatSetComparisonBadge(ex.name, set, sIdx)
-                    : '';
-                setsListHtml += `
-                    <div class="flex items-center justify-between gap-2 px-2 py-1 text-xs bg-[#1f1c1a] rounded-xl mt-1">
-                        <span class="font-medium min-w-0 truncate">set ${sIdx + 1}：${escapeHtml(setText)}</span>
-                        <div class="flex items-center gap-1.5 flex-shrink-0">
-                            ${cmpBadge}
-                            <button onclick="deleteSet(${exIdx}, ${sIdx})" class="text-red-400 px-2 py-1 active:bg-red-900/30 rounded" title="刪除此組"><i class="fa-solid fa-times"></i></button>
-                        </div>
-                    </div>`;
-            });
-            setsListHtml = `<div class="mt-2 space-y-0.5">${setsListHtml}</div>`;
-        } else {
-            setsListHtml = `<div class="mt-1 px-1 text-[10px] text-[#a8a29e]">尚未有組數</div>`;
-        }
+        const setsListHtml = buildLoggedSetsHtml(ex, exIdx);
 
         const sparkPoints = (!isTreadmill && !isHold)
             ? getExerciseVolumeLastDays(ex.name, 4)
@@ -529,7 +609,7 @@ function renderCurrentWorkout() {
                     </div>
                     <div class="col-span-3">
                         <button onclick="addSetToExercise(${exIdx})"
-                                class="quick-add-btn w-full text-white px-2 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
+                                onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" class="quick-add-btn w-full text-white px-2 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
                             <i class="fa-solid fa-plus"></i> <span>加組</span>
                         </button>
                     </div>
@@ -599,7 +679,7 @@ function renderCurrentWorkout() {
                     </div>
                     <div class="col-span-3">
                         <button onclick="addSetToExercise(${exIdx})"
-                                class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
+                                onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
                             <i class="fa-solid fa-plus"></i> <span>加組</span>
                         </button>
                     </div>
@@ -618,7 +698,7 @@ function renderCurrentWorkout() {
                     </div>
                     <div class="col-span-3">
                         <button onclick="addSetToExercise(${exIdx})" 
-                                class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
+                                onpointerdown="event.preventDefault()" onmousedown="event.preventDefault()" class="quick-add-btn w-full text-white px-3 py-1.5 text-sm font-semibold rounded-2xl flex items-center justify-center gap-x-1 min-h-[38px]">
                             <i class="fa-solid fa-plus"></i> <span>加組</span>
                         </button>
                     </div>
@@ -643,50 +723,7 @@ function renderCurrentWorkout() {
     updateSessionSummary();
 
     currentWorkout.exercises.forEach((ex, idx) => {
-        const recordType = typeof getExerciseRecordType === 'function'
-            ? getExerciseRecordType(ex.name) : 'weight';
-        const source = getMatchingLastSet(ex);
-        if (recordType === 'treadmill') {
-            const dEl = document.getElementById(`set-duration-${idx}`);
-            const iEl = document.getElementById(`set-incline-${idx}`);
-            const sEl = document.getElementById(`set-speed-${idx}`);
-            if (!dEl || !source) return;
-            if (!dEl.value && source.duration != null) dEl.value = source.duration;
-            if (iEl && !iEl.value && source.incline != null) iEl.value = source.incline;
-            if (sEl && !sEl.value && source.speed != null) sEl.value = source.speed;
-        } else if (recordType === 'time_reps') {
-            const dEl = document.getElementById(`set-duration-${idx}`);
-            const rEl = document.getElementById(`set-reps-hold-${idx}`);
-            const bwEl = document.getElementById(`set-body-weight-${idx}`);
-            if (!dEl) return;
-            if (source) {
-                if (dEl && !dEl.value && source.duration != null) dEl.value = source.duration;
-                if (rEl && !rEl.value && source.reps != null) rEl.value = source.reps;
-                if (bwEl && !bwEl.value && source.body_weight != null) bwEl.value = source.body_weight;
-            } else if (bwEl && !bwEl.value && typeof getLastBodyWeightKg === 'function') {
-                const bw = getLastBodyWeightKg();
-                if (bw > 0) bwEl.value = bw;
-            }
-        } else if (recordType === 'bodyweight') {
-            const bwEl = document.getElementById(`set-body-weight-${idx}`);
-            const rEl = document.getElementById(`set-reps-${idx}`);
-            if (!bwEl || !rEl || (bwEl.value && rEl.value)) return;
-            if (source) {
-                if (!bwEl.value) bwEl.value = source.body_weight || '';
-                if (!rEl.value) rEl.value = source.reps || '';
-            } else {
-                const bw = typeof getLastBodyWeightKg === 'function' ? getLastBodyWeightKg() : 0;
-                if (!bwEl.value && bw > 0) bwEl.value = bw;
-            }
-        } else {
-            const wEl = document.getElementById(`set-weight-${idx}`);
-            const rEl = document.getElementById(`set-reps-${idx}`);
-            if (!wEl || !rEl || (wEl.value && rEl.value)) return;
-            if (source) {
-                if (!wEl.value) wEl.value = source.weight || '';
-                if (!rEl.value) rEl.value = source.reps || '';
-            }
-        }
+        fillExerciseInputsFromLast(ex, idx, false);
     });
 }
 
@@ -935,9 +972,7 @@ function stopHoldTimer(exIdx, autoRecord = true) {
                 _clientLogId: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
             };
             ex.sets.push(newSet);
-
-            renderCurrentWorkout();
-            updateSessionSummary();
+            commitExerciseSetChange(exIdx, 'time_reps', true);
             saveWorkoutData();
 
             if (currentUser && currentWorkout && currentWorkout.id) {
