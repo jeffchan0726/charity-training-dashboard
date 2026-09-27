@@ -16,7 +16,11 @@ const EXERCISE_GIF_MAP = {
     chest_dips: '1430',
     machine_chest_press: '0577',
     incline_chest_press_machine: '1299',
+    decline_press_machine: '1300',
     pec_deck: '0596',
+    upper_chest_fly: '0171',
+    standing_fly_machine: '0227',
+    assisted_dip: '0009',
 
     // 背部
     pull_ups: '0652',
@@ -30,6 +34,9 @@ const EXERCISE_GIF_MAP = {
     face_pulls: '0233',
     high_row: '0581',
     assisted_pull_up: '0017',
+    neutral_pulldown: '0579',
+    pullover_machine: '2285',
+    iso_lateral_row: '1313',
 
     // 腿部
     barbell_back_squat: '0043',
@@ -40,6 +47,8 @@ const EXERCISE_GIF_MAP = {
     bulgarian_split_squat: '0410',
     leg_press: '0739',
     leg_curl: '0586',
+    seated_leg_curl: '0599',
+    prone_leg_curl: '0586',
     leg_extension: '0585',
     hip_thrust: '1409',
     standing_calf_raise: '1372',
@@ -51,6 +60,8 @@ const EXERCISE_GIF_MAP = {
     hip_adduction: '0598',
     glute_kickback: '0860',
     booty_builder: '1409',
+    hip_extension_machine: '2286',
+    donkey_calf: '1253',
 
     // 手臂
     barbell_curl: '0031',
@@ -58,7 +69,10 @@ const EXERCISE_GIF_MAP = {
     bayesian_cable_curls: '1636',
     hammer_curls: '0313',
     arm_curl_machine: '0575',
+    preacher_machine: '0592',
     tricep_rope_pushdown: '0200',
+    seated_dip_machine: '1451',
+    tricep_extension_machine: '0607',
     cable_overhead_triceps: '0194',
     skull_crushers: '0060',
     reverse_forearm_curl: '0082',
@@ -73,7 +87,9 @@ const EXERCISE_GIF_MAP = {
     rear_delt_raises: '2292',
     barbell_shrugs: '0095',
     machine_shoulder_press: '0603',
+    viking_press: '2318',
     standing_lateral_machine: '0584',
+    reverse_pec_deck: '0602',
 
     // 核心
     ab_wheel_rollout: '0857',
@@ -84,7 +100,9 @@ const EXERCISE_GIF_MAP = {
     cable_crunch: '0175',
     decline_crunch: '0277',
     abdominal_crunch: '0595',
+    rotary_torso: '0583',
     back_extension: '0573',
+    reverse_hyper: '0593',
 
     // 全身 / 有氧
     farmer_carry: '2133',
@@ -95,7 +113,9 @@ const EXERCISE_GIF_MAP = {
     jump_rope: '2612',
     treadmill: '3666',
     exercise_bike: '2138',
+    recumbent_bike: '0798',
     elliptical: '2141',
+    arc_trainer: '2331',
     stair_climber: '2311'
 };
 

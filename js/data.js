@@ -38,9 +38,13 @@ const EXERCISES = [
     { id: "lower_chest_cable_fly", name: "下胸繩索飛鳥 (Lower Chest Cable Fly)", muscle_group: "胸部", image: "images/lower_chest_cable_fly.jpg" },
     { id: "cable_crossover", name: "繩索夾胸 (Cable Crossover)", muscle_group: "胸部", image: "images/cable_crossover.jpg" },
     { id: "chest_dips", name: "雙槓胸推 (Chest Dips)", muscle_group: "胸部", image: "images/chest_dips.jpg", is_bodyweight: true },
-    { id: "machine_chest_press", name: "機器胸推 (Machine Chest Press)", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
+    { id: "machine_chest_press", name: "機器胸推 (Machine Chest Press)", muscle_group: "胸部", image: "images/machine_chest_press.jpg" },
     { id: "incline_chest_press_machine", name: "上斜胸推機 (Incline Chest Press)", muscle_group: "胸部", image: "images/incline_chest_press_machine.jpg" },
+    { id: "decline_press_machine", name: "下斜胸推機 (Decline Chest Press)", muscle_group: "胸部", image: "images/decline_press_machine.jpg" },
     { id: "pec_deck", name: "蝴蝶機夾胸 (Pec Deck)", muscle_group: "胸部", image: "images/pec_deck.jpg" },
+    { id: "upper_chest_fly", name: "上胸飛鳥機 (Upper Chest Fly)", muscle_group: "胸部", image: "images/upper_chest_fly.jpg" },
+    { id: "standing_fly_machine", name: "站姿飛鳥機 (Standing Fly)", muscle_group: "胸部", image: "images/standing_fly_machine.jpg" },
+    { id: "assisted_dip", name: "輔助雙槓 (Assisted Dip)", muscle_group: "胸部", image: "images/assisted_dip.jpg" },
 
     // 背部 (香港常用「拉背」「划船」)
     { id: "pull_ups", name: "引體向上 (Pull-ups)", muscle_group: "背部", image: "images/pull_ups.jpg", is_bodyweight: true },
@@ -54,6 +58,9 @@ const EXERCISES = [
     { id: "face_pulls", name: "臉部拉 (Face Pulls)", muscle_group: "背部", image: "images/face_pulls.jpg" },
     { id: "high_row", name: "高位划船機 (High Row)", muscle_group: "背部", image: "images/high_row.jpg" },
     { id: "assisted_pull_up", name: "輔助引體向上 (Assisted Pull-up)", muscle_group: "背部", image: "images/assisted_pull_up.jpg" },
+    { id: "neutral_pulldown", name: "平行握下拉 (Neutral Grip Pulldown)", muscle_group: "背部", image: "images/neutral_pulldown.jpg" },
+    { id: "pullover_machine", name: "拉背機 (Pullover Machine)", muscle_group: "背部", image: "images/pullover_machine.jpg" },
+    { id: "iso_lateral_row", name: "單側划船機 (Iso-Lateral Row)", muscle_group: "背部", image: "images/iso_lateral_row.jpg" },
 
     // 腿部 (香港常用「深蹲」「弓步」「保加利亞蹲」)
     { id: "barbell_back_squat", name: "槓鈴深蹲 (Barbell Back Squat)", muscle_group: "腿部", image: "images/barbell_back_squat.jpg" },
@@ -64,6 +71,8 @@ const EXERCISES = [
     { id: "bulgarian_split_squat", name: "保加利亞蹲 (Bulgarian Split Squat)", muscle_group: "腿部", image: "images/bulgarian_split_squat.jpg" },
     { id: "leg_press", name: "腿推機 (Leg Press)", muscle_group: "腿部", image: "images/leg_press.jpg" },
     { id: "leg_curl", name: "腿彎舉 (Leg Curl)", muscle_group: "腿部", image: "images/leg_curl.jpg" },
+    { id: "seated_leg_curl", name: "坐姿腿彎舉 (Seated Leg Curl)", muscle_group: "腿部", image: "images/seated_leg_curl.jpg" },
+    { id: "prone_leg_curl", name: "俯臥腿彎舉 (Prone Leg Curl)", muscle_group: "腿部", image: "images/prone_leg_curl.jpg" },
     { id: "leg_extension", name: "腿伸展 (Leg Extension)", muscle_group: "腿部", image: "images/leg_extension.jpg" },
     { id: "hip_thrust", name: "臀推 (Hip Thrust)", muscle_group: "腿部", image: "images/hip_thrust.jpg" },
     { id: "standing_calf_raise", name: "站姿小腿提踵 (Standing Calf Raise)", muscle_group: "腿部", image: "images/standing_calf_raise.jpg" },
@@ -75,6 +84,8 @@ const EXERCISES = [
     { id: "hip_adduction", name: "髖內收機 (Hip Adduction)", muscle_group: "腿部", image: "images/hip_adduction.jpg" },
     { id: "glute_kickback", name: "臀後踢機 (Glute Kickback)", muscle_group: "腿部", image: "images/glute_kickback.jpg" },
     { id: "booty_builder", name: "臀推機 (Booty Builder)", muscle_group: "腿部", image: "images/booty_builder.jpg" },
+    { id: "hip_extension_machine", name: "髖伸展機 (Hip Extension)", muscle_group: "腿部", image: "images/hip_extension_machine.jpg" },
+    { id: "donkey_calf", name: "驢式提踵 (Donkey Calf Raise)", muscle_group: "腿部", image: "images/donkey_calf.jpg" },
 
     // 手臂 (香港常用「彎」「下壓」「牧師椅」)
     { id: "barbell_curl", name: "槓鈴彎舉 (Barbell Curl)", muscle_group: "手臂", image: "images/barbell_curl.jpg" },
@@ -82,7 +93,10 @@ const EXERCISES = [
     { id: "bayesian_cable_curls", name: "貝葉斯繩索彎舉 (Bayesian Cable Curls)", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
     { id: "hammer_curls", name: "錘式彎舉 (Hammer Curls)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
     { id: "arm_curl_machine", name: "二頭彎舉機 (Arm Curl Machine)", muscle_group: "手臂", image: "images/arm_curl_machine.jpg" },
+    { id: "preacher_machine", name: "牧師椅彎舉機 (Preacher Curl Machine)", muscle_group: "手臂", image: "images/preacher_machine.jpg" },
     { id: "tricep_rope_pushdown", name: "繩索三頭下壓 (Tricep Rope Pushdown)", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
+    { id: "seated_dip_machine", name: "坐姿雙槓機 (Seated Dip)", muscle_group: "手臂", image: "images/seated_dip_machine.jpg" },
+    { id: "tricep_extension_machine", name: "三頭伸展機 (Tricep Extension)", muscle_group: "手臂", image: "images/tricep_extension_machine.jpg" },
     { id: "cable_overhead_triceps", name: "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)", muscle_group: "手臂", image: "images/cable_overhead_triceps.jpg" },
     { id: "skull_crushers", name: "仰臥三頭伸展 (Skull Crushers)", muscle_group: "手臂", image: "images/skull_crushers.jpg" },
     { id: "reverse_forearm_curl", name: "反向腕彎舉 (Reverse Forearm Curl)", muscle_group: "手臂", image: "images/reverse_forearm_curl.jpg" },
@@ -97,7 +111,9 @@ const EXERCISES = [
     { id: "rear_delt_raises", name: "後飛 (Rear Delt Raises)", muscle_group: "肩膀", image: "images/rear_delt_raises.jpg" },
     { id: "barbell_shrugs", name: "槓鈴聳肩 (Barbell Shrugs)", muscle_group: "肩膀", image: "images/barbell_shrugs.jpg" },
     { id: "machine_shoulder_press", name: "器械肩推 (Machine Shoulder Press)", muscle_group: "肩膀", image: "images/machine_shoulder_press.jpg" },
+    { id: "viking_press", name: "維京推 (Viking Press)", muscle_group: "肩膀", image: "images/viking_press.jpg" },
     { id: "standing_lateral_machine", name: "站姿側舉機 (Standing Lateral Raise)", muscle_group: "肩膀", image: "images/standing_lateral_machine.jpg" },
+    { id: "reverse_pec_deck", name: "反向蝴蝶機 (Rear Delt Fly)", muscle_group: "肩膀", image: "images/reverse_pec_deck.jpg" },
 
     // 核心 (香港常用「腹輪」「平板撐」「斬木」)
     { id: "ab_wheel_rollout", name: "腹輪 (Ab Wheel Rollout)", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg", is_bodyweight: true },
@@ -108,7 +124,9 @@ const EXERCISES = [
     { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
     { id: "decline_crunch", name: "下斜捲腹 (Decline Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg", is_bodyweight: true },
     { id: "abdominal_crunch", name: "器械捲腹 (Machine Abdominal Crunch)", muscle_group: "核心", image: "images/abdominal_crunch.jpg" },
+    { id: "rotary_torso", name: "轉體機 (Rotary Torso)", muscle_group: "核心", image: "images/rotary_torso.jpg" },
     { id: "back_extension", name: "山羊挺身 (Back Extension)", muscle_group: "核心", image: "images/back_extension.jpg" },
+    { id: "reverse_hyper", name: "反向超伸 (Reverse Hyperextension)", muscle_group: "核心", image: "images/reverse_hyper.jpg" },
 
     // 全身 / 有氧 — is_hold = 時間+次數記錄（唔用重量）
     { id: "farmer_carry", name: "農夫行走 (Farmer's Carry)", muscle_group: "全身", image: "images/farmer_carry.jpg" },
@@ -119,7 +137,9 @@ const EXERCISES = [
     { id: "jump_rope", name: "跳繩 (Jump Rope)", muscle_group: "有氧", image: "images/jump_rope.jpg", is_hold: true },
     { id: "treadmill", name: "跑步機 (Treadmill)", muscle_group: "有氧", image: "images/treadmill.jpg", record_type: "treadmill" },
     { id: "exercise_bike", name: "健身單車 (Exercise Bike)", muscle_group: "有氧", image: "images/exercise_bike.jpg", is_hold: true },
+    { id: "recumbent_bike", name: "靠背單車 (Recumbent Bike)", muscle_group: "有氧", image: "images/recumbent_bike.jpg", is_hold: true },
     { id: "elliptical", name: "橢圓機 (Elliptical)", muscle_group: "有氧", image: "images/elliptical.jpg", is_hold: true },
+    { id: "arc_trainer", name: "弧形訓練機 (Arc Trainer)", muscle_group: "有氧", image: "images/arc_trainer.jpg", is_hold: true },
     { id: "stair_climber", name: "踏步機 (Stair Climber)", muscle_group: "有氧", image: "images/stair_climber.jpg", is_hold: true },
 ];
 

@@ -363,7 +363,7 @@ function getExerciseLoadProfile(exerciseName) {
     const ex = typeof getExerciseByName === 'function' ? getExerciseByName(name) : null;
     const muscle = (ex && ex.muscle_group) || '';
     const smallName = /curl|pushdown|tricep|bicep|lateral|rear delt|face pull|shrug|calf|forearm|wrist|finger|彎舉|下壓|三頭|二頭|側舉|後飛|臉部|聳肩|小腿|前臂|外展|內收/;
-    const mediumName = /fly|crossover|pec deck|kickback|leg curl|leg extension|crunch|wood|飛鳥|夾胸|蝴蝶|腿彎|腿伸|捲腹|斬木|山羊/;
+    const mediumName = /fly|crossover|pec deck|kickback|leg curl|leg extension|crunch|wood|hip extension|飛鳥|夾胸|蝴蝶|腿彎|腿伸|捲腹|斬木|山羊|髖伸/;
     const lowerBig = /squat|deadlift|leg press|hack|lunge|romanian|hip thrust|zercher|深蹲|硬拉|腿推|弓步|臀推|哈克/;
     if (muscle === '手臂' || muscle === '核心' || smallName.test(n)) {
         return { role: 'small', ceiling: 20, resetTo: 15, plate: 1.25, repCap: 30 };
