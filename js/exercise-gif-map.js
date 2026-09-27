@@ -15,6 +15,8 @@ const EXERCISE_GIF_MAP = {
     cable_crossover: '1269',
     chest_dips: '1430',
     machine_chest_press: '0577',
+    incline_chest_press_machine: '1299',
+    pec_deck: '0596',
 
     // 背部
     pull_ups: '0652',
@@ -26,6 +28,8 @@ const EXERCISE_GIF_MAP = {
     incline_bench_row: '0327',
     t_bar_row: '0606',
     face_pulls: '0233',
+    high_row: '0581',
+    assisted_pull_up: '0017',
 
     // 腿部
     barbell_back_squat: '0043',
@@ -39,12 +43,21 @@ const EXERCISE_GIF_MAP = {
     leg_extension: '0585',
     hip_thrust: '1409',
     standing_calf_raise: '1372',
+    seated_calf_raise: '0594',
+    hack_squat: '0743',
+    v_squat: '0741',
+    smith_squat: '0770',
+    hip_abduction: '0597',
+    hip_adduction: '0598',
+    glute_kickback: '0860',
+    booty_builder: '1409',
 
     // 手臂
     barbell_curl: '0031',
     preacher_curls: '0070',
     bayesian_cable_curls: '1636',
     hammer_curls: '0313',
+    arm_curl_machine: '0575',
     tricep_rope_pushdown: '0200',
     cable_overhead_triceps: '0194',
     skull_crushers: '0060',
@@ -59,6 +72,8 @@ const EXERCISE_GIF_MAP = {
     cable_lateral_raise: '0178',
     rear_delt_raises: '2292',
     barbell_shrugs: '0095',
+    machine_shoulder_press: '0603',
+    standing_lateral_machine: '0584',
 
     // 核心
     ab_wheel_rollout: '0857',
@@ -68,14 +83,19 @@ const EXERCISE_GIF_MAP = {
     cable_wood_chopper: '0862',
     cable_crunch: '0175',
     decline_crunch: '0277',
+    back_extension: '0573',
 
     // 全身 / 有氧
     farmer_carry: '2133',
+    kettlebell_swing: '0549',
     battle_ropes: '0128',
     burpees: '1160',
     rowing_machine: '1323',
     jump_rope: '2612',
-    treadmill: '3666'
+    treadmill: '3666',
+    exercise_bike: '2138',
+    elliptical: '2141',
+    stair_climber: '2311'
 };
 
 function getExerciseGifId(ex) {
