@@ -391,6 +391,10 @@ function renderHistoryEditContent() {
         html += `
             <div class="exercise-log-card bg-[#252321] rounded-2xl p-3 border border-[#57534e] relative" data-ex-idx="${exIdx}">
                 <div class="absolute top-1 right-1 flex items-center gap-0.5 z-10">
+                    <button type="button" class="exercise-nudge-btn" ${exIdx === 0 ? 'disabled' : ''}
+                            onclick="nudgeExerciseOrder(${exIdx}, -1, 'history')" title="向上移">▲</button>
+                    <button type="button" class="exercise-nudge-btn" ${exIdx === currentViewingHistory.exercises.length - 1 ? 'disabled' : ''}
+                            onclick="nudgeExerciseOrder(${exIdx}, 1, 'history')" title="向下移">▼</button>
                     <button type="button"
                             class="exercise-drag-handle"
                             data-ex-idx="${exIdx}"
@@ -407,7 +411,7 @@ function renderHistoryEditContent() {
                         <i class="fa-solid fa-times"></i>
                     </button>
                 </div>
-                <div class="flex items-center justify-between mb-2 pr-12">
+                <div class="flex items-center justify-between mb-2 exercise-card-copy">
                     <div>
                         <div class="font-semibold text-sm">${escapeHtml(ex.name)}</div>
                         <div class="text-[10px] text-[#a8a29e]">${escapeHtml(getMuscleGroup ? getMuscleGroup(ex.name) : '')}${isTreadmill ? ' • 時間+坡度+速度' : ''}${isHold ? ' • 時間+次數' : ''}${isBodyweight ? ' • 體重+次數' : ''}</div>
@@ -535,10 +539,14 @@ function moveExerciseInHistory(fromIdx, toIdx) {
     if (!currentViewingHistory || fromIdx === toIdx) return;
     const exercises = currentViewingHistory.exercises;
     if (!exercises || fromIdx < 0 || fromIdx >= exercises.length || toIdx < 0 || toIdx >= exercises.length) return;
+    const box = document.getElementById('history-edit-exercises');
+    const scroller = box ? box.parentElement : null;
+    const top = scroller ? scroller.scrollTop : 0;
 
     const [item] = exercises.splice(fromIdx, 1);
     exercises.splice(toIdx, 0, item);
     renderHistoryEditContent();
+    if (scroller) scroller.scrollTop = top;
 }
 
 function applyHistoryEditLocally(viewing, historyIndex, isDayGroup, dateStr) {

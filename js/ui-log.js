@@ -583,6 +583,10 @@ function renderCurrentWorkout() {
         html += `
             <div class="exercise-log-card bg-[#252321] rounded-2xl p-2 border border-[#57534e] relative" data-ex-idx="${exIdx}">
                 <div class="absolute top-1 right-1 flex items-center gap-0.5 z-10">
+                    <button type="button" class="exercise-nudge-btn" ${exIdx === 0 ? 'disabled' : ''}
+                            onclick="nudgeExerciseOrder(${exIdx}, -1)" title="向上移">▲</button>
+                    <button type="button" class="exercise-nudge-btn" ${exIdx === currentWorkout.exercises.length - 1 ? 'disabled' : ''}
+                            onclick="nudgeExerciseOrder(${exIdx}, 1)" title="向下移">▼</button>
                     <button type="button"
                             class="exercise-drag-handle"
                             data-ex-idx="${exIdx}"
@@ -605,7 +609,7 @@ function renderCurrentWorkout() {
                          data-exercise-name="${exNameAttr}"
                          onerror="this.onerror=null;this.src='images/icon.jpeg';">
                     
-                    <div class="flex-1 min-w-0 pr-14">
+                    <div class="flex-1 min-w-0 exercise-card-copy">
                         <div class="font-semibold text-sm leading-tight cursor-pointer exercise-detail-trigger" data-exercise-name="${exNameAttr}">${exNameHtml}</div>
                         <div class="flex items-center gap-1 mt-0.5">
                             <span class="muscle-chip text-[9px] px-1.5">${muscle}</span>
@@ -1033,6 +1037,8 @@ function moveExerciseInCurrent(fromIdx, toIdx) {
     if (!currentWorkout || fromIdx === toIdx) return;
     const exercises = currentWorkout.exercises;
     if (fromIdx < 0 || fromIdx >= exercises.length || toIdx < 0 || toIdx >= exercises.length) return;
+    const scroll = document.querySelector('.immersive-scroll');
+    const top = scroll ? scroll.scrollTop : 0;
 
     if (typeof activeHoldTimer !== 'undefined' && activeHoldTimer) {
         const timerIdx = activeHoldTimer.exIdx;
@@ -1048,7 +1054,12 @@ function moveExerciseInCurrent(fromIdx, toIdx) {
     const [item] = exercises.splice(fromIdx, 1);
     exercises.splice(toIdx, 0, item);
     renderCurrentWorkout();
+    if (scroll) scroll.scrollTop = top;
     saveWorkoutData();
+}
+
+function nudgeExerciseOrder(exIdx, delta, context) {
+    _moveExerciseByContext(context || 'current', exIdx, exIdx + delta);
 }
 
 function onExerciseDragHandlePointerDown(e, exIdx, context = 'current') {
@@ -1057,6 +1068,8 @@ function onExerciseDragHandlePointerDown(e, exIdx, context = 'current') {
     const handle = e.currentTarget;
     const card = handle.closest('.exercise-log-card');
     if (!card) return;
+    if (e.cancelable) e.preventDefault();
+    try { handle.setPointerCapture(e.pointerId); } catch (_) {}
 
     _exerciseDragState = {
         fromIdx: exIdx,
@@ -1138,6 +1151,7 @@ window.startHoldTimer = startHoldTimer;
 window.stopHoldTimer = stopHoldTimer;
 window.cancelHoldTimer = cancelHoldTimer;
 window.moveExerciseInCurrent = moveExerciseInCurrent;
+window.nudgeExerciseOrder = nudgeExerciseOrder;
 window.onExerciseDragHandlePointerDown = onExerciseDragHandlePointerDown;
 window.onExerciseDragHandlePointerMove = onExerciseDragHandlePointerMove;
 window.onExerciseDragHandlePointerUp = onExerciseDragHandlePointerUp;

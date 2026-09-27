@@ -603,8 +603,9 @@
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
         }
 
-        .exercise-drag-handle {
-            touch-action: manipulation;
+        .exercise-drag-handle,
+        body.fullscreen-training .exercise-drag-handle {
+            touch-action: none;
             cursor: grab;
             color: #a8a29e;
             background: #1c1917;
@@ -632,6 +633,25 @@
         body.exercise-drag-active {
             user-select: none;
             -webkit-user-select: none;
+        }
+        .exercise-nudge-btn {
+            touch-action: manipulation;
+            color: #d6d3d1;
+            background: #1c1917;
+            border: 1px solid #57534e;
+            border-radius: 8px;
+            min-width: 30px;
+            min-height: 30px;
+            padding: 0 4px;
+            line-height: 1;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+        .exercise-nudge-btn:disabled {
+            opacity: 0.28;
+        }
+        .exercise-card-copy {
+            padding-right: 8.4rem;
         }
 
         body.server-syncing-lock .workout-history-card,
@@ -680,7 +700,7 @@
             margin-right: auto !important;
             height: 100dvh !important;
             transform: none !important;
-            touch-action: manipulation;
+            touch-action: pan-y;
         }
 
         body.fullscreen-training #finishModal,
@@ -770,7 +790,7 @@
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            touch-action: manipulation;
+            touch-action: pan-y;
             overscroll-behavior: contain;
             min-height: 0; /* critical for flex child to scroll properly */
             padding-bottom: 16px;
