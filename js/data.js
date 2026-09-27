@@ -14,10 +14,10 @@ const ANALYSIS_EXERCISE_FILTERS = [
     { key: 'chest', label: '胸肌', muscle: '胸部' },
     { key: 'back', label: '背肌', muscle: '背部' },
     { key: 'legs', label: '大腿', muscle: '腿部', excludeIds: ['standing_calf_raise'] },
-    { key: 'calves', label: '小腿', exerciseIds: ['standing_calf_raise'] },
-    { key: 'glutes', label: '臀部', exerciseIds: ['hip_thrust', 'romanian_deadlift', 'bulgarian_split_squat'] },
+    { key: 'calves', label: '小腿', exerciseIds: ['standing_calf_raise', 'seated_calf_raise'] },
+    { key: 'glutes', label: '臀部', exerciseIds: ['hip_thrust', 'romanian_deadlift', 'bulgarian_split_squat', 'booty_builder', 'glute_kickback', 'hip_abduction'] },
     { key: 'shoulders', label: '肩膀', muscle: '肩膀' },
-    { key: 'biceps', label: '二頭', exerciseIds: ['barbell_curl', 'preacher_curls', 'bayesian_cable_curls', 'hammer_curls'] },
+    { key: 'biceps', label: '二頭', exerciseIds: ['barbell_curl', 'preacher_curls', 'bayesian_cable_curls', 'hammer_curls', 'arm_curl_machine'] },
     { key: 'triceps', label: '三頭', exerciseIds: ['tricep_rope_pushdown', 'cable_overhead_triceps', 'skull_crushers', 'chest_dips'] },
     { key: 'forearms', label: '前臂', exerciseIds: ['reverse_forearm_curl', 'finger_curls'] },
     { key: 'arms', label: '手臂', muscle: '手臂' },
@@ -38,7 +38,9 @@ const EXERCISES = [
     { id: "lower_chest_cable_fly", name: "下胸繩索飛鳥 (Lower Chest Cable Fly)", muscle_group: "胸部", image: "images/lower_chest_cable_fly.jpg" },
     { id: "cable_crossover", name: "繩索夾胸 (Cable Crossover)", muscle_group: "胸部", image: "images/cable_crossover.jpg" },
     { id: "chest_dips", name: "雙槓胸推 (Chest Dips)", muscle_group: "胸部", image: "images/chest_dips.jpg", is_bodyweight: true },
-    { id: "machine_chest_press", name: "機器胸推 (Machine Chest Press)", muscle_group: "胸部", image: "images/machine_chest_press.jpg" },
+    { id: "machine_chest_press", name: "機器胸推 (Machine Chest Press)", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
+    { id: "incline_chest_press_machine", name: "上斜胸推機 (Incline Chest Press)", muscle_group: "胸部", image: "images/incline_dumbbell_press.jpg" },
+    { id: "pec_deck", name: "蝴蝶機夾胸 (Pec Deck)", muscle_group: "胸部", image: "images/flat_dumbbell_press.jpg" },
 
     // 背部 (香港常用「拉背」「划船」)
     { id: "pull_ups", name: "引體向上 (Pull-ups)", muscle_group: "背部", image: "images/pull_ups.jpg", is_bodyweight: true },
@@ -50,6 +52,8 @@ const EXERCISES = [
     { id: "incline_bench_row", name: "上斜啞鈴划船 (Incline Dumbbell Row)", muscle_group: "背部", image: "images/incline_bench_row.jpg" },
     { id: "t_bar_row", name: "T槓划船 (T-Bar Row)", muscle_group: "背部", image: "images/t_bar_row.jpg" },
     { id: "face_pulls", name: "臉部拉 (Face Pulls)", muscle_group: "背部", image: "images/face_pulls.jpg" },
+    { id: "high_row", name: "高位划船機 (High Row)", muscle_group: "背部", image: "images/seated_cable_row.jpg" },
+    { id: "assisted_pull_up", name: "輔助引體向上 (Assisted Pull-up)", muscle_group: "背部", image: "images/pull_ups.jpg" },
 
     // 腿部 (香港常用「深蹲」「弓步」「保加利亞蹲」)
     { id: "barbell_back_squat", name: "槓鈴深蹲 (Barbell Back Squat)", muscle_group: "腿部", image: "images/barbell_back_squat.jpg" },
@@ -63,12 +67,21 @@ const EXERCISES = [
     { id: "leg_extension", name: "腿伸展 (Leg Extension)", muscle_group: "腿部", image: "images/leg_extension.jpg" },
     { id: "hip_thrust", name: "臀推 (Hip Thrust)", muscle_group: "腿部", image: "images/hip_thrust.jpg" },
     { id: "standing_calf_raise", name: "站姿小腿提踵 (Standing Calf Raise)", muscle_group: "腿部", image: "images/standing_calf_raise.jpg" },
+    { id: "seated_calf_raise", name: "坐姿小腿提踵 (Seated Calf Raise)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+    { id: "hack_squat", name: "哈克深蹲 (Hack Squat)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+    { id: "v_squat", name: "V蹲機 (V-Squat)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+    { id: "smith_squat", name: "史密斯深蹲 (Smith Squat)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+    { id: "hip_abduction", name: "髖外展機 (Hip Abduction)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+    { id: "hip_adduction", name: "髖內收機 (Hip Adduction)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+    { id: "glute_kickback", name: "臀後踢機 (Glute Kickback)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
+    { id: "booty_builder", name: "臀推機 (Booty Builder)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
 
     // 手臂 (香港常用「彎」「下壓」「牧師椅」)
     { id: "barbell_curl", name: "槓鈴彎舉 (Barbell Curl)", muscle_group: "手臂", image: "images/barbell_curl.jpg" },
     { id: "preacher_curls", name: "牧師椅彎舉 (Preacher Curls)", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
     { id: "bayesian_cable_curls", name: "貝葉斯繩索彎舉 (Bayesian Cable Curls)", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
     { id: "hammer_curls", name: "錘式彎舉 (Hammer Curls)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
+    { id: "arm_curl_machine", name: "二頭彎舉機 (Arm Curl Machine)", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
     { id: "tricep_rope_pushdown", name: "繩索三頭下壓 (Tricep Rope Pushdown)", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
     { id: "cable_overhead_triceps", name: "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)", muscle_group: "手臂", image: "images/cable_overhead_triceps.jpg" },
     { id: "skull_crushers", name: "仰臥三頭伸展 (Skull Crushers)", muscle_group: "手臂", image: "images/skull_crushers.jpg" },
@@ -83,6 +96,8 @@ const EXERCISES = [
     { id: "cable_lateral_raise", name: "繩索側舉 (Cable Lateral Raise)", muscle_group: "肩膀", image: "images/cable_lateral_raise.jpg" },
     { id: "rear_delt_raises", name: "後飛 (Rear Delt Raises)", muscle_group: "肩膀", image: "images/rear_delt_raises.jpg" },
     { id: "barbell_shrugs", name: "槓鈴聳肩 (Barbell Shrugs)", muscle_group: "肩膀", image: "images/barbell_shrugs.jpg" },
+    { id: "machine_shoulder_press", name: "器械肩推 (Machine Shoulder Press)", muscle_group: "肩膀", image: "images/lateral_raises.jpg" },
+    { id: "standing_lateral_machine", name: "站姿側舉機 (Standing Lateral Raise)", muscle_group: "肩膀", image: "images/lateral_raises.jpg" },
 
     // 核心 (香港常用「腹輪」「平板撐」「斬木」)
     { id: "ab_wheel_rollout", name: "腹輪 (Ab Wheel Rollout)", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg", is_bodyweight: true },
@@ -92,14 +107,19 @@ const EXERCISES = [
     { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/wood_chopper.jpg" },
     { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
     { id: "decline_crunch", name: "下斜捲腹 (Decline Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg", is_bodyweight: true },
+    { id: "back_extension", name: "山羊挺身 (Back Extension)", muscle_group: "核心", image: "images/ab_wheel_rollout.jpg" },
 
     // 全身 / 有氧 — is_hold = 時間+次數記錄（唔用重量）
     { id: "farmer_carry", name: "農夫行走 (Farmer's Carry)", muscle_group: "全身", image: "images/farmer_carry.jpg" },
+    { id: "kettlebell_swing", name: "壺鈴擺盪 (Kettlebell Swing)", muscle_group: "全身", image: "images/deadlift.jpg" },
     { id: "battle_ropes", name: "戰繩 (Battle Ropes)", muscle_group: "全身", image: "images/battle_ropes.jpg", is_hold: true },
     { id: "burpees", name: "波比跳 (Burpees)", muscle_group: "全身", image: "images/burpees.jpg", is_bodyweight: true },
     { id: "rowing_machine", name: "划船機 (Rowing Machine)", muscle_group: "有氧", image: "images/rowing_machine.jpg", is_hold: true },
     { id: "jump_rope", name: "跳繩 (Jump Rope)", muscle_group: "有氧", image: "images/jump_rope.jpg", is_hold: true },
     { id: "treadmill", name: "跑步機 (Treadmill)", muscle_group: "有氧", image: "images/treadmill.jpg", record_type: "treadmill" },
+    { id: "exercise_bike", name: "健身單車 (Exercise Bike)", muscle_group: "有氧", image: "images/icon.jpeg", is_hold: true },
+    { id: "elliptical", name: "橢圓機 (Elliptical)", muscle_group: "有氧", image: "images/icon.jpeg", is_hold: true },
+    { id: "stair_climber", name: "踏步機 (Stair Climber)", muscle_group: "有氧", image: "images/icon.jpeg", is_hold: true },
 ];
 
 // Source of truth for the 3 fixed, non-modifiable Training Days.
