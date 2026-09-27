@@ -83,6 +83,7 @@ const EXERCISE_GIF_MAP = {
     cable_wood_chopper: '0862',
     cable_crunch: '0175',
     decline_crunch: '0277',
+    abdominal_crunch: '0595',
     back_extension: '0573',
 
     // 全身 / 有氧

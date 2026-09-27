@@ -107,6 +107,7 @@ const EXERCISES = [
     { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/wood_chopper.jpg" },
     { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
     { id: "decline_crunch", name: "下斜捲腹 (Decline Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg", is_bodyweight: true },
+    { id: "abdominal_crunch", name: "器械捲腹 (Machine Abdominal Crunch)", muscle_group: "核心", image: "images/abdominal_crunch.jpg" },
     { id: "back_extension", name: "山羊挺身 (Back Extension)", muscle_group: "核心", image: "images/back_extension.jpg" },
 
     // 全身 / 有氧 — is_hold = 時間+次數記錄（唔用重量）
