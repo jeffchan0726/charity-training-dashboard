@@ -634,24 +634,31 @@
             user-select: none;
             -webkit-user-select: none;
         }
+        .exercise-move-col {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
         .exercise-nudge-btn {
             touch-action: manipulation;
-            color: #d6d3d1;
+            color: #e7e5e4;
             background: #1c1917;
             border: 1px solid #57534e;
             border-radius: 8px;
-            min-width: 30px;
-            min-height: 30px;
-            padding: 0 4px;
+            width: 36px;
+            height: 28px;
+            padding: 0;
             line-height: 1;
-            font-size: 0.72rem;
-            font-weight: 700;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .exercise-nudge-btn:disabled {
             opacity: 0.28;
         }
         .exercise-card-copy {
-            padding-right: 8.4rem;
+            padding-right: 5.2rem;
         }
 
         body.server-syncing-lock .workout-history-card,

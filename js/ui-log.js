@@ -582,22 +582,18 @@ function renderCurrentWorkout() {
 
         html += `
             <div class="exercise-log-card bg-[#252321] rounded-2xl p-2 border border-[#57534e] relative" data-ex-idx="${exIdx}">
-                <div class="absolute top-1 right-1 flex items-center gap-0.5 z-10">
-                    <button type="button" class="exercise-nudge-btn" ${exIdx === 0 ? 'disabled' : ''}
-                            onclick="nudgeExerciseOrder(${exIdx}, -1)" title="向上移">▲</button>
-                    <button type="button" class="exercise-nudge-btn" ${exIdx === currentWorkout.exercises.length - 1 ? 'disabled' : ''}
-                            onclick="nudgeExerciseOrder(${exIdx}, 1)" title="向下移">▼</button>
-                    <button type="button"
-                            class="exercise-drag-handle"
-                            data-ex-idx="${exIdx}"
-                            onpointerdown="onExerciseDragHandlePointerDown(event, ${exIdx})"
-                            onpointermove="onExerciseDragHandlePointerMove(event)"
-                            onpointerup="onExerciseDragHandlePointerUp(event)"
-                            onpointercancel="onExerciseDragHandlePointerCancel(event)"
-                            title="按住 ↕ 拖動調整順序">
-                        ↕
-                    </button>
-                    <button onclick="removeExerciseFromCurrent(${exIdx})" 
+                <div class="absolute top-1 right-1 flex items-center gap-1 z-10">
+                    <div class="exercise-move-col">
+                        <button type="button" class="exercise-nudge-btn" ${exIdx === 0 ? 'disabled' : ''}
+                                onclick="nudgeExerciseOrder(${exIdx}, -1)" title="向上移">
+                            <i class="fa-solid fa-chevron-up"></i>
+                        </button>
+                        <button type="button" class="exercise-nudge-btn" ${exIdx === currentWorkout.exercises.length - 1 ? 'disabled' : ''}
+                                onclick="nudgeExerciseOrder(${exIdx}, 1)" title="向下移">
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    <button type="button" onclick="removeExerciseFromCurrent(${exIdx})" 
                             class="text-red-400 hover:text-red-300 px-1.5 py-0.5 text-base leading-none active:bg-red-900/30 rounded"
                             title="刪除此動作">
                         <i class="fa-solid fa-times"></i>
