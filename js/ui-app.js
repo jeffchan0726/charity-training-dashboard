@@ -971,8 +971,13 @@ function suggestProgressiveOverload(exerciseName) {
     const weakest = sets.reduce(function (a, s) {
         return Number(s.reps) < Number(a.reps) ? s : a;
     });
+    const profile = typeof getExerciseLoadProfile === 'function' ? getExerciseLoadProfile(exerciseName) : null;
     const topped = sets.every(function (s) {
-        return Number(s.reps) >= repRangeCeiling(Math.round(Number(s.reps)));
+        const reps = Math.round(Number(s.reps));
+        const ceiling = profile && typeof profileCeiling === 'function'
+            ? profileCeiling(profile, reps)
+            : 12;
+        return reps >= ceiling;
     });
     const basis = topped ? sets[sets.length - 1] : weakest;
     const plan = planNextProgression(basis.weight, basis.reps, exerciseName);

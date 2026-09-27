@@ -100,7 +100,7 @@ function onHeavierWeightReps(exIdx, immediate) {
     }
     clearTimeout(onHeavierWeightReps._timer);
     const plan = (baseline && typeof repsToBeatLastVolume === 'function')
-        ? repsToBeatLastVolume(baseline.weight, baseline.reps, wEl.value)
+        ? repsToBeatLastVolume(baseline.weight, baseline.reps, wEl.value, ex.name)
         : null;
     if (!plan) {
         if (hint) hint.textContent = '';

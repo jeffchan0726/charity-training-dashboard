@@ -353,13 +353,42 @@ function calculateSetVolume(set, exName) {
     return w * r;
 }
 
-/** 漸進超負荷：次數未到範圍頂就加 1 下；到頂先加最小片，次數回落。上肢/孤立 1.25kg，下肢複合 2.5kg。 */
-function plateJumpKg(exerciseName) {
-    const n = String(exerciseName || '').toLowerCase();
-    const lower = /squat|deadlift|leg press|hack|lunge|romanian|hip thrust|zercher|深蹲|硬拉|腿推|弓步|臀推|哈克|史密斯/;
-    const iso = /curl|fly|raise|extension|calf|shrug|kickback|pushdown|lateral|pec|abduct|adduct|彎舉|飛鳥|側舉|伸展|小腿|聳肩|下壓|外展|內收|蝴蝶|踢/;
-    if (lower.test(n) && !iso.test(n)) return 2.5;
-    return 1.25;
+/**
+ * 按動作自動分級。細肌（手臂、側頭、小腿）係輕重量、高次數；
+ * 大肌孤立（飛鳥、腿彎舉）中等次數；深蹲硬拉推胸呢類複合先用低次數加較大片。
+ */
+function getExerciseLoadProfile(exerciseName) {
+    const name = String(exerciseName || '');
+    const n = name.toLowerCase();
+    const ex = typeof getExerciseByName === 'function' ? getExerciseByName(name) : null;
+    const muscle = (ex && ex.muscle_group) || '';
+    const smallName = /curl|pushdown|tricep|bicep|lateral|rear delt|face pull|shrug|calf|forearm|wrist|finger|彎舉|下壓|三頭|二頭|側舉|後飛|臉部|聳肩|小腿|前臂|外展|內收/;
+    const mediumName = /fly|crossover|pec deck|kickback|leg curl|leg extension|crunch|wood|飛鳥|夾胸|蝴蝶|腿彎|腿伸|捲腹|斬木|山羊/;
+    const lowerBig = /squat|deadlift|leg press|hack|lunge|romanian|hip thrust|zercher|深蹲|硬拉|腿推|弓步|臀推|哈克/;
+    if (muscle === '手臂' || muscle === '核心' || smallName.test(n)) {
+        return { role: 'small', ceiling: 20, resetTo: 15, plate: 1.25, repCap: 30 };
+    }
+    if (mediumName.test(n)) {
+        const legIso = /leg curl|leg extension|腿彎|腿伸/;
+        return { role: 'medium', ceiling: 15, resetTo: 12, plate: legIso.test(n) ? 2.5 : 1.25, repCap: 25 };
+    }
+    if (muscle === '腿部' || lowerBig.test(n)) {
+        return { role: 'big', ceiling: 12, resetTo: 6, plate: 2.5, repCap: 20 };
+    }
+    return { role: 'big', ceiling: 12, resetTo: 6, plate: 1.25, repCap: 20 };
+}
+
+function profileCeiling(profile, reps) {
+    if (!profile || profile.role === 'small' || profile.role === 'medium') return profile.ceiling;
+    if (reps <= 6) return 6;
+    return profile.ceiling;
+}
+
+function profileResetReps(profile, reps) {
+    if (profile.role === 'small') return profile.resetTo;
+    if (profile.role === 'medium') return profile.resetTo;
+    if (reps <= 6) return Math.max(3, Math.round(reps * 0.7));
+    return Math.max(profile.resetTo, Math.round(reps * 0.7));
 }
 
 function formatLoadNumber(n) {
@@ -368,63 +397,58 @@ function formatLoadNumber(n) {
     return Math.abs(x - Math.round(x)) < 0.001 ? String(Math.round(x)) : String(x);
 }
 
-function repRangeCeiling(reps) {
-    if (reps <= 6) return 6;
-    if (reps <= 12) return 12;
-    return 15;
-}
-
 function planNextProgression(lastWeight, lastReps, exerciseName) {
     const w = Number(lastWeight) || 0;
     const r = Math.round(Number(lastReps) || 0);
     if (!(w > 0) || !(r > 0)) return null;
-    const ceiling = repRangeCeiling(r);
+    const profile = getExerciseLoadProfile(exerciseName);
+    const ceiling = profileCeiling(profile, r);
+    const roleTag = profile.role === 'small' ? '細肌·' : (profile.role === 'medium' ? '孤立·' : '');
     if (r < ceiling) {
-        return { weight: formatLoadNumber(w), reps: r + 1, tag: '加次數' };
+        return { weight: formatLoadNumber(w), reps: r + 1, tag: roleTag + '加次數' };
     }
-    const jump = plateJumpKg(exerciseName);
-    const floor = ceiling <= 6 ? 3 : 6;
     return {
-        weight: formatLoadNumber(w + jump),
-        reps: Math.max(floor, Math.round(r * 0.7)),
-        tag: '加' + formatLoadNumber(jump) + 'kg'
+        weight: formatLoadNumber(w + profile.plate),
+        reps: profileResetReps(profile, r),
+        tag: roleTag + '加' + formatLoadNumber(profile.plate) + 'kg'
     };
 }
 
 /**
- * 自己改重量之後計次數。
- * 輕咗：次數加到容量至少高 2%。
- * 重 10% 以內、次數未到頂：容量大約 +3%。
- * 次數已到頂，或者重量一次加超過 10%：次數回落（Epley），唔追住爆容量。
+ * 自己改重量之後計次數。細肌唔會因為百分比跳得大就將次數打落去 6 下。
  */
-function repsToBeatLastVolume(lastWeight, lastReps, newWeight) {
+function repsToBeatLastVolume(lastWeight, lastReps, newWeight, exerciseName) {
     const lw = Number(lastWeight) || 0;
     const lr = Math.round(Number(lastReps) || 0);
     const nw = Number(newWeight) || 0;
     if (!(lw > 0) || !(lr > 0) || !(nw > 0) || Math.abs(nw - lw) < 0.05) return null;
+    const profile = getExerciseLoadProfile(exerciseName);
+    const ceiling = profileCeiling(profile, lr);
     const lastVol = lw * lr;
     const loadRatio = nw / lw;
     let reps;
     let tag;
+    const roleTag = profile.role === 'small' ? '細肌，' : (profile.role === 'medium' ? '孤立，' : '');
     if (nw < lw) {
         reps = Math.ceil((lastVol * 1.02) / nw);
         if (nw * reps <= lastVol) reps += 1;
-        reps = Math.min(30, Math.max(1, reps));
-        tag = '減重量，次數高過上次';
-    } else if (loadRatio <= 1.10 && lr < repRangeCeiling(lr)) {
+        reps = Math.min(profile.repCap, Math.max(1, reps));
+        tag = roleTag + '減重量，次數高過上次';
+    } else if (lr >= ceiling && (profile.role !== 'big' || loadRatio <= 1.10)) {
+        reps = profileResetReps(profile, lr);
+        tag = roleTag + '加重量，次數保持喺範圍';
+    } else if (profile.role !== 'big' || loadRatio <= 1.10) {
         reps = Math.max(1, Math.round((lastVol * 1.03) / nw));
         if (nw * reps < lastVol * 1.02) reps += 1;
-        reps = Math.min(15, reps);
-        tag = '穩步加負荷';
-    } else if (loadRatio <= 1.10) {
-        const floor = lr <= 6 ? 3 : 6;
-        reps = Math.max(floor, Math.round(lr * 0.7));
-        tag = '加重量，次數回落';
+        const minReps = profile.role === 'small' ? 10 : (profile.role === 'medium' ? 8 : 1);
+        if (reps < minReps) reps = minReps;
+        reps = Math.min(profile.repCap, reps);
+        tag = profile.role === 'small' ? '細肌，高次數' : (profile.role === 'medium' ? '孤立，次數保持' : '穩步加負荷');
     } else {
         const oneRm = lw * (1 + lr / 30);
         reps = Math.round(30 * (oneRm / nw - 1));
-        reps = Math.min(30, Math.max(3, reps));
-        tag = '重量加超過 10%，次數回落';
+        reps = Math.min(profile.repCap, Math.max(3, reps));
+        tag = '大肌，重量加超過 10%，次數回落';
     }
     const newVol = nw * reps;
     const pct = Math.round((newVol - lastVol) / lastVol * 100);
