@@ -110,8 +110,8 @@ function onHeavierWeightReps(exIdx, immediate) {
         return;
     }
     rEl.value = String(plan.reps);
-    if (hint) hint.textContent = '要做到 ' + plan.reps + ' 下（' + plan.newVol + ' > 上次 ' + plan.lastVol + '）';
-    if (tip) tip.textContent = String(wEl.value) + 'kg × ' + plan.reps;
+    if (hint) hint.textContent = plan.hint || ('要做到 ' + plan.reps + ' 下');
+    if (tip) tip.textContent = '建議 ' + formatLoadNumber(wEl.value) + 'kg × ' + plan.reps + (plan.tag ? '（' + plan.tag + '）' : '');
 }
 
 function focusExerciseEntry(exIdx, recordType) {

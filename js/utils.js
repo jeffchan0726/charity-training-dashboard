@@ -353,20 +353,89 @@ function calculateSetVolume(set, exName) {
     return w * r;
 }
 
-/** 新重量（重啲或者輕啲）要高過上一組重量×次數，最少要幾多下。重量一樣就唔改。 */
+/** 漸進超負荷：次數未到範圍頂就加 1 下；到頂先加最小片，次數回落。上肢/孤立 1.25kg，下肢複合 2.5kg。 */
+function plateJumpKg(exerciseName) {
+    const n = String(exerciseName || '').toLowerCase();
+    const lower = /squat|deadlift|leg press|hack|lunge|romanian|hip thrust|zercher|深蹲|硬拉|腿推|弓步|臀推|哈克|史密斯/;
+    const iso = /curl|fly|raise|extension|calf|shrug|kickback|pushdown|lateral|pec|abduct|adduct|彎舉|飛鳥|側舉|伸展|小腿|聳肩|下壓|外展|內收|蝴蝶|踢/;
+    if (lower.test(n) && !iso.test(n)) return 2.5;
+    return 1.25;
+}
+
+function formatLoadNumber(n) {
+    const x = Math.round(Number(n) * 100) / 100;
+    if (!isFinite(x)) return '';
+    return Math.abs(x - Math.round(x)) < 0.001 ? String(Math.round(x)) : String(x);
+}
+
+function repRangeCeiling(reps) {
+    if (reps <= 6) return 6;
+    if (reps <= 12) return 12;
+    return 15;
+}
+
+function planNextProgression(lastWeight, lastReps, exerciseName) {
+    const w = Number(lastWeight) || 0;
+    const r = Math.round(Number(lastReps) || 0);
+    if (!(w > 0) || !(r > 0)) return null;
+    const ceiling = repRangeCeiling(r);
+    if (r < ceiling) {
+        return { weight: formatLoadNumber(w), reps: r + 1, tag: '加次數' };
+    }
+    const jump = plateJumpKg(exerciseName);
+    const floor = ceiling <= 6 ? 3 : 6;
+    return {
+        weight: formatLoadNumber(w + jump),
+        reps: Math.max(floor, Math.round(r * 0.7)),
+        tag: '加' + formatLoadNumber(jump) + 'kg'
+    };
+}
+
+/**
+ * 自己改重量之後計次數。
+ * 輕咗：次數加到容量至少高 2%。
+ * 重 10% 以內、次數未到頂：容量大約 +3%。
+ * 次數已到頂，或者重量一次加超過 10%：次數回落（Epley），唔追住爆容量。
+ */
 function repsToBeatLastVolume(lastWeight, lastReps, newWeight) {
     const lw = Number(lastWeight) || 0;
-    const lr = Number(lastReps) || 0;
+    const lr = Math.round(Number(lastReps) || 0);
     const nw = Number(newWeight) || 0;
-    if (!(lw > 0) || !(lr > 0) || !(nw > 0) || nw === lw) return null;
+    if (!(lw > 0) || !(lr > 0) || !(nw > 0) || Math.abs(nw - lw) < 0.05) return null;
     const lastVol = lw * lr;
-    const reps = Math.floor(lastVol / nw) + 1;
-    if (!isFinite(reps) || reps < 1 || reps > 999) return null;
-    const nice = function (n) {
-        const x = Math.round(Number(n) * 10) / 10;
-        return Math.abs(x - Math.round(x)) < 0.001 ? String(Math.round(x)) : String(x);
+    const loadRatio = nw / lw;
+    let reps;
+    let tag;
+    if (nw < lw) {
+        reps = Math.ceil((lastVol * 1.02) / nw);
+        if (nw * reps <= lastVol) reps += 1;
+        reps = Math.min(30, Math.max(1, reps));
+        tag = '減重量，次數高過上次';
+    } else if (loadRatio <= 1.10 && lr < repRangeCeiling(lr)) {
+        reps = Math.max(1, Math.round((lastVol * 1.03) / nw));
+        if (nw * reps < lastVol * 1.02) reps += 1;
+        reps = Math.min(15, reps);
+        tag = '穩步加負荷';
+    } else if (loadRatio <= 1.10) {
+        const floor = lr <= 6 ? 3 : 6;
+        reps = Math.max(floor, Math.round(lr * 0.7));
+        tag = '加重量，次數回落';
+    } else {
+        const oneRm = lw * (1 + lr / 30);
+        reps = Math.round(30 * (oneRm / nw - 1));
+        reps = Math.min(30, Math.max(3, reps));
+        tag = '重量加超過 10%，次數回落';
+    }
+    const newVol = nw * reps;
+    const pct = Math.round((newVol - lastVol) / lastVol * 100);
+    const sign = pct > 0 ? '+' : '';
+    return {
+        reps: reps,
+        lastVol: formatLoadNumber(lastVol),
+        newVol: formatLoadNumber(newVol),
+        tag: tag,
+        hint: '要做到 ' + reps + ' 下（容量 ' + sign + pct + '%，' + tag + '）'
     };
-    return { reps: reps, lastVol: nice(lastVol), newVol: nice(nw * reps) };
 }
 
 function calculateWorkoutTotals(workout) {

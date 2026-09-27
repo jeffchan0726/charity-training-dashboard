@@ -964,17 +964,20 @@ function updateCalorieItemGrams(idx, grams) {
 
 function suggestProgressiveOverload(exerciseName) {
     const perf = typeof lastPerformed !== 'undefined' ? lastPerformed[exerciseName] : null;
-    const last = perf && perf.sets && perf.sets.length ? perf.sets[perf.sets.length - 1] : null;
-    if (!last || !last.weight) return '';
-    if ((last.reps || 0) >= 10) {
-        const nextW = Math.round((Number(last.weight) + 2.5) * 10) / 10;
-        const plan = typeof repsToBeatLastVolume === 'function'
-            ? repsToBeatLastVolume(last.weight, last.reps, nextW)
-            : null;
-        if (plan) return '建議下一組 ' + nextW + 'kg × ' + plan.reps;
-        return '建議下一組 ' + nextW + ' kg';
-    }
-    return '上次 ' + last.weight + ' kg × ' + (last.reps || 0);
+    const sets = (perf && perf.sets ? perf.sets : []).filter(function (s) {
+        return s && Number(s.weight) > 0 && Number(s.reps) > 0;
+    });
+    if (!sets.length || typeof planNextProgression !== 'function') return '';
+    const weakest = sets.reduce(function (a, s) {
+        return Number(s.reps) < Number(a.reps) ? s : a;
+    });
+    const topped = sets.every(function (s) {
+        return Number(s.reps) >= repRangeCeiling(Math.round(Number(s.reps)));
+    });
+    const basis = topped ? sets[sets.length - 1] : weakest;
+    const plan = planNextProgression(basis.weight, basis.reps, exerciseName);
+    if (!plan) return '';
+    return '建議下一組 ' + plan.weight + 'kg × ' + plan.reps + '（' + plan.tag + '）';
 }
 
 function exportLocalBackup() {
