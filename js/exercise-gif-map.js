@@ -9,12 +9,14 @@ const EXERCISE_GIF_BASE_URL =
 const EXERCISE_GIF_MAP = {
     // 胸部
     incline_dumbbell_press: '0314',
+    incline_barbell_press: '0047',
     flat_dumbbell_press: '0289',
     barbell_bench_press: '0025',
     lower_chest_cable_fly: '0158',
     cable_crossover: '1269',
     chest_dips: '1430',
     machine_chest_press: '0577',
+    wide_chest_press: '0576',
     incline_chest_press_machine: '1299',
     decline_press_machine: '1300',
     pec_deck: '0596',
@@ -27,6 +29,7 @@ const EXERCISE_GIF_MAP = {
     deadlift: '0032',
     deadlift_machine: '0578',
     seated_cable_row: '0861',
+    low_row: '0180',
     barbell_row: '0027',
     lat_pulldown: '0198',
     straight_arm_pulldown: '0238',
@@ -58,8 +61,12 @@ const EXERCISE_GIF_MAP = {
     seated_calf_raise: '0594',
     hack_squat: '0743',
     v_squat: '0741',
+    power_squat: '0043',
     smith_squat: '0770',
+    smith_bench_press: '0748',
+    smith_incline_press: '0757',
     hip_abduction: '0597',
+    standing_abductor: '0597',
     hip_adduction: '0598',
     glute_kickback: '0860',
     booty_builder: '1409',
@@ -93,6 +100,8 @@ const EXERCISE_GIF_MAP = {
     rear_delt_raises: '2292',
     barbell_shrugs: '0095',
     machine_shoulder_press: '0603',
+    smith_shoulder_press: '0766',
+    shrug_machine: '0604',
     viking_press: '2318',
     standing_lateral_machine: '0584',
     reverse_pec_deck: '0602',
@@ -122,7 +131,8 @@ const EXERCISE_GIF_MAP = {
     recumbent_bike: '0798',
     elliptical: '2141',
     arc_trainer: '2331',
-    stair_climber: '2311'
+    stair_climber: '2311',
+    ski_erg: '2142'
 };
 
 function getExerciseGifId(ex) {
