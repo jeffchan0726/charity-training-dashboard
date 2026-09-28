@@ -208,7 +208,7 @@ const TRAINING_DAYS = [
       "指力彎舉 (Finger Curls)",
       "反向腕彎舉 (Reverse Forearm Curl)",
       "側舉 (Lateral Raises)",
-      "龍旗 (Dragon Flag)"
+      "懸垂舉腿 (Hanging Leg Raise)"
     ]
   }
 ];
