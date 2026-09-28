@@ -178,7 +178,7 @@ const TRAINING_DAYS = [
       "繩索三頭下壓 (Tricep Rope Pushdown)",
       "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)",
       "坐姿啞鈴肩推 (Seated Dumbbell Shoulder Press)",
-      "下斜捲腹 (Decline Crunch)"
+      "器械捲腹 (Machine Abdominal Crunch)"
     ]
   },
   {
