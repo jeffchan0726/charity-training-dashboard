@@ -25,9 +25,11 @@ const EXERCISE_GIF_MAP = {
     // 背部
     pull_ups: '0652',
     deadlift: '0032',
+    deadlift_machine: '0578',
     seated_cable_row: '0861',
     barbell_row: '0027',
     lat_pulldown: '0198',
+    straight_arm_pulldown: '0238',
     dumbbell_row: '0292',
     incline_bench_row: '0327',
     t_bar_row: '0606',
@@ -51,6 +53,7 @@ const EXERCISE_GIF_MAP = {
     prone_leg_curl: '0586',
     leg_extension: '0585',
     hip_thrust: '1409',
+    cable_pull_through: '0196',
     standing_calf_raise: '1372',
     seated_calf_raise: '0594',
     hack_squat: '0743',
@@ -62,6 +65,9 @@ const EXERCISE_GIF_MAP = {
     booty_builder: '1409',
     hip_extension_machine: '2286',
     donkey_calf: '1253',
+    reverse_lunge_machine: '0078',
+    abductor_3d: '0597',
+    kneeling_glute: '0860',
 
     // 手臂
     barbell_curl: '0031',

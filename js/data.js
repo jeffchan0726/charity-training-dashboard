@@ -49,9 +49,11 @@ const EXERCISES = [
     // 背部 (香港常用「拉背」「划船」)
     { id: "pull_ups", name: "引體向上 (Pull-ups)", muscle_group: "背部", image: "images/pull_ups.jpg", is_bodyweight: true },
     { id: "deadlift", name: "硬拉 (Deadlift)", muscle_group: "背部", image: "images/deadlift.jpg" },
+    { id: "deadlift_machine", name: "器械硬拉 (Deadlift Machine)", muscle_group: "背部", image: "images/deadlift_machine.jpg" },
     { id: "seated_cable_row", name: "坐姿繩索拉背 (Seated Cable Row)", muscle_group: "背部", image: "images/seated_cable_row.jpg" },
     { id: "barbell_row", name: "槓鈴划船 (Barbell Bent Over Row)", muscle_group: "背部", image: "images/barbell_row.jpg" },
     { id: "lat_pulldown", name: "寬握下拉 (Lat Pulldown)", muscle_group: "背部", image: "images/lat_pulldown.jpg" },
+    { id: "straight_arm_pulldown", name: "直臂下拉 (Straight-Arm Pulldown)", muscle_group: "背部", image: "images/straight_arm_pulldown.jpg" },
     { id: "dumbbell_row", name: "單臂啞鈴拉 (Single Arm Dumbbell Row)", muscle_group: "背部", image: "images/dumbbell_row.jpg" },
     { id: "incline_bench_row", name: "上斜啞鈴划船 (Incline Dumbbell Row)", muscle_group: "背部", image: "images/incline_bench_row.jpg" },
     { id: "t_bar_row", name: "T槓划船 (T-Bar Row)", muscle_group: "背部", image: "images/t_bar_row.jpg" },
@@ -75,6 +77,7 @@ const EXERCISES = [
     { id: "prone_leg_curl", name: "俯臥腿彎舉 (Prone Leg Curl)", muscle_group: "腿部", image: "images/prone_leg_curl.jpg" },
     { id: "leg_extension", name: "腿伸展 (Leg Extension)", muscle_group: "腿部", image: "images/leg_extension.jpg" },
     { id: "hip_thrust", name: "臀推 (Hip Thrust)", muscle_group: "腿部", image: "images/hip_thrust.jpg" },
+    { id: "cable_pull_through", name: "繩索臀拉 (Cable Pull Through)", muscle_group: "腿部", image: "images/cable_pull_through.jpg" },
     { id: "standing_calf_raise", name: "站姿小腿提踵 (Standing Calf Raise)", muscle_group: "腿部", image: "images/standing_calf_raise.jpg" },
     { id: "seated_calf_raise", name: "坐姿小腿提踵 (Seated Calf Raise)", muscle_group: "腿部", image: "images/seated_calf_raise.jpg" },
     { id: "hack_squat", name: "哈克深蹲 (Hack Squat)", muscle_group: "腿部", image: "images/hack_squat.jpg" },
@@ -86,6 +89,10 @@ const EXERCISES = [
     { id: "booty_builder", name: "臀推機 (Booty Builder)", muscle_group: "腿部", image: "images/booty_builder.jpg" },
     { id: "hip_extension_machine", name: "髖伸展機 (Hip Extension)", muscle_group: "腿部", image: "images/hip_extension_machine.jpg" },
     { id: "donkey_calf", name: "驢式提踵 (Donkey Calf Raise)", muscle_group: "腿部", image: "images/donkey_calf.jpg" },
+    { id: "belt_squat", name: "腰帶深蹲 (Belt Squat)", muscle_group: "腿部", image: "images/belt_squat.jpg" },
+    { id: "reverse_lunge_machine", name: "反向弓步機 (Reverse Lunge Machine)", muscle_group: "腿部", image: "images/reverse_lunge_machine.jpg" },
+    { id: "abductor_3d", name: "3D外展機 (3D Abductor)", muscle_group: "腿部", image: "images/abductor_3d.jpg" },
+    { id: "kneeling_glute", name: "跪姿臀踢機 (Kneeling Glute Kick)", muscle_group: "腿部", image: "images/kneeling_glute.jpg" },
 
     // 手臂 (香港常用「彎」「下壓」「牧師椅」)
     { id: "barbell_curl", name: "槓鈴彎舉 (Barbell Curl)", muscle_group: "手臂", image: "images/barbell_curl.jpg" },
