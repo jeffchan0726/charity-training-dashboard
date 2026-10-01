@@ -119,14 +119,32 @@ function loadWorkoutSet(set) {
     }
     if (!currentWorkout) return;
 
-    // Append the set's exercises (deduped)
-    set.exercises.forEach(name => {
-        const ex = getExerciseByName(name);
-        const displayName = ex ? getExerciseDisplay(ex) : name;
-        if (!currentWorkout.exercises.find(e => e.name === displayName)) {
-            currentWorkout.exercises.push({ name: displayName, sets: [] });
+    if (set.isPreset && currentWorkout.workoutSetName !== set.name) {
+        const hasSets = (currentWorkout.exercises || []).some(ex => (ex.sets || []).length > 0);
+        if (hasSets && !confirm('換去呢個訓練日會清走而家場嘅動作同已記嘅組數。確定換？')) return;
+        const syncedLogIds = [];
+        (currentWorkout.exercises || []).forEach(ex => {
+            (ex.sets || []).forEach(s => {
+                if (s && s._syncInFlight) s._deleted = true;
+                if (s && s.id) syncedLogIds.push(s.id);
+            });
+        });
+        currentWorkout.exercises = set.exercises.map(name => {
+            const ex = getExerciseByName(name);
+            return { name: ex ? getExerciseDisplay(ex) : name, sets: [] };
+        });
+        if (currentUser && syncedLogIds.length && typeof backgroundDeleteLog === 'function') {
+            syncedLogIds.forEach(logId => backgroundDeleteLog(logId));
         }
-    });
+    } else if (!set.isPreset) {
+        set.exercises.forEach(name => {
+            const ex = getExerciseByName(name);
+            const displayName = ex ? getExerciseDisplay(ex) : name;
+            if (!currentWorkout.exercises.find(e => e.name === displayName)) {
+                currentWorkout.exercises.push({ name: displayName, sets: [] });
+            }
+        });
+    }
 
     renderCurrentWorkout();
     updateSessionSummary();
