@@ -824,30 +824,7 @@
                 delete currentWorkout._continueSnapshot;
             }
 
-            // === Auto "接埋" last chosen training set ===
-            // 只有全新空白訓練才自動接 last set；繼續今日訓練已 preload 了內容，跳過。
-            const isContinueMode = !!(currentWorkout && currentWorkout.isContinuedFromToday);
-            if (!isContinueMode && lastWorkoutSetName && currentWorkout && (!currentWorkout.exercises || currentWorkout.exercises.length === 0)) {
-                let lastSet = (workoutSets || []).find(s => s.name === lastWorkoutSetName);
-                if (!lastSet && typeof TRAINING_DAYS !== 'undefined') {
-                    const presetDay = TRAINING_DAYS.find(d =>
-                        d.fullName === lastWorkoutSetName || d.label === lastWorkoutSetName
-                    );
-                    if (presetDay) {
-                        lastSet = { name: presetDay.fullName, exercises: presetDay.exercises };
-                    }
-                }
-                if (lastSet && Array.isArray(lastSet.exercises) && lastSet.exercises.length > 0) {
-                    currentWorkout.workoutSetName = lastSet.name || lastWorkoutSetName;
-                    lastSet.exercises.forEach(name => {
-                        const ex = getExerciseByName(name);
-                        const displayName = ex ? getExerciseDisplay(ex) : name;
-                        if (!currentWorkout.exercises.find(e => e.name === displayName)) {
-                            currentWorkout.exercises.push({ name: displayName, sets: [] });
-                        }
-                    });
-                }
-            }
+            // 開始新訓練保持空白。要邊個訓練日，用戶自己撳上面嘅訓練日掣先載入。
 
             // Robust tab activation for log: only switch if the content-log is currently hidden.
             // This avoids unnecessary switchTab('log') calls (and the associated "Restoring originalLogContent" + wrapper spam)

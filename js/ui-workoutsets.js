@@ -51,7 +51,7 @@ function renderWorkoutSetsBar() {
         const isLast = lastWorkoutSetName && set.name === lastWorkoutSetName;
         if (isLast) {
             cls += ' ring-2 ring-emerald-400 ring-offset-1 ring-offset-[#1c1917]';
-            btn.title = '上次使用的訓練組合（下次開始新訓練會自動接續）';
+            btn.title = '上次使用的訓練組合';
         } else {
             btn.title = '載入此自訂訓練組合到目前訓練';
         }
@@ -131,7 +131,7 @@ function loadWorkoutSet(set) {
     renderCurrentWorkout();
     updateSessionSummary();
 
-    // Remember this choice so next time user starts a new workout, we can auto "接埋" it
+    // Remember this choice so the set button can show which one was used last.
     lastWorkoutSetName = set.name;
     if (currentWorkout) {
         currentWorkout.workoutSetName = set.name;
