@@ -32,65 +32,97 @@ function parseAppsScriptResponse(raw) {
     return raw;
 }
 
+function sleepMs(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
+
+function gasResponseLooksBroken(response, text) {
+    if (!response) return true;
+    if (response.status === 404 || response.status === 405 || response.status >= 500) return true;
+    const t = String(text || '').replace(/^\uFEFF/, '').trim();
+    if (!t) return false;
+    return t.charAt(0) === '<' || /^<!doctype/i.test(t) || /<html/i.test(t);
+}
+
 async function callAppsScript(action, data = {}, options = {}) {
+    let last = { status: 'error', message: '連接 Apps Script 失敗' };
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const out = await callAppsScriptAttempt(action, data, options);
+        if (!out.retry) return out.result;
+        last = out.result;
+        if (attempt < 2) await sleepMs(600 * (attempt + 1));
+    }
+    if (/<!DOCTYPE|<html|Unexpected token|Failed to fetch|network|404/i.test(String(last.message || ''))) {
+        return { status: 'error', message: 'Google 暫時開唔到試算表，本地紀錄仍然喺度' };
+    }
+    return last;
+}
+
+async function callAppsScriptAttempt(action, data = {}, options = {}) {
     try {
         let pin = (typeof currentUserPin !== 'undefined' && currentUserPin) ? currentUserPin : '';
         if (!pin) {
             try { pin = sessionStorage.getItem('currentUserPin') || localStorage.getItem('currentUserPin') || ''; } catch (_) {}
         }
 
-        if (action === "getLogs" && currentUser) {
-            const url = new URL(getAppsScriptUrl());
-            url.searchParams.append("action", "getLogs");
-            url.searchParams.append("user", currentUser);
-            if (pin) url.searchParams.append("pin", pin);
-            const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
-            return parseAppsScriptResponse(await res.json());
-        }
-        if (action === "getWorkoutSets" && currentUser) {
-            const url = new URL(getAppsScriptUrl());
-            url.searchParams.append("action", "getWorkoutSets");
-            url.searchParams.append("user", currentUser);
-            if (pin) url.searchParams.append("pin", pin);
-            const res = await fetch(url, options.keepalive ? { keepalive: true } : undefined);
-            return parseAppsScriptResponse(await res.json());
-        }
         const scriptUrl = getAppsScriptUrl();
+        const fetchOpts = {};
+        if (options.keepalive) fetchOpts.keepalive = true;
+        if (!options.keepalive && typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+            fetchOpts.signal = AbortSignal.timeout(15000);
+        }
+
+        if ((action === 'getLogs' || action === 'getWorkoutSets') && currentUser) {
+            if (!scriptUrl) return { retry: false, result: { status: 'error', message: 'APPS_SCRIPT_URL 未設定' } };
+            const url = new URL(scriptUrl);
+            url.searchParams.append('action', action);
+            url.searchParams.append('user', currentUser);
+            if (pin) url.searchParams.append('pin', pin);
+            const res = await fetch(url, fetchOpts);
+            const body = await res.text();
+            if (gasResponseLooksBroken(res, body)) {
+                return { retry: true, result: { status: 'error', message: 'Google 暫時開唔到試算表' } };
+            }
+            return { retry: false, result: parseAppsScriptResponse(body ? JSON.parse(body) : null) };
+        }
+
         if (!scriptUrl) {
-            return { status: 'error', message: 'APPS_SCRIPT_URL 未設定' };
+            return { retry: false, result: { status: 'error', message: 'APPS_SCRIPT_URL 未設定' } };
         }
 
         if (currentUser && pin && data.user == null) data.user = currentUser;
         if (pin && data.pin == null) data.pin = pin;
-        const payload = JSON.stringify({ action, ...data });
-        // 必須用 text/plain，避免瀏覽器 CORS preflight（application/json 會令 GAS POST 失敗）
-        const fetchOpts = {
+        const payload = JSON.stringify(Object.assign({ action: action }, data));
+        const postOpts = {
             method: 'POST',
             mode: 'cors',
             redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: payload
         };
-        if (options.keepalive) fetchOpts.keepalive = true;
-        const response = await fetch(scriptUrl, fetchOpts);
-        const text = await response.text();
+        if (options.keepalive) postOpts.keepalive = true;
+        else if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) postOpts.signal = AbortSignal.timeout(15000);
+        const response = await fetch(scriptUrl, postOpts);
+        const body = await response.text();
+        if (gasResponseLooksBroken(response, body)) {
+            return { retry: true, result: { status: 'error', message: 'Google 暫時開唔到試算表' } };
+        }
         let parsed = null;
         try {
-            parsed = text ? JSON.parse(text) : null;
+            parsed = body ? JSON.parse(body) : null;
         } catch (parseErr) {
-            console.warn('[callAppsScript] JSON parse failed:', text ? text.slice(0, 300) : '(empty)');
-            return { status: 'error', message: '後端回應格式錯誤' };
+            console.warn('[callAppsScript] JSON parse failed:', body ? body.slice(0, 300) : '(empty)');
+            return { retry: true, result: { status: 'error', message: '後端回應格式錯誤' } };
         }
         const result = parseAppsScriptResponse(parsed);
-        // 部份 GAS 部署在寫入成功時回傳空 body + HTTP 200
         if ((!parsed || (parsed.status == null && parsed.message == null)) && response.ok) {
-            return { status: 'success', message: 'HTTP OK (empty body)' };
+            return { retry: false, result: { status: 'success', message: 'HTTP OK (empty body)' } };
         }
-        return result;
+        return { retry: false, result: result };
     } catch (error) {
         console.error('[callAppsScript] POST error:', action, error);
         const detail = (error && error.message) ? error.message : String(error);
-        return { status: 'error', message: `連接 Apps Script 失敗：${detail}` };
+        return { retry: true, result: { status: 'error', message: '連接 Apps Script 失敗：' + detail } };
     }
 }
 
