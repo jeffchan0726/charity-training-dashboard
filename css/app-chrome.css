@@ -1383,3 +1383,147 @@
                 font-size: 0.7rem;
             }
         }
+
+        .kitchen-banner {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 1.15rem;
+            background: linear-gradient(135deg, #3f2a12 0%, #1c1917 72%);
+            border: 1px solid #92400e;
+        }
+        .kitchen-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #b45309;
+            color: #fff;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+        .kitchen-banner h3 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fde68a;
+            line-height: 1.2;
+        }
+        .kitchen-banner p {
+            margin-top: 2px;
+            font-size: 11px;
+            color: #d6d3d1;
+        }
+        .kitchen-day {
+            border-color: #44403c !important;
+            box-shadow: inset 3px 0 0 #d97706;
+        }
+        .kitchen-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            background: #b45309;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .kitchen-go {
+            flex-shrink: 0;
+            min-height: 44px;
+            padding: 0 14px;
+            border-radius: 12px;
+            background: #b45309;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .kitchen-go:active { background: #92400e; }
+        .kitchen-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #292524;
+            color: #fcd34d;
+            font-size: 11px;
+        }
+        .kitchen-cardio {
+            box-shadow: inset 0 0 0 1px #92400e;
+        }
+        .kitchen-tag {
+            display: inline-block;
+            margin-right: 6px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: #78350f;
+            color: #fde68a;
+            font-size: 10px;
+            font-weight: 700;
+            vertical-align: 1px;
+        }
+        .kitchen-en {
+            display: block;
+            font-size: 11px;
+            color: #a8a29e;
+            margin-top: 1px;
+        }
+        .kitchen-home {
+            background: linear-gradient(180deg, #2a2118 0%, #1c1917 55%);
+            border-color: #92400e !important;
+        }
+        .kitchen-home-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .kitchen-home-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            text-align: left;
+            min-height: 44px;
+            padding: 8px 10px;
+            border-radius: 14px;
+            background: #292524;
+            color: #e7e5e4;
+            border: 1px solid #44403c;
+        }
+        .kitchen-home-btn .lbl {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+        .kitchen-home-btn .sub {
+            display: block;
+            margin-top: 1px;
+            font-size: 10px;
+            font-weight: 500;
+            color: #a8a29e;
+        }
+        .kitchen-home-btn.is-next {
+            border-color: #4ade80;
+            box-shadow: 0 0 0 1px #4ade80;
+        }
+        .kitchen-home-btn.is-next .kitchen-num { background: #166534; }
+        .kitchen-bar-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            line-height: 1;
+            padding: 6px 10px;
+            border-radius: 999px;
+            color: #fde68a;
+            background: #78350f;
+            border: 1px solid #b45309;
+        }

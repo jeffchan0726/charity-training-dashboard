@@ -283,12 +283,16 @@ function renderOverviewDashboard() {
         if (!btn) return;
         const recId = rec && Number(rec.id) === Number(id);
         const kitchen = id >= 4;
+        if (kitchen) {
+            btn.classList.toggle('is-next', recId);
+            btn.classList.remove('ring-2', 'ring-emerald-400', 'bg-emerald-800', 'bg-[#166534]', 'bg-sky-800', 'bg-amber-800', 'opacity-70');
+            return;
+        }
         btn.classList.toggle('ring-2', recId);
         btn.classList.toggle('ring-emerald-400', recId);
         btn.classList.toggle('bg-emerald-800', recId);
         btn.classList.toggle('bg-[#166534]', recId);
-        btn.classList.toggle('bg-sky-800', !recId && !kitchen);
-        btn.classList.toggle('bg-amber-800', !recId && kitchen);
+        btn.classList.toggle('bg-sky-800', !recId);
         btn.classList.toggle('opacity-70', !recId);
     });
     if (typeof renderMorningChecklist === 'function') renderMorningChecklist();

@@ -35,12 +35,13 @@ function renderWorkoutSetsBar() {
     fixedPresets.forEach(preset => {
         const btn = document.createElement('button');
         const kitchen = preset.group === '廚房守護者';
-        let cls = kitchen
-            ? 'text-xs px-3 py-1 bg-amber-800 hover:bg-amber-700 active:bg-amber-800 rounded-2xl transition flex items-center'
-            : 'text-xs px-3 py-1 bg-sky-700 hover:bg-sky-600 active:bg-sky-800 rounded-2xl transition flex items-center';
-        btn.className = cls;
+        let cls = 'text-xs px-3 py-1 bg-sky-700 hover:bg-sky-600 active:bg-sky-800 rounded-2xl transition flex items-center';
+        btn.className = kitchen ? 'kitchen-bar-btn' : cls;
         btn.title = '固定預設訓練日（不可編輯 / 不可刪除）';
-        btn.innerHTML = `<span class="font-medium">${escapeHtml(preset.label || preset.name)}</span> <span class="text-[9px] opacity-70">🔒</span>`;
+        const barText = kitchen
+            ? ('廚房 ' + String(preset.label || '').replace('廚房守護者 ', ''))
+            : (preset.label || preset.name);
+        btn.innerHTML = `<span class="font-medium">${escapeHtml(barText)}</span> <span class="text-[9px] opacity-70">🔒</span>`;
         btn.onclick = (e) => {
             loadWorkoutSet(preset);  // 直接用前端 preset 物件載入
         };
