@@ -81,6 +81,7 @@ const EXERCISE_GIF_MAP = {
     preacher_curls: '0070',
     bayesian_cable_curls: '1636',
     hammer_curls: '0313',
+    dumbbell_curl: '0294',
     arm_curl_machine: '0575',
     preacher_machine: '0592',
     tricep_rope_pushdown: '0200',

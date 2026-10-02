@@ -278,15 +278,17 @@ function renderOverviewDashboard() {
         else if (rec) planHint.textContent = '今次建議：' + rec.fullName;
         else planHint.textContent = '撳下面一鍵開訓。';
     }
-    [1, 2, 3].forEach(function (id) {
+    [1, 2, 3, 4, 5, 6].forEach(function (id) {
         const btn = document.getElementById('overview-start-day-' + id);
         if (!btn) return;
         const recId = rec && Number(rec.id) === Number(id);
+        const kitchen = id >= 4;
         btn.classList.toggle('ring-2', recId);
         btn.classList.toggle('ring-emerald-400', recId);
         btn.classList.toggle('bg-emerald-800', recId);
         btn.classList.toggle('bg-[#166534]', recId);
-        btn.classList.toggle('bg-sky-800', !recId);
+        btn.classList.toggle('bg-sky-800', !recId && !kitchen);
+        btn.classList.toggle('bg-amber-800', !recId && kitchen);
         btn.classList.toggle('opacity-70', !recId);
     });
     if (typeof renderMorningChecklist === 'function') renderMorningChecklist();

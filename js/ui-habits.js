@@ -344,14 +344,32 @@ function renderTrainWeekStrip() {
     }).join('');
 }
 
-function workoutMatchesTrainingDay(w, day) {
-    if (!w || !day) return false;
-    const name = String(w.name || w.setName || w.title || w.workoutSetName || '');
-    if (name && (name.indexOf(day.fullName) >= 0 || name.indexOf(day.label) >= 0)) return true;
+function scoreWorkoutAgainstTrainingDay(w, day) {
+    if (!w || !day) return 0;
+    const name = String(w.workoutSetName || w.name || w.setName || w.title || '');
+    if (name && day.fullName && name.indexOf(day.fullName) >= 0) return 1000;
+    if (name && day.label && name.indexOf(day.label) >= 0) return 500;
     const exs = (w.exercises || []).map(function (e) { return e && e.name; }).filter(Boolean);
-    if (!exs.length) return false;
+    if (!exs.length) return 0;
     const hits = (day.exercises || []).filter(function (n) { return exs.indexOf(n) >= 0; }).length;
-    return hits >= 3;
+    return hits >= 3 ? hits : 0;
+}
+
+function bestTrainingDayForWorkout(w, days) {
+    let best = null;
+    let bestScore = 0;
+    (days || []).forEach(function (day) {
+        const score = scoreWorkoutAgainstTrainingDay(w, day);
+        if (score > bestScore) {
+            bestScore = score;
+            best = day;
+        }
+    });
+    return best;
+}
+
+function workoutMatchesTrainingDay(w, day) {
+    return scoreWorkoutAgainstTrainingDay(w, day) > 0;
 }
 
 function trainingDayDoneThisWeek(day) {
@@ -386,9 +404,8 @@ function getLastCompletedTrainingDay() {
         return String(b.id || b.session_id || '').localeCompare(String(a.id || a.session_id || ''));
     });
     for (let i = 0; i < history.length; i++) {
-        for (let d = 0; d < days.length; d++) {
-            if (workoutMatchesTrainingDay(history[i], days[d])) return days[d];
-        }
+        const best = bestTrainingDayForWorkout(history[i], days);
+        if (best) return best;
     }
     return null;
 }
@@ -398,15 +415,18 @@ function getRecommendedTrainingDay() {
     if (!days.length) return null;
     const last = getLastCompletedTrainingDay();
     if (!last) return days[0];
+    const group = last.group || '';
+    const groupDays = days.filter(function (d) { return (d.group || '') === group; });
+    if (!groupDays.length) return days[0];
     let idx = -1;
-    for (let i = 0; i < days.length; i++) {
-        if (Number(days[i].id) === Number(last.id)) {
+    for (let i = 0; i < groupDays.length; i++) {
+        if (Number(groupDays[i].id) === Number(last.id)) {
             idx = i;
             break;
         }
     }
-    if (idx < 0) return days[0];
-    return days[(idx + 1) % days.length];
+    if (idx < 0) return groupDays[0];
+    return groupDays[(idx + 1) % groupDays.length];
 }
 
 function isGymDayToday() {

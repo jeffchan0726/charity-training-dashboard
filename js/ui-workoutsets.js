@@ -26,18 +26,21 @@ function renderWorkoutSetsBar() {
     // 使用 TRAINING_DAYS 作為唯一來源，確保與主訓練日 UI 一致。
     const fixedPresets = (typeof TRAINING_DAYS !== 'undefined' ? TRAINING_DAYS : []).map(day => ({
         name: day.fullName,
+        label: day.label,
+        group: day.group || '',
         exercises: day.exercises,
         isPreset: true
     }));
 
-    // 先渲染三個固定預設 (text only, no images to avoid any placeholder)
     fixedPresets.forEach(preset => {
         const btn = document.createElement('button');
-        // 固定預設用不同顏色（藍色系）以區分，並標示不可編輯
-        let cls = 'text-xs px-3 py-1 bg-sky-700 hover:bg-sky-600 active:bg-sky-800 rounded-2xl transition flex items-center';
+        const kitchen = preset.group === '廚房守護者';
+        let cls = kitchen
+            ? 'text-xs px-3 py-1 bg-amber-800 hover:bg-amber-700 active:bg-amber-800 rounded-2xl transition flex items-center'
+            : 'text-xs px-3 py-1 bg-sky-700 hover:bg-sky-600 active:bg-sky-800 rounded-2xl transition flex items-center';
         btn.className = cls;
         btn.title = '固定預設訓練日（不可編輯 / 不可刪除）';
-        btn.innerHTML = `<span class="font-medium">${escapeHtml(preset.name)}</span> <span class="text-[9px] opacity-70">🔒</span>`;
+        btn.innerHTML = `<span class="font-medium">${escapeHtml(preset.label || preset.name)}</span> <span class="text-[9px] opacity-70">🔒</span>`;
         btn.onclick = (e) => {
             loadWorkoutSet(preset);  // 直接用前端 preset 物件載入
         };

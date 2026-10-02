@@ -11,13 +11,16 @@ const ANALYSIS_EXERCISE_FILTERS = [
     { key: 'day1', label: '訓練日 1', dayId: 1 },
     { key: 'day2', label: '訓練日 2', dayId: 2 },
     { key: 'day3', label: '訓練日 3', dayId: 3 },
+    { key: 'k1', label: '廚房 1', dayId: 4 },
+    { key: 'k2', label: '廚房 2', dayId: 5 },
+    { key: 'k3', label: '廚房 3', dayId: 6 },
     { key: 'chest', label: '胸肌', muscle: '胸部' },
     { key: 'back', label: '背肌', muscle: '背部' },
     { key: 'legs', label: '大腿', muscle: '腿部', excludeIds: ['standing_calf_raise'] },
     { key: 'calves', label: '小腿', exerciseIds: ['standing_calf_raise', 'seated_calf_raise'] },
     { key: 'glutes', label: '臀部', exerciseIds: ['hip_thrust', 'romanian_deadlift', 'bulgarian_split_squat', 'booty_builder', 'glute_kickback', 'hip_abduction'] },
     { key: 'shoulders', label: '肩膀', muscle: '肩膀' },
-    { key: 'biceps', label: '二頭', exerciseIds: ['barbell_curl', 'preacher_curls', 'bayesian_cable_curls', 'hammer_curls', 'arm_curl_machine'] },
+    { key: 'biceps', label: '二頭', exerciseIds: ['barbell_curl', 'dumbbell_curl', 'preacher_curls', 'bayesian_cable_curls', 'hammer_curls', 'arm_curl_machine'] },
     { key: 'triceps', label: '三頭', exerciseIds: ['tricep_rope_pushdown', 'cable_overhead_triceps', 'skull_crushers', 'chest_dips'] },
     { key: 'forearms', label: '前臂', exerciseIds: ['reverse_forearm_curl', 'finger_curls'] },
     { key: 'arms', label: '手臂', muscle: '手臂' },
@@ -106,6 +109,7 @@ const EXERCISES = [
     { id: "preacher_curls", name: "牧師椅彎舉 (Preacher Curls)", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
     { id: "bayesian_cable_curls", name: "貝葉斯繩索彎舉 (Bayesian Cable Curls)", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
     { id: "hammer_curls", name: "錘式彎舉 (Hammer Curls)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
+    { id: "dumbbell_curl", name: "啞鈴彎舉 (Dumbbell Curl)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
     { id: "arm_curl_machine", name: "二頭彎舉機 (Arm Curl Machine)", muscle_group: "手臂", image: "images/arm_curl_machine.jpg" },
     { id: "preacher_machine", name: "牧師椅彎舉機 (Preacher Curl Machine)", muscle_group: "手臂", image: "images/preacher_machine.jpg" },
     { id: "tricep_rope_pushdown", name: "繩索三頭下壓 (Tricep Rope Pushdown)", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
@@ -209,6 +213,52 @@ const TRAINING_DAYS = [
       "反向腕彎舉 (Reverse Forearm Curl)",
       "側舉 (Lateral Raises)",
       "懸垂舉腿 (Hanging Leg Raise)"
+    ]
+  },
+  {
+    id: 4,
+    group: "廚房守護者",
+    label: "廚房守護者 1",
+    subtitle: "胸・三頭・肩・腹",
+    fullName: "廚房守護者 1（胸・三頭・肩・腹）",
+    exercises: [
+      "平板啞鈴推胸 (Flat Dumbbell Press)",
+      "繩索三頭下壓 (Tricep Rope Pushdown)",
+      "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)",
+      "肩推 (Overhead Press)",
+      "器械捲腹 (Machine Abdominal Crunch)",
+      "跑步機 (Treadmill)"
+    ]
+  },
+  {
+    id: 5,
+    group: "廚房守護者",
+    label: "廚房守護者 2",
+    subtitle: "背・二頭・後束・核心",
+    fullName: "廚房守護者 2（背・二頭・後束・核心）",
+    exercises: [
+      "寬握下拉 (Lat Pulldown)",
+      "坐姿繩索拉背 (Seated Cable Row)",
+      "啞鈴彎舉 (Dumbbell Curl)",
+      "後飛 (Rear Delt Raises)",
+      "斬木 (Wood Chopper)",
+      "划船機 (Rowing Machine)"
+    ]
+  },
+  {
+    id: 6,
+    group: "廚房守護者",
+    label: "廚房守護者 3",
+    subtitle: "腿・側肩・下腹",
+    fullName: "廚房守護者 3（腿・側肩・下腹）",
+    exercises: [
+      "高腳杯深蹲 (Goblet Squat)",
+      "羅馬尼亞硬拉 (Romanian Deadlift)",
+      "髖外展機 (Hip Abduction)",
+      "臀推 (Hip Thrust)",
+      "側舉 (Lateral Raises)",
+      "懸垂舉腿 (Hanging Leg Raise)",
+      "踏步機 (Stair Climber)"
     ]
   }
 ];
