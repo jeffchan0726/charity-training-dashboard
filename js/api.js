@@ -44,15 +44,25 @@ function gasResponseLooksBroken(response, text) {
     return t.charAt(0) === '<' || /^<!doctype/i.test(t) || /<html/i.test(t);
 }
 
+function gasReadTimeoutMs(action) {
+    if (action === 'getLogs' || action === 'getWorkoutSets' || action === 'getHabitRecords' ||
+        action === 'getBodyLogs' || action === 'getCalorieLogs' || action === 'getYugongLeaderboard') {
+        return 45000;
+    }
+    return 25000;
+}
+
 async function callAppsScript(action, data = {}, options = {}) {
     let last = { status: 'error', message: '連接 Apps Script 失敗' };
-    for (let attempt = 0; attempt < 3; attempt++) {
+    const attempts = (action === 'getLogs' || action === 'getWorkoutSets') ? 4 : 3;
+    for (let attempt = 0; attempt < attempts; attempt++) {
         const out = await callAppsScriptAttempt(action, data, options);
         if (!out.retry) return out.result;
         last = out.result;
-        if (attempt < 2) await sleepMs(600 * (attempt + 1));
+        if (attempt < attempts - 1) await sleepMs(1200 * (attempt + 1));
     }
-    if (/<!DOCTYPE|<html|Unexpected token|Failed to fetch|network|404/i.test(String(last.message || ''))) {
+    console.warn('[callAppsScript] gave up:', action, last && last.message);
+    if (/<!DOCTYPE|<html|Unexpected token|Failed to fetch|network|404|timed out|Timeout/i.test(String(last.message || ''))) {
         return { status: 'error', message: 'Google 暫時開唔到試算表，本地紀錄仍然喺度' };
     }
     return last;
@@ -66,10 +76,10 @@ async function callAppsScriptAttempt(action, data = {}, options = {}) {
         }
 
         const scriptUrl = getAppsScriptUrl();
-        const fetchOpts = {};
+        const fetchOpts = { cache: 'no-store', redirect: 'follow' };
         if (options.keepalive) fetchOpts.keepalive = true;
         if (!options.keepalive && typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
-            fetchOpts.signal = AbortSignal.timeout(15000);
+            fetchOpts.signal = AbortSignal.timeout(gasReadTimeoutMs(action));
         }
 
         if ((action === 'getLogs' || action === 'getWorkoutSets') && currentUser) {
@@ -78,6 +88,7 @@ async function callAppsScriptAttempt(action, data = {}, options = {}) {
             url.searchParams.append('action', action);
             url.searchParams.append('user', currentUser);
             if (pin) url.searchParams.append('pin', pin);
+            url.searchParams.append('_t', String(Date.now()));
             const res = await fetch(url, fetchOpts);
             const body = await res.text();
             if (gasResponseLooksBroken(res, body)) {
@@ -101,7 +112,7 @@ async function callAppsScriptAttempt(action, data = {}, options = {}) {
             body: payload
         };
         if (options.keepalive) postOpts.keepalive = true;
-        else if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) postOpts.signal = AbortSignal.timeout(15000);
+        else if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) postOpts.signal = AbortSignal.timeout(gasReadTimeoutMs(action));
         const response = await fetch(scriptUrl, postOpts);
         const body = await response.text();
         if (gasResponseLooksBroken(response, body)) {
@@ -120,8 +131,8 @@ async function callAppsScriptAttempt(action, data = {}, options = {}) {
         }
         return { retry: false, result: result };
     } catch (error) {
-        console.error('[callAppsScript] POST error:', action, error);
         const detail = (error && error.message) ? error.message : String(error);
+        console.warn('[callAppsScript] retry:', action, detail);
         return { retry: true, result: { status: 'error', message: '連接 Apps Script 失敗：' + detail } };
     }
 }
