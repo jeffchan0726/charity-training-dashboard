@@ -13,12 +13,11 @@ const ANALYSIS_EXERCISE_FILTERS = [
     { key: 'day3', label: '訓練日 3', dayId: 3 },
     { key: 'k1', label: '廚房 1', dayId: 4 },
     { key: 'k2', label: '廚房 2', dayId: 5 },
-    { key: 'k3', label: '廚房 3', dayId: 6 },
     { key: 'chest', label: '胸肌', muscle: '胸部' },
     { key: 'back', label: '背肌', muscle: '背部' },
     { key: 'legs', label: '大腿', muscle: '腿部', excludeIds: ['standing_calf_raise'] },
     { key: 'calves', label: '小腿', exerciseIds: ['standing_calf_raise', 'seated_calf_raise'] },
-    { key: 'glutes', label: '臀部', exerciseIds: ['hip_thrust', 'romanian_deadlift', 'bulgarian_split_squat', 'booty_builder', 'glute_kickback', 'hip_abduction'] },
+    { key: 'glutes', label: '臀部', exerciseIds: ['hip_thrust', 'romanian_deadlift', 'romanian_dumbbell_deadlift', 'bulgarian_split_squat', 'booty_builder', 'glute_kickback', 'hip_abduction', 'cable_hip_abduction'] },
     { key: 'shoulders', label: '肩膀', muscle: '肩膀' },
     { key: 'biceps', label: '二頭', exerciseIds: ['barbell_curl', 'dumbbell_curl', 'preacher_curls', 'bayesian_cable_curls', 'hammer_curls', 'arm_curl_machine'] },
     { key: 'triceps', label: '三頭', exerciseIds: ['tricep_rope_pushdown', 'cable_overhead_triceps', 'skull_crushers', 'chest_dips'] },
@@ -77,6 +76,7 @@ const EXERCISES = [
     { id: "zercher_squats", name: "澤奇深蹲 (Zercher Squats)", muscle_group: "腿部", image: "images/zercher_squats.jpg" },
     { id: "goblet_squat", name: "高腳杯深蹲 (Goblet Squat)", muscle_group: "腿部", image: "images/goblet_squat.jpg" },
     { id: "romanian_deadlift", name: "羅馬尼亞硬拉 (Romanian Deadlift)", muscle_group: "腿部", image: "images/romanian_deadlift.jpg" },
+    { id: "romanian_dumbbell_deadlift", name: "羅馬尼亞啞鈴硬拉 (Romanian Dumbbell Deadlift)", muscle_group: "腿部", image: "images/romanian_dumbbell_deadlift.jpg" },
     { id: "walking_lunges", name: "行走弓步 (Walking Lunges)", muscle_group: "腿部", image: "images/walking_lunges.jpg" },
     { id: "bulgarian_split_squat", name: "保加利亞蹲 (Bulgarian Split Squat)", muscle_group: "腿部", image: "images/bulgarian_split_squat.jpg" },
     { id: "leg_press", name: "腿推機 (Leg Press)", muscle_group: "腿部", image: "images/leg_press.jpg" },
@@ -93,6 +93,7 @@ const EXERCISES = [
     { id: "power_squat", name: "力量深蹲機 (Power Squat)", muscle_group: "腿部", image: "images/power_squat.jpg" },
     { id: "smith_squat", name: "史密斯深蹲 (Smith Squat)", muscle_group: "腿部", image: "images/smith_squat.jpg" },
     { id: "hip_abduction", name: "髖外展機 (Hip Abduction)", muscle_group: "腿部", image: "images/hip_abduction.jpg" },
+    { id: "cable_hip_abduction", name: "繩索髖外展 (Cable Hip Abduction)", muscle_group: "腿部", image: "images/cable_hip_abduction.jpg" },
     { id: "standing_abductor", name: "站姿外展機 (Standing Abductor)", muscle_group: "腿部", image: "images/standing_abductor.jpg" },
     { id: "hip_adduction", name: "髖內收機 (Hip Adduction)", muscle_group: "腿部", image: "images/hip_adduction.jpg" },
     { id: "glute_kickback", name: "臀後踢機 (Glute Kickback)", muscle_group: "腿部", image: "images/glute_kickback.jpg" },
@@ -109,7 +110,7 @@ const EXERCISES = [
     { id: "preacher_curls", name: "牧師椅彎舉 (Preacher Curls)", muscle_group: "手臂", image: "images/preacher_curls.jpg" },
     { id: "bayesian_cable_curls", name: "貝葉斯繩索彎舉 (Bayesian Cable Curls)", muscle_group: "手臂", image: "images/bayesian_cable_curls.jpg" },
     { id: "hammer_curls", name: "錘式彎舉 (Hammer Curls)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
-    { id: "dumbbell_curl", name: "啞鈴彎舉 (Dumbbell Curl)", muscle_group: "手臂", image: "images/hammer_curls.jpg" },
+    { id: "dumbbell_curl", name: "啞鈴彎舉 (Dumbbell Curl)", muscle_group: "手臂", image: "images/dumbbell_curl.jpg" },
     { id: "arm_curl_machine", name: "二頭彎舉機 (Arm Curl Machine)", muscle_group: "手臂", image: "images/arm_curl_machine.jpg" },
     { id: "preacher_machine", name: "牧師椅彎舉機 (Preacher Curl Machine)", muscle_group: "手臂", image: "images/preacher_machine.jpg" },
     { id: "tricep_rope_pushdown", name: "繩索三頭下壓 (Tricep Rope Pushdown)", muscle_group: "手臂", image: "images/tricep_rope_pushdown.jpg" },
@@ -140,9 +141,9 @@ const EXERCISES = [
     { id: "dragon_flag", name: "龍旗 (Dragon Flag)", muscle_group: "核心", image: "images/dragon_flag.jpg", is_bodyweight: true },
     { id: "hanging_leg_raise", name: "懸垂舉腿 (Hanging Leg Raise)", muscle_group: "核心", image: "images/hanging_leg_raise.jpg", is_bodyweight: true },
     { id: "plank", name: "平板支撐 (Plank)", muscle_group: "核心", image: "images/plank.jpg", is_hold: true, is_bodyweight: true },
-    { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/wood_chopper.jpg" },
+    { id: "cable_wood_chopper", name: "斬木 (Wood Chopper)", muscle_group: "核心", image: "images/cable_wood_chopper.jpg" },
     { id: "cable_crunch", name: "繩索捲腹 (Cable Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg" },
-    { id: "decline_crunch", name: "下斜捲腹 (Decline Crunch)", muscle_group: "核心", image: "images/cable_crunch.jpg", is_bodyweight: true },
+    { id: "decline_crunch", name: "下斜捲腹 (Decline Crunch)", muscle_group: "核心", image: "images/decline_crunch.jpg", is_bodyweight: true },
     { id: "abdominal_crunch", name: "器械捲腹 (Machine Abdominal Crunch)", muscle_group: "核心", image: "images/abdominal_crunch.jpg" },
     { id: "rotary_torso", name: "轉體機 (Rotary Torso)", muscle_group: "核心", image: "images/rotary_torso.jpg" },
     { id: "back_extension", name: "山羊挺身 (Back Extension)", muscle_group: "核心", image: "images/back_extension.jpg" },
@@ -219,13 +220,14 @@ const TRAINING_DAYS = [
     id: 4,
     group: "廚房守護者",
     label: "廚房守護者 1",
-    subtitle: "胸・三頭・肩・腹",
-    fullName: "廚房守護者 1（胸・三頭・肩・腹）",
+    subtitle: "推・腿",
+    fullName: "廚房守護者 1（推・腿）",
     exercises: [
       "平板啞鈴推胸 (Flat Dumbbell Press)",
       "繩索三頭下壓 (Tricep Rope Pushdown)",
-      "繩索過頭三頭伸展 (Cable Overhead Triceps Extension)",
-      "肩推 (Overhead Press)",
+      "羅馬尼亞啞鈴硬拉 (Romanian Dumbbell Deadlift)",
+      "高腳杯深蹲 (Goblet Squat)",
+      "側舉 (Lateral Raises)",
       "器械捲腹 (Machine Abdominal Crunch)",
       "跑步機 (Treadmill)"
     ]
@@ -234,31 +236,17 @@ const TRAINING_DAYS = [
     id: 5,
     group: "廚房守護者",
     label: "廚房守護者 2",
-    subtitle: "背・二頭・後束・核心",
-    fullName: "廚房守護者 2（背・二頭・後束・核心）",
+    subtitle: "拉・髋",
+    fullName: "廚房守護者 2（拉・髋）",
     exercises: [
       "寬握下拉 (Lat Pulldown)",
-      "坐姿繩索拉背 (Seated Cable Row)",
       "啞鈴彎舉 (Dumbbell Curl)",
+      "繩索髖外展 (Cable Hip Abduction)",
+      "臀推 (Hip Thrust)",
       "後飛 (Rear Delt Raises)",
       "斬木 (Wood Chopper)",
-      "划船機 (Rowing Machine)"
-    ]
-  },
-  {
-    id: 6,
-    group: "廚房守護者",
-    label: "廚房守護者 3",
-    subtitle: "腿・側肩・下腹",
-    fullName: "廚房守護者 3（腿・側肩・下腹）",
-    exercises: [
-      "高腳杯深蹲 (Goblet Squat)",
-      "羅馬尼亞硬拉 (Romanian Deadlift)",
-      "髖外展機 (Hip Abduction)",
-      "臀推 (Hip Thrust)",
-      "側舉 (Lateral Raises)",
       "懸垂舉腿 (Hanging Leg Raise)",
-      "踏步機 (Stair Climber)"
+      "划船機 (Rowing Machine)"
     ]
   }
 ];
@@ -293,103 +281,12 @@ function getExerciseByName(name) {
     ) || null;
 }
 
-const LOCAL_EXERCISE_IMAGES = {
-    'images/ab_wheel_rollout.jpg': 1,
-    'images/bayesian_cable_curls.jpg': 1,
-    'images/cable_overhead_triceps.jpg': 1,
-    'images/deadlift.jpg': 1,
-    'images/dragon_flag.jpg': 1,
-    'images/finger_curls.jpg': 1,
-    'images/flat_dumbbell_press.jpg': 1,
-    'images/incline_dumbbell_press.jpg': 1,
-    'images/lateral_raises.jpg': 1,
-    'images/lower_chest_cable_fly.jpg': 1,
-    'images/preacher_curls.jpg': 1,
-    'images/pull_ups.jpg': 1,
-    'images/rear_delt_raises.jpg': 1,
-    'images/reverse_forearm_curl.jpg': 1,
-    'images/seated_cable_row.jpg': 1,
-    'images/tricep_rope_pushdown.jpg': 1,
-    'images/wood_chopper.jpg': 1,
-    'images/zercher_squats.jpg': 1,
-    'images/icon.jpeg': 1,
-    'images/incline_chest_press_machine.jpg': 1,
-    'images/pec_deck.jpg': 1,
-    'images/high_row.jpg': 1,
-    'images/assisted_pull_up.jpg': 1,
-    'images/seated_calf_raise.jpg': 1,
-    'images/hack_squat.jpg': 1,
-    'images/v_squat.jpg': 1,
-    'images/smith_squat.jpg': 1,
-    'images/hip_abduction.jpg': 1,
-    'images/hip_adduction.jpg': 1,
-    'images/glute_kickback.jpg': 1,
-    'images/booty_builder.jpg': 1,
-    'images/machine_shoulder_press.jpg': 1,
-    'images/standing_lateral_machine.jpg': 1,
-    'images/arm_curl_machine.jpg': 1,
-    'images/back_extension.jpg': 1,
-    'images/kettlebell_swing.jpg': 1,
-    'images/exercise_bike.jpg': 1,
-    'images/elliptical.jpg': 1,
-    'images/stair_climber.jpg': 1
-};
-
-const EXERCISE_IMAGE_FALLBACK = {
-    'images/seated_dumbbell_press.jpg': 'images/lateral_raises.jpg',
-    'images/cable_crunch.jpg': 'images/ab_wheel_rollout.jpg',
-    'images/romanian_deadlift.jpg': 'images/deadlift.jpg',
-    'images/standing_calf_raise.jpg': 'images/zercher_squats.jpg',
-    'images/barbell_bench_press.jpg': 'images/flat_dumbbell_press.jpg',
-    'images/cable_crossover.jpg': 'images/lower_chest_cable_fly.jpg',
-    'images/chest_dips.jpg': 'images/flat_dumbbell_press.jpg',
-    'images/machine_chest_press.jpg': 'images/flat_dumbbell_press.jpg',
-    'images/barbell_row.jpg': 'images/seated_cable_row.jpg',
-    'images/lat_pulldown.jpg': 'images/pull_ups.jpg',
-    'images/dumbbell_row.jpg': 'images/seated_cable_row.jpg',
-    'images/incline_bench_row.jpg': 'images/seated_cable_row.jpg',
-    'images/t_bar_row.jpg': 'images/seated_cable_row.jpg',
-    'images/face_pulls.jpg': 'images/rear_delt_raises.jpg',
-    'images/barbell_back_squat.jpg': 'images/zercher_squats.jpg',
-    'images/goblet_squat.jpg': 'images/zercher_squats.jpg',
-    'images/walking_lunges.jpg': 'images/zercher_squats.jpg',
-    'images/bulgarian_split_squat.jpg': 'images/zercher_squats.jpg',
-    'images/leg_press.jpg': 'images/zercher_squats.jpg',
-    'images/leg_curl.jpg': 'images/zercher_squats.jpg',
-    'images/leg_extension.jpg': 'images/zercher_squats.jpg',
-    'images/hip_thrust.jpg': 'images/zercher_squats.jpg',
-    'images/barbell_curl.jpg': 'images/preacher_curls.jpg',
-    'images/hammer_curls.jpg': 'images/bayesian_cable_curls.jpg',
-    'images/skull_crushers.jpg': 'images/cable_overhead_triceps.jpg',
-    'images/overhead_press.jpg': 'images/lateral_raises.jpg',
-    'images/arnold_press.jpg': 'images/lateral_raises.jpg',
-    'images/cable_lateral_raise.jpg': 'images/lateral_raises.jpg',
-    'images/barbell_shrugs.jpg': 'images/rear_delt_raises.jpg',
-    'images/hanging_leg_raise.jpg': 'images/dragon_flag.jpg',
-    'images/plank.jpg': 'images/ab_wheel_rollout.jpg',
-    'images/farmer_carry.jpg': 'images/deadlift.jpg',
-    'images/battle_ropes.jpg': 'images/wood_chopper.jpg',
-    'images/burpees.jpg': 'images/zercher_squats.jpg',
-    'images/rowing_machine.jpg': 'images/seated_cable_row.jpg',
-    'images/jump_rope.jpg': 'images/icon.jpeg',
-    'images/treadmill.jpg': 'images/icon.jpeg'
-};
-
-const MUSCLE_IMAGE_FALLBACK = {
-    '胸部': 'images/flat_dumbbell_press.jpg',
-    '背部': 'images/seated_cable_row.jpg',
-    '腿部': 'images/zercher_squats.jpg',
-    '手臂': 'images/preacher_curls.jpg',
-    '肩膀': 'images/lateral_raises.jpg',
-    '核心': 'images/ab_wheel_rollout.jpg',
-    '全身': 'images/deadlift.jpg',
-    '有氧': 'images/icon.jpeg'
-};
-
-function resolveExerciseImage(src, muscleGroup) {
-    if (src && LOCAL_EXERCISE_IMAGES[src]) return src;
-    if (src && EXERCISE_IMAGE_FALLBACK[src]) return EXERCISE_IMAGE_FALLBACK[src];
-    return MUSCLE_IMAGE_FALLBACK[muscleGroup] || 'images/icon.jpeg';
+function resolveExerciseImage(src) {
+    if (src && typeof src === 'string' && src.indexOf('images/') === 0) {
+        if (src.indexOf('v=') === -1) return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=2.4.44';
+        return src;
+    }
+    return 'images/icon.jpeg';
 }
 
 EXERCISES.forEach(function (ex) {
