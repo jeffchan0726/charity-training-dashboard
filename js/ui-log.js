@@ -605,7 +605,7 @@ function renderCurrentWorkout() {
                 </div>
                 <div class="flex gap-2 items-start">
                     <img src="${imgSrc}" loading="lazy" decoding="async" alt=""
-                         class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer exercise-detail-trigger"
+                         class="w-28 h-28 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer exercise-detail-trigger"
                          data-exercise-name="${exNameAttr}"
                          onerror="this.onerror=null;this.src='${imgFallback}';">
                     
