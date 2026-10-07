@@ -569,7 +569,11 @@ function renderCurrentWorkout() {
             });
         }
 
-        const imgSrc = sanitizeUrl(getExerciseImage(ex.name) || 'images/icon.jpeg');
+        const preview = (typeof getExercisePreview === 'function')
+            ? getExercisePreview(ex.name)
+            : { primary: (typeof getExerciseImage === 'function' ? getExerciseImage(ex.name) : 'images/icon.jpeg'), fallback: 'images/icon.jpeg' };
+        const imgSrc = sanitizeUrl(preview.primary || 'images/icon.jpeg');
+        const imgFallback = sanitizeUrl(preview.fallback || 'images/icon.jpeg');
         const muscle = escapeHtml(getMuscleGroup(ex.name));
         const exNameAttr = escapeAttr(ex.name);
         const exNameHtml = escapeHtml(ex.name);
@@ -603,7 +607,7 @@ function renderCurrentWorkout() {
                     <img src="${imgSrc}" loading="lazy" decoding="async" alt=""
                          class="w-14 h-14 object-contain bg-white rounded-xl flex-shrink-0 border border-[#3f3a36] cursor-pointer exercise-detail-trigger"
                          data-exercise-name="${exNameAttr}"
-                         onerror="this.onerror=null;this.src='images/icon.jpeg';">
+                         onerror="this.onerror=null;this.src='${imgFallback}';">
                     
                     <div class="flex-1 min-w-0 exercise-card-copy">
                         <div class="font-semibold text-sm leading-tight cursor-pointer exercise-detail-trigger" data-exercise-name="${exNameAttr}">${exNameHtml}</div>

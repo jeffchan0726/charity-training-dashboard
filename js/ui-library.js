@@ -93,9 +93,14 @@ function renderLibraryList() {
         const div = document.createElement('div');
         div.className = 'exercise-card bg-[#292524] rounded-2xl overflow-hidden cursor-pointer active:scale-[0.985] transition flex flex-col';
         div.onclick = () => showExerciseDetail(ex.name);
+        const preview = (typeof getExercisePreview === 'function')
+            ? getExercisePreview(ex.name)
+            : { primary: (typeof resolveExerciseImage === 'function' ? resolveExerciseImage(ex.image) : (ex.image || 'images/icon.jpeg')), fallback: 'images/icon.jpeg' };
+        const imgSrc = sanitizeUrl(preview.primary || 'images/icon.jpeg');
+        const imgFallback = sanitizeUrl(preview.fallback || 'images/icon.jpeg');
         div.innerHTML = `
             <div class="relative bg-[#1c1917]">
-                <img src="${sanitizeUrl(typeof resolveExerciseImage === 'function' ? resolveExerciseImage(ex.image, ex.muscle_group || ex.category) : ex.image)}" class="w-full h-32 object-contain bg-white" loading="lazy" onerror="this.onerror=null;this.src='images/icon.jpeg';">
+                <img src="${imgSrc}" class="w-full h-32 object-contain bg-white" loading="lazy" onerror="this.onerror=null;this.src='${imgFallback}';">
                 <div class="absolute top-1 right-1 bg-black/50 text-[9px] px-1 rounded">${escapeHtml(ex.muscle_group)}</div>
             </div>
             <div class="p-2 flex-1">
