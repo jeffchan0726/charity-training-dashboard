@@ -26,6 +26,64 @@ function buildLoggedSetsHtml(ex, exIdx) {
     return `<div class="mt-2 space-y-0.5">${setsListHtml}</div>`;
 }
 
+function sumLoggedWeightVolume(sets) {
+    let total = 0;
+    let count = 0;
+    (sets || []).forEach(function (s) {
+        const w = Number(s && s.weight);
+        const r = Number(s && s.reps);
+        if (w > 0 && r > 0) {
+            total += w * r;
+            count += 1;
+        }
+    });
+    return { total: total, count: count };
+}
+
+function sumLoggedTreadmillKm(sets) {
+    let total = 0;
+    let count = 0;
+    (sets || []).forEach(function (s) {
+        const km = typeof calculateTreadmillDistanceKm === 'function' ? calculateTreadmillDistanceKm(s) : 0;
+        if (km > 0) {
+            total += km;
+            count += 1;
+        }
+    });
+    return { total: Math.round(total * 100) / 100, count: count };
+}
+
+function buildSessionVolumeCompareHtml(ex) {
+    if (!ex) return '';
+    const recordType = typeof getExerciseRecordType === 'function' ? getExerciseRecordType(ex.name) : 'weight';
+    if (recordType === 'time_reps' || recordType === 'bodyweight') return '';
+    const isTreadmill = recordType === 'treadmill';
+    const current = isTreadmill ? sumLoggedTreadmillKm(ex.sets) : sumLoggedWeightVolume(ex.sets);
+    if (current.count < 2) return '';
+    const lastPerf = (typeof lastPerformed !== 'undefined' && lastPerformed) ? lastPerformed[ex.name] : null;
+    const last = isTreadmill ? sumLoggedTreadmillKm(lastPerf && lastPerf.sets) : sumLoggedWeightVolume(lastPerf && lastPerf.sets);
+    const unit = isTreadmill ? 'km' : 'kg';
+    const fmt = isTreadmill
+        ? function (n) { return (Math.round(Number(n) * 100) / 100).toFixed(2); }
+        : function (n) { return String(Math.round(Number(n))); };
+    const nowLabel = '今次 ' + fmt(current.total) + unit;
+    if (!last.count) {
+        return '<div class="mt-1 px-1 text-[11px] text-[#a8a29e]">' + nowLabel + ' · 未有上次</div>';
+    }
+    const rawDiff = current.total - last.total;
+    const roundedDiff = isTreadmill ? Math.round(rawDiff * 100) / 100 : Math.round(rawDiff);
+    let delta = '持平';
+    let color = 'text-[#a8a29e]';
+    if (roundedDiff > 0) {
+        delta = '+' + fmt(roundedDiff) + unit;
+        color = 'text-emerald-400';
+    } else if (roundedDiff < 0) {
+        delta = '-' + fmt(Math.abs(roundedDiff)) + unit;
+        color = 'text-red-400';
+    }
+    return '<div class="mt-1 px-1 text-[11px] text-[#d6d3d1]">' + nowLabel + ' · 上次 ' + fmt(last.total) + unit + ' · <span class="' + color + '">' + delta + '</span></div>';
+}
+
 function fillExerciseInputsFromLast(ex, idx, force) {
     if (!ex) return;
     const recordType = typeof getExerciseRecordType === 'function'
@@ -744,6 +802,7 @@ function renderCurrentWorkout() {
 
                 <div class="sets-list mt-1">
                     ${setsListHtml}
+                    ${buildSessionVolumeCompareHtml(ex)}
                 </div>
             </div>`;
     });
