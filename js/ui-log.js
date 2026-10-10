@@ -191,7 +191,9 @@ function refreshLoggedSets(exIdx) {
     const card = document.querySelector('#current-workout-exercises .exercise-log-card[data-ex-idx="' + exIdx + '"]');
     if (!ex || !card) return false;
     const list = card.querySelector('.sets-list');
-    if (list) list.innerHTML = buildLoggedSetsHtml(ex, exIdx);
+    if (list) {
+        list.innerHTML = buildLoggedSetsHtml(ex, exIdx) + buildSessionVolumeCompareHtml(ex);
+    }
     const recordType = typeof getExerciseRecordType === 'function'
         ? getExerciseRecordType(ex.name) : 'weight';
     if (recordType !== 'treadmill' && recordType !== 'time_reps' && typeof getExerciseVolumeLastDays === 'function') {
@@ -412,6 +414,7 @@ function updateSetField(exIdx, setIdx, field, value) {
         set._syncDirty = true;
     }
     updateSessionSummary();
+    refreshLoggedSets(exIdx);
     saveWorkoutData();
 }
 
