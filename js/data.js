@@ -283,7 +283,7 @@ function getExerciseByName(name) {
 
 function resolveExerciseImage(src) {
     if (src && typeof src === 'string' && src.indexOf('images/') === 0) {
-        if (src.indexOf('v=') === -1) return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=2.4.58';
+        if (src.indexOf('v=') === -1) return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=2.4.59';
         return src;
     }
     return 'images/icon.jpeg';

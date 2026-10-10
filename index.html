@@ -151,29 +151,50 @@ Local Development Instructions:
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function () {
-                navigator.serviceWorker.register('sw.js?v=2.4.58').then(function (reg) {
-                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    reg.addEventListener('updatefound', function () {
-                        var worker = reg.installing;
-                        if (!worker) return;
-                        worker.addEventListener('statechange', function () {
-                            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                                worker.postMessage({ type: 'SKIP_WAITING' });
-                            }
-                        });
-                    });
-                }).catch(function () {});
-                var reloaded = false;
-                navigator.serviceWorker.addEventListener('controllerchange', function () {
-                    if (reloaded) return;
-                    reloaded = true;
-                    window.location.reload();
-                });
+        window.APP_VERSION = '2.4.59';
+        (function () {
+            var KEY = 'recomp-reload-for';
+            function checkVersion() {
+                return fetch('version.json?_=' + Date.now(), { cache: 'no-store' })
+                    .then(function (res) { return res.ok ? res.json() : null; })
+                    .then(function (data) {
+                        var remote = data && data.version;
+                        if (!remote || remote === window.APP_VERSION) return;
+                        if (sessionStorage.getItem(KEY) === remote) return;
+                        sessionStorage.setItem(KEY, remote);
+                        window.location.reload();
+                    })
+                    .catch(function () {});
+            }
+            checkVersion();
+            document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') checkVersion();
             });
-        }
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+                        reg.update().catch(function () {});
+                        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                        reg.addEventListener('updatefound', function () {
+                            var worker = reg.installing;
+                            if (!worker) return;
+                            worker.addEventListener('statechange', function () {
+                                if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    worker.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        });
+                    }).catch(function () {});
+                    var reloaded = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', function () {
+                        if (reloaded) return;
+                        reloaded = true;
+                        window.location.reload();
+                    });
+                });
+            }
+        })();
     </script>
-    <script src="js/boot.js?v=2.4.58"></script>
+    <script src="js/boot.js?v=2.4.59"></script>
 </body>
 </html>
