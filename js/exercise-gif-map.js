@@ -20,7 +20,7 @@ const EXERCISE_GIF_MAP = {
     incline_chest_press_machine: '1299',
     decline_press_machine: '1300',
     pec_deck: '0596',
-    upper_chest_fly: '0171',
+    upper_chest_fly: '0596',
     standing_fly_machine: '0227',
     assisted_dip: '0009',
 
@@ -39,7 +39,7 @@ const EXERCISE_GIF_MAP = {
     face_pulls: '0233',
     high_row: '0581',
     assisted_pull_up: '0017',
-    neutral_pulldown: '0579',
+    neutral_pulldown: '0818',
     pullover_machine: '2285',
     iso_lateral_row: '1313',
 
