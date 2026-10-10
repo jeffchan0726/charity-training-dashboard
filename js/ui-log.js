@@ -74,7 +74,6 @@ function buildSessionVolumeCompareHtml(ex) {
     if (recordType === 'time_reps' || recordType === 'bodyweight') return '';
     const isTreadmill = recordType === 'treadmill';
     const current = isTreadmill ? sumLoggedTreadmillKm(ex.sets) : sumLoggedWeightVolume(ex.sets);
-    if (current.count < 2) return '';
     const lastPerf = findLastPerformed(ex.name);
     const last = isTreadmill ? sumLoggedTreadmillKm(lastPerf && lastPerf.sets) : sumLoggedWeightVolume(lastPerf && lastPerf.sets);
     const unit = isTreadmill ? 'km' : 'kg';
