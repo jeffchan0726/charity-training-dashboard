@@ -153,10 +153,27 @@ Local Development Instructions:
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('sw.js').catch(function () {});
+                navigator.serviceWorker.register('sw.js?v=2.4.58').then(function (reg) {
+                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    reg.addEventListener('updatefound', function () {
+                        var worker = reg.installing;
+                        if (!worker) return;
+                        worker.addEventListener('statechange', function () {
+                            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                                worker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        });
+                    });
+                }).catch(function () {});
+                var reloaded = false;
+                navigator.serviceWorker.addEventListener('controllerchange', function () {
+                    if (reloaded) return;
+                    reloaded = true;
+                    window.location.reload();
+                });
             });
         }
     </script>
-    <script src="js/boot.js?v=2.4.57"></script>
+    <script src="js/boot.js?v=2.4.58"></script>
 </body>
 </html>

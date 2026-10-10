@@ -2267,7 +2267,9 @@
             }
 
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
+                navigator.serviceWorker.register('sw.js?v=2.4.58').then(function (reg) {
+                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }).catch(() => {});
             }
 
         }
