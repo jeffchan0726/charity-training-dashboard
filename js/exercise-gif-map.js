@@ -31,7 +31,7 @@ const EXERCISE_GIF_MAP = {
     seated_cable_row: '0861',
     low_row: '0180',
     barbell_row: '0027',
-    lat_pulldown: '2330',
+    lat_pulldown: '0579',
     straight_arm_pulldown: '0238',
     dumbbell_row: '0292',
     incline_bench_row: '0327',
