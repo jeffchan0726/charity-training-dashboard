@@ -53,6 +53,21 @@ function sumLoggedTreadmillKm(sets) {
     return { total: Math.round(total * 100) / 100, count: count };
 }
 
+function findLastPerformed(name) {
+    if (!name || typeof lastPerformed === 'undefined' || !lastPerformed) return null;
+    if (lastPerformed[name]) return lastPerformed[name];
+    const canonical = typeof normalizeExerciseNameForMatch === 'function'
+        ? normalizeExerciseNameForMatch(name)
+        : name;
+    if (canonical && lastPerformed[canonical]) return lastPerformed[canonical];
+    const lower = String(name).trim().toLowerCase();
+    const key = Object.keys(lastPerformed).find(function (k) {
+        return String(k).trim().toLowerCase() === lower
+            || (typeof normalizeExerciseNameForMatch === 'function' && normalizeExerciseNameForMatch(k) === canonical);
+    });
+    return key ? lastPerformed[key] : null;
+}
+
 function buildSessionVolumeCompareHtml(ex) {
     if (!ex) return '';
     const recordType = typeof getExerciseRecordType === 'function' ? getExerciseRecordType(ex.name) : 'weight';
@@ -60,28 +75,31 @@ function buildSessionVolumeCompareHtml(ex) {
     const isTreadmill = recordType === 'treadmill';
     const current = isTreadmill ? sumLoggedTreadmillKm(ex.sets) : sumLoggedWeightVolume(ex.sets);
     if (current.count < 2) return '';
-    const lastPerf = (typeof lastPerformed !== 'undefined' && lastPerformed) ? lastPerformed[ex.name] : null;
+    const lastPerf = findLastPerformed(ex.name);
     const last = isTreadmill ? sumLoggedTreadmillKm(lastPerf && lastPerf.sets) : sumLoggedWeightVolume(lastPerf && lastPerf.sets);
     const unit = isTreadmill ? 'km' : 'kg';
     const fmt = isTreadmill
         ? function (n) { return (Math.round(Number(n) * 100) / 100).toFixed(2); }
         : function (n) { return String(Math.round(Number(n))); };
-    const nowLabel = '今次 ' + fmt(current.total) + unit;
+    const nowShown = fmt(current.total);
+    const nowLabel = '今次 ' + nowShown + unit;
     if (!last.count) {
         return '<div class="mt-1 px-1 text-[11px] text-[#a8a29e]">' + nowLabel + ' · 未有上次</div>';
     }
-    const rawDiff = current.total - last.total;
-    const roundedDiff = isTreadmill ? Math.round(rawDiff * 100) / 100 : Math.round(rawDiff);
+    const lastShown = fmt(last.total);
+    const shownDiff = isTreadmill
+        ? Math.round((Number(nowShown) - Number(lastShown)) * 100) / 100
+        : Number(nowShown) - Number(lastShown);
     let delta = '持平';
     let color = 'text-[#a8a29e]';
-    if (roundedDiff > 0) {
-        delta = '+' + fmt(roundedDiff) + unit;
+    if (shownDiff > 0) {
+        delta = '+' + fmt(shownDiff) + unit;
         color = 'text-emerald-400';
-    } else if (roundedDiff < 0) {
-        delta = '-' + fmt(Math.abs(roundedDiff)) + unit;
+    } else if (shownDiff < 0) {
+        delta = '-' + fmt(Math.abs(shownDiff)) + unit;
         color = 'text-red-400';
     }
-    return '<div class="mt-1 px-1 text-[11px] text-[#d6d3d1]">' + nowLabel + ' · 上次 ' + fmt(last.total) + unit + ' · <span class="' + color + '">' + delta + '</span></div>';
+    return '<div class="mt-1 px-1 text-[11px] text-[#d6d3d1]">' + nowLabel + ' · 上次 ' + lastShown + unit + ' · <span class="' + color + '">' + delta + '</span></div>';
 }
 
 function fillExerciseInputsFromLast(ex, idx, force) {
@@ -191,9 +209,8 @@ function refreshLoggedSets(exIdx) {
     const card = document.querySelector('#current-workout-exercises .exercise-log-card[data-ex-idx="' + exIdx + '"]');
     if (!ex || !card) return false;
     const list = card.querySelector('.sets-list');
-    if (list) {
-        list.innerHTML = buildLoggedSetsHtml(ex, exIdx) + buildSessionVolumeCompareHtml(ex);
-    }
+    if (!list) return false;
+    list.innerHTML = buildLoggedSetsHtml(ex, exIdx) + buildSessionVolumeCompareHtml(ex);
     const recordType = typeof getExerciseRecordType === 'function'
         ? getExerciseRecordType(ex.name) : 'weight';
     if (recordType !== 'treadmill' && recordType !== 'time_reps' && typeof getExerciseVolumeLastDays === 'function') {
