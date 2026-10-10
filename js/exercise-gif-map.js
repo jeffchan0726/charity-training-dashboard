@@ -141,5 +141,6 @@ function getExerciseGifId(ex) {
 function getExerciseGifUrl(ex) {
     const gifId = getExerciseGifId(ex);
     if (!gifId) return null;
-    return EXERCISE_GIF_BASE_URL + gifId + '.gif';
+    const v = (typeof window !== 'undefined' && window.APP_VERSION) ? window.APP_VERSION : '2.4.57';
+    return EXERCISE_GIF_BASE_URL + gifId + '.gif?v=' + v;
 }

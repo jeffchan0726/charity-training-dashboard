@@ -144,15 +144,16 @@ function showExerciseDetail(nameOrObj) {
     const gifWrap = document.getElementById('detail-gif-wrap');
     const gifEl = document.getElementById('detail-gif');
     const gifLoading = document.getElementById('detail-gif-loading');
-    const gifFallback = ex.image || '';
+    const gifFallback = (typeof resolveExerciseImage === 'function' && ex.image)
+        ? resolveExerciseImage(ex.image)
+        : (ex.image || '');
     const gifUrl = typeof getExerciseGifUrl === 'function' ? getExerciseGifUrl(ex) : null;
 
     if (gifEl) {
-        gifEl.style.display = 'none';
-        gifEl.removeAttribute('src');
+        gifEl.style.display = '';
         gifEl.alt = displayName + ' 動作示範';
         gifEl.onerror = () => {
-            if (gifFallback) {
+            if (gifFallback && gifEl.src !== gifFallback) {
                 gifEl.src = gifFallback;
                 gifEl.style.display = '';
             } else {
@@ -165,13 +166,22 @@ function showExerciseDetail(nameOrObj) {
             if (gifLoading) gifLoading.classList.add('hidden');
         };
 
+        if (gifFallback) {
+            gifEl.src = gifFallback;
+        }
         if (gifUrl) {
             if (gifLoading) gifLoading.classList.remove('hidden');
-            gifEl.src = gifUrl;
-        } else if (gifFallback) {
-            if (gifLoading) gifLoading.classList.add('hidden');
-            gifEl.src = gifFallback;
-            gifEl.style.display = '';
+            const probe = new Image();
+            probe.onload = () => {
+                if (document.getElementById('detail-name') && document.getElementById('detail-name').textContent === displayName) {
+                    gifEl.src = gifUrl;
+                }
+                if (gifLoading) gifLoading.classList.add('hidden');
+            };
+            probe.onerror = () => {
+                if (gifLoading) gifLoading.classList.add('hidden');
+            };
+            probe.src = gifUrl;
         } else if (gifLoading) {
             gifLoading.classList.add('hidden');
         }
