@@ -283,7 +283,7 @@ function getExerciseByName(name) {
 
 function resolveExerciseImage(src) {
     if (src && typeof src === 'string' && src.indexOf('images/') === 0) {
-        if (src.indexOf('v=') === -1) return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=2.4.52';
+        if (src.indexOf('v=') === -1) return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=2.4.53';
         return src;
     }
     return 'images/icon.jpeg';
@@ -301,8 +301,7 @@ function getExerciseImage(name) {
 function getExercisePreview(name) {
     const ex = getExerciseByName(name);
     const local = ex ? resolveExerciseImage(ex.image) : 'images/icon.jpeg';
-    const gif = (ex && typeof getExerciseGifUrl === 'function') ? getExerciseGifUrl(ex) : null;
-    return { primary: gif || local, fallback: local };
+    return { primary: local, fallback: local };
 }
 
 function getMuscleGroup(name) {
