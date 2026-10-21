@@ -160,7 +160,7 @@ html.mobile-app {
 }
 
 .mobile-app #analysis-category-filters button {
-    min-height: 36px;
+    min-height: 44px;
 }
 
 /* Schedule rows: always stacked time + content */
@@ -223,7 +223,7 @@ html.mobile-app {
 }
 
 .mobile-app .time-range-btn {
-    min-height: 36px;
+    min-height: 44px;
     font-size: 0.75rem;
     padding: 0.35rem 0.75rem;
 }
@@ -630,11 +630,25 @@ body:not(.diet-owner) #overview-cta-row {
 .mobile-app .ex-action-chip,
 .mobile-app .calorie-action-btn,
 .mobile-app .account-chip,
-.mobile-app .me-back-btn {
+.mobile-app .me-back-btn,
+.mobile-app .account-menu button,
+.mobile-app .time-range-btn,
+.mobile-app .log-subtab,
+.mobile-app .habit-step-btn,
+.mobile-app .water-dot,
+.mobile-app [role="tab"],
+.mobile-app [onclick] {
     touch-action: manipulation;
     user-select: none;
     -webkit-user-select: none;
     cursor: pointer;
+}
+
+/* Force hit-testing on any remaining fully-transparent tappable elements */
+.mobile-app button[style*="background: transparent"],
+.mobile-app .account-menu button,
+.mobile-app .me-back-btn {
+    background: rgba(0, 0, 0, 0.01);
 }
 
 .app-bottom-nav {
