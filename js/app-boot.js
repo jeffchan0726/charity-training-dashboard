@@ -1,4 +1,8 @@
 // js/app-boot.js — auth & modal helpers (restored so login buttons work)
+// APPS_SCRIPT_URL restored from prior version (2026-10-21)
+var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8C7XUmx5IvhoSQZ-6JKegxyFtDtoK_gWv_xSS7b2vyRO3Nv7Sc6Kz8p6mWsVOrh1/exec";
+window.APPS_SCRIPT_URL = APPS_SCRIPT_URL;
+
 function showLoginModal() {
     const m = document.getElementById('loginModal');
     if (m) {
@@ -50,7 +54,12 @@ async function loginUser() {
         const result = await callAppsScript('login', { user: username, pin: pin });
         if (result && result.status === 'success') {
             window.currentUser = username;
-            try { localStorage.setItem('currentUser', username); } catch (e) {}
+            try {
+                localStorage.setItem('currentUser', username);
+                localStorage.setItem('currentUserPin', pin);
+                sessionStorage.setItem('currentUserPin', pin);
+            } catch (e) {}
+            if (typeof currentUserPin !== 'undefined') window.currentUserPin = pin;
             hideLoginModal();
             if (typeof updateUIAfterLogin === 'function') updateUIAfterLogin();
             if (typeof loadUserLogs === 'function') await loadUserLogs();
@@ -81,7 +90,12 @@ async function addNewUser() {
             alert('用戶 ' + username + ' 已建立！');
             hideAddUserModal();
             window.currentUser = username;
-            try { localStorage.setItem('currentUser', username); } catch (e) {}
+            try {
+                localStorage.setItem('currentUser', username);
+                localStorage.setItem('currentUserPin', pin);
+                sessionStorage.setItem('currentUserPin', pin);
+            } catch (e) {}
+            if (typeof currentUserPin !== 'undefined') window.currentUserPin = pin;
             if (typeof updateUIAfterLogin === 'function') updateUIAfterLogin();
             if (typeof loadUserLogs === 'function') await loadUserLogs();
             if (typeof renderOverviewDashboard === 'function') renderOverviewDashboard();
@@ -96,7 +110,11 @@ async function addNewUser() {
 
 function logoutUser() {
     window.currentUser = null;
-    try { localStorage.removeItem('currentUser'); } catch (e) {}
+    try {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('currentUserPin');
+        sessionStorage.removeItem('currentUserPin');
+    } catch (e) {}
     if (typeof workoutLogs !== 'undefined') window.workoutLogs = [];
     const nameEl = document.getElementById('currentUserName');
     if (nameEl) nameEl.textContent = '';
