@@ -3,10 +3,14 @@
 html.mobile-app {
     -webkit-tap-highlight-color: transparent;
     background: #0c0a09;
+    touch-action: manipulation;
+    overscroll-behavior: none;
 }
 
 .mobile-app body {
     overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    touch-action: manipulation;
     padding-bottom: 0;
     margin: 0;
     background: #0c0a09;
@@ -612,15 +616,20 @@ body:not(.diet-owner) #overview-cta-row {
     }
 }
 
-/* === iOS Safari / PWA tap reliability fixes (iPhone 17+) === */
-/* touch-action: manipulation prioritizes taps over system gestures (double-tap zoom, edge swipes).
-   Near-invisible background ensures hit-testing on transparent elements.
-   Extra bottom buffer clears Home Indicator + Safari toolbar reveal zone.
-   See MDN touch-action, Apple HIG safe areas, and common PWA practices. */
+/* === iOS Safari / PWA tap reliability — strengthened for all buttons (v2.4.60) === */
+/* Force reliable hit-testing on iOS WebKit / installed PWA.
+   Near-invisible background ensures elements are recognized as hit targets even if transparent.
+   Does not override existing solid backgrounds because of cascade order (later rules only apply where needed). */
 
-.app-bottom-nav,
-.app-bottom-nav .nav-tab,
+html.mobile-app,
+.mobile-app body,
 .mobile-app button,
+.mobile-app [role="button"],
+.mobile-app [role="tab"],
+.mobile-app a,
+.mobile-app [onclick],
+.mobile-app .nav-tab,
+.mobile-app .app-header-btn,
 .mobile-app .quick-add-btn,
 .mobile-app .me-link-card,
 .mobile-app .habit-check-row,
@@ -635,20 +644,26 @@ body:not(.diet-owner) #overview-cta-row {
 .mobile-app .time-range-btn,
 .mobile-app .log-subtab,
 .mobile-app .habit-step-btn,
-.mobile-app .water-dot,
-.mobile-app [role="tab"],
-.mobile-app [onclick] {
+.mobile-app .water-dot {
     touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
-    cursor: pointer;
+    position: relative;
 }
 
-/* Force hit-testing on any remaining fully-transparent tappable elements */
+/* Insurance background for fully transparent tappable elements only */
 .mobile-app button[style*="background: transparent"],
 .mobile-app .account-menu button,
-.mobile-app .me-back-btn {
-    background: rgba(0, 0, 0, 0.01);
+.mobile-app .me-back-btn,
+.mobile-app .app-bottom-nav .nav-tab {
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.app-bottom-nav .nav-tab.active,
+.app-bottom-nav .nav-tab[aria-selected="true"] {
+    background: rgba(22, 101, 52, 0.35);
 }
 
 .app-bottom-nav {
@@ -659,13 +674,9 @@ body:not(.diet-owner) #overview-cta-row {
     padding-bottom: max(6.75rem, calc(6rem + env(safe-area-inset-bottom, 0px)));
 }
 
-.app-bottom-nav .nav-tab {
-    background: rgba(0, 0, 0, 0.01); /* force hit-testing on iOS */
+/* Ensure no invisible full-screen layers block taps */
+#app-boot-splash.hidden,
+#app-boot-error.hidden {
+    pointer-events: none;
+    display: none !important;
 }
-
-.app-bottom-nav .nav-tab.active,
-.app-bottom-nav .nav-tab[aria-selected="true"] {
-    background: rgba(22, 101, 52, 0.35);
-}
-
-/* Header top already has max(0.65rem, env(safe-area-inset-top)); keep it. */
