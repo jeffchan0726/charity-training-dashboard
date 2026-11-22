@@ -2,11 +2,41 @@
 // Calendar rendering and month navigation + debug helper
 // Extracted as part of A (architecture refactor)
 
+function ensureCalendarDom() {
+    let grid = document.getElementById('calendar-grid');
+    let titleEl = document.getElementById('calendar-title');
+    let muscleContainer = document.getElementById('muscle-volume-bars');
+    if (grid && titleEl && muscleContainer) return { grid, titleEl, muscleContainer };
+
+    const host = document.getElementById('training-calendar');
+    if (!host) return null;
+
+    host.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <button type="button" onclick="prevMonth()" class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-2xl bg-[#292524] hover:bg-[#3f3a36] text-sm" aria-label="上一個月">‹</button>
+            <div id="calendar-title" class="font-semibold text-base tabular-nums">—</div>
+            <button type="button" onclick="nextMonth()" class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-2xl bg-[#292524] hover:bg-[#3f3a36] text-sm" aria-label="下一個月">›</button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-[10px] text-[#a8a29e] mb-1 select-none">
+            <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+        </div>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1"></div>
+        <div class="mt-5">
+            <div class="text-xs font-medium text-[#a8a29e] mb-2">近 30 日肌群訓練量</div>
+            <div id="muscle-volume-bars" class="space-y-2"></div>
+        </div>
+    `;
+    return {
+        grid: document.getElementById('calendar-grid'),
+        titleEl: document.getElementById('calendar-title'),
+        muscleContainer: document.getElementById('muscle-volume-bars')
+    };
+}
+
 function renderCalendar(year, month) {
-    const grid = document.getElementById('calendar-grid');
-    const titleEl = document.getElementById('calendar-title');
-    const muscleContainer = document.getElementById('muscle-volume-bars');
-    if (!grid) return;
+    const dom = ensureCalendarDom();
+    if (!dom || !dom.grid) return;
+    const { grid, titleEl, muscleContainer } = dom;
 
     // 處理年月狀態：若未提供參數，則使用目前狀態；若無狀態則預設為今天
     if (year == null || month == null) {
@@ -54,7 +84,7 @@ function renderCalendar(year, month) {
     // 前面空白日子（對齊星期）
     for (let i = 0; i < firstDay; i++) {
         const empty = document.createElement('div');
-        empty.className = 'h-9 rounded bg-[#252321] opacity-30';
+        empty.className = 'h-9 min-h-[36px] rounded bg-[#252321] opacity-30';
         grid.appendChild(empty);
     }
 
@@ -67,7 +97,7 @@ function renderCalendar(year, month) {
             ? `rgba(74, 222, 128, ${0.25 + intensity * 0.65})`
             : '#252321';
 
-        let cellClass = `h-9 flex items-center justify-center text-[10px] rounded cursor-pointer transition-all ${v > 0 ? 'text-white font-medium hover:brightness-110' : 'text-[#a8a29e]'}`;
+        let cellClass = `h-9 min-h-[36px] flex items-center justify-center text-[10px] rounded cursor-pointer transition-all ${v > 0 ? 'text-white font-medium hover:brightness-110' : 'text-[#a8a29e]'}`;
 
         // 今日 highlight（只在查看當月時）
         if (isViewingCurrentMonth && day === today.getDate()) {
@@ -90,76 +120,78 @@ function renderCalendar(year, month) {
         grid.appendChild(cell);
     }
 
-    // Muscle volume last 30d （獨立於目前顯示的月份；重量用 kg，跑步機/有氧用 km）
-    muscleContainer.innerHTML = '';
-    const muscleVol = {};
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
+    // Muscle volume last 30d
+    if (muscleContainer) {
+        muscleContainer.innerHTML = '';
+        const muscleVol = {};
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 30);
 
-    const cutoffStr = getLocalDateString(cutoff);
-    workoutHistory.forEach(w => {
-        const key = normalizeDateToLocal(w.date);
-        if (!key || key < cutoffStr) return;
+        const cutoffStr = getLocalDateString(cutoff);
+        workoutHistory.forEach(w => {
+            const key = normalizeDateToLocal(w.date);
+            if (!key || key < cutoffStr) return;
 
-        (w.exercises || []).forEach(ex => {
-            const cat = getExerciseCategory(ex.name);
-            if (!muscleVol[cat]) muscleVol[cat] = { weightKg: 0, distanceKm: 0 };
+            (w.exercises || []).forEach(ex => {
+                const cat = getExerciseCategory(ex.name);
+                if (!muscleVol[cat]) muscleVol[cat] = { weightKg: 0, distanceKm: 0 };
 
-            ex.sets.forEach(s => {
-                const isTreadmill = typeof isTreadmillExercise === 'function' && isTreadmillExercise(ex.name);
-                if (isTreadmill) {
-                    const km = typeof calculateTreadmillDistanceKm === 'function'
-                        ? calculateTreadmillDistanceKm(s)
-                        : (parseFloat(s.volume) || 0);
-                    muscleVol[cat].distanceKm += km;
-                } else {
-                    const kg = typeof calculateSetVolume === 'function'
-                        ? calculateSetVolume(s, ex.name)
-                        : (s.volume || ((s.weight || 0) * (s.reps || 0)));
-                    muscleVol[cat].weightKg += kg;
-                }
+                ex.sets.forEach(s => {
+                    const isTreadmill = typeof isTreadmillExercise === 'function' && isTreadmillExercise(ex.name);
+                    if (isTreadmill) {
+                        const km = typeof calculateTreadmillDistanceKm === 'function'
+                            ? calculateTreadmillDistanceKm(s)
+                            : (parseFloat(s.volume) || 0);
+                        muscleVol[cat].distanceKm += km;
+                    } else {
+                        const kg = typeof calculateSetVolume === 'function'
+                            ? calculateSetVolume(s, ex.name)
+                            : (s.volume || ((s.weight || 0) * (s.reps || 0)));
+                        muscleVol[cat].weightKg += kg;
+                    }
+                });
             });
         });
-    });
 
-    const categories = Object.keys(muscleVol).filter(cat => {
-        const v = muscleVol[cat];
-        return v.weightKg > 0 || v.distanceKm > 0;
-    });
+        const categories = Object.keys(muscleVol).filter(cat => {
+            const v = muscleVol[cat];
+            return v.weightKg > 0 || v.distanceKm > 0;
+        });
 
-    const totalWeightKg = categories.reduce((sum, cat) => sum + muscleVol[cat].weightKg, 0);
-    const totalDistanceKm = categories.reduce((sum, cat) => sum + muscleVol[cat].distanceKm, 0);
+        const totalWeightKg = categories.reduce((sum, cat) => sum + muscleVol[cat].weightKg, 0);
+        const totalDistanceKm = categories.reduce((sum, cat) => sum + muscleVol[cat].distanceKm, 0);
 
-    const sortScore = (stats) => Math.max(stats.weightKg, stats.distanceKm * 50);
+        const sortScore = (stats) => Math.max(stats.weightKg, stats.distanceKm * 50);
 
-    categories.sort((a, b) => sortScore(muscleVol[b]) - sortScore(muscleVol[a])).forEach(cat => {
-        const stats = muscleVol[cat];
-        let label = '';
-        let pct = 0;
+        categories.sort((a, b) => sortScore(muscleVol[b]) - sortScore(muscleVol[a])).forEach(cat => {
+            const stats = muscleVol[cat];
+            let label = '';
+            let pct = 0;
 
-        if (stats.distanceKm > 0 && stats.weightKg <= 0) {
-            pct = totalDistanceKm > 0 ? Math.round((stats.distanceKm / totalDistanceKm) * 100) : 0;
-            label = `${stats.distanceKm.toFixed(1)} km (${pct}%)`;
-        } else if (stats.weightKg > 0 && stats.distanceKm <= 0) {
-            pct = totalWeightKg > 0 ? Math.round((stats.weightKg / totalWeightKg) * 100) : 0;
-            label = `${Math.round(stats.weightKg).toLocaleString()} kg (${pct}%)`;
-        } else {
-            const weightPct = totalWeightKg > 0 ? Math.round((stats.weightKg / totalWeightKg) * 100) : 0;
-            pct = weightPct;
-            label = `${Math.round(stats.weightKg).toLocaleString()} kg + ${stats.distanceKm.toFixed(1)} km (${weightPct}%)`;
-        }
+            if (stats.distanceKm > 0 && stats.weightKg <= 0) {
+                pct = totalDistanceKm > 0 ? Math.round((stats.distanceKm / totalDistanceKm) * 100) : 0;
+                label = `${stats.distanceKm.toFixed(1)} km (${pct}%)`;
+            } else if (stats.weightKg > 0 && stats.distanceKm <= 0) {
+                pct = totalWeightKg > 0 ? Math.round((stats.weightKg / totalWeightKg) * 100) : 0;
+                label = `${Math.round(stats.weightKg).toLocaleString()} kg (${pct}%)`;
+            } else {
+                const weightPct = totalWeightKg > 0 ? Math.round((stats.weightKg / totalWeightKg) * 100) : 0;
+                pct = weightPct;
+                label = `${Math.round(stats.weightKg).toLocaleString()} kg + ${stats.distanceKm.toFixed(1)} km (${weightPct}%)`;
+            }
 
-        const bar = document.createElement('div');
-        bar.innerHTML = `
-            <div class="flex justify-between text-xs mb-0.5">
-                <span>${escapeHtml(cat)}</span>
-                <span class="tabular-nums">${label}</span>
-            </div>
-            <div class="h-2 bg-[#292524] rounded"><div class="h-2 bg-emerald-400 rounded" style="width:${pct}%"></div>
-            </div>
-        `;
-        muscleContainer.appendChild(bar);
-    });
+            const bar = document.createElement('div');
+            bar.innerHTML = `
+                <div class="flex justify-between text-xs mb-0.5">
+                    <span>${escapeHtml(cat)}</span>
+                    <span class="tabular-nums">${label}</span>
+                </div>
+                <div class="h-2 bg-[#292524] rounded"><div class="h-2 bg-emerald-400 rounded" style="width:${pct}%"></div>
+                </div>
+            `;
+            muscleContainer.appendChild(bar);
+        });
+    }
 }
 
 // 月份切換函數
@@ -262,7 +294,7 @@ function showAllWorkoutDates() {
         <div class="bg-[#1c1917] border border-[#44403c] rounded-3xl max-w-md w-full max-h-[82vh] flex flex-col overflow-hidden shadow-2xl">
             <div class="px-5 py-3.5 border-b border-[#44403c] flex items-center justify-between">
                 <div>
-                    <div class="font-semibold">所有有訓練記錄嘅日期</div>
+                    <div class="font-semibold">所有有訓練記錄嘋日期</div>
                     <div class="text-xs text-[#a8a29e]">共 ${dates.length} 日（由新到舊）</div>
                 </div>
                 <button class="text-xl leading-none px-2 py-1 text-[#a8a29e] hover:text-white" onclick="this.closest('.fixed').remove()">✕</button>
